@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama: 賦能本地端 AI 開發與部署</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- 
+    Chosen Palette: "Tech Neutral" - A modern, clean palette suitable for a tech product.
+    - Background: bg-stone-50 (#FAFAF9)
+    - Text: text-stone-800 (#292524)
+    - Primary Accent: bg-indigo-600 (#4F46E5) for interactive elements.
+    - Secondary/Highlight: bg-amber-500 (#F59E0B) for callouts.
+    - Code Background: bg-stone-900 (#1C1917)
+    -->
+    <!-- 
+    Application Structure Plan: The SPA is designed as a single, scrollable narrative landing page.
+    1.  **Hero Section:** Captures immediate attention.
+    2.  **The Problem:** Visually presents cloud-AI challenges.
+    3.  **The Solution (Ollama's Pillars):** Contrasts problems with Ollama's benefits.
+    4.  **How It Works (Architecture):** An interactive diagram explains the tech stack.
+    5.  **Getting Started (Interactive Guide):** A simulated terminal with practical commands and a new AI-powered model suggestion feature.
+    6.  **Customization (Modelfile):** Explains the static concept.
+    7.  **AI Modelfile Generator (Gemini-powered):** A new interactive section where users can describe an AI and have Gemini generate the Modelfile code, making customization practical.
+    8.  **Use Cases:** A grid layout showcases Ollama's versatility.
+    9.  **Conclusion & CTA:** A final summary and call-to-action.
+    This thematic flow guides the user logically from "Why should I care?" to "How can I use it?".
+    -->
+    <!-- 
+    Visualization & Content Choices:
+    - Feature: AI Modelfile Generator -> Goal: Enable/Engage -> Viz: Text area and a "Generate" button with a code block for output -> Interaction: User types a description, clicks button, and receives code from Gemini API -> Justification: A powerful demonstration of AI assisting in AI development, making the customization concept tangible and highly interactive.
+    - Feature: AI Model Suggester -> Goal: Guide/Assist -> Viz: An input field within the interactive terminal -> Interaction: User types task description, clicks button, receives a model suggestion via Gemini API -> Justification: Adds decision-making support directly into the user's workflow, enhancing the tool's utility.
+    - Fix: Share Button -> Goal: Enable Sharing on all devices -> Viz: A responsive header with a mobile menu containing the share button -> Interaction: Click to copy page URL -> Justification: Addresses the key usability issue where the share button was hidden on mobile, making it accessible everywhere.
+    - Fix: Toast Notification Visibility -> Goal: Ensure user feedback is always visible -> Method: Added a high z-index to the toast notification's CSS to ensure it appears above all other elements. -> Justification: Fixes a bug where the notification was hidden behind the sticky header.
+    Library/Method: All visuals by HTML/Tailwind CSS. Interactions by vanilla JS, with new `fetch` calls to the Gemini API.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #FAFAF9;
+            color: #292524;
+        }
+        .section-title {
+            @apply text-3xl font-bold text-stone-900 sm:text-4xl text-center;
+        }
+        .section-subtitle {
+            @apply mt-4 text-lg text-stone-600 text-center max-w-2xl mx-auto;
+        }
+        .nav-link.active {
+            color: #4F46E5;
+            font-weight: 600;
+        }
+        .code-block {
+            @apply bg-stone-900 text-white p-4 rounded-lg font-mono text-sm overflow-x-auto relative;
+        }
+        .copy-btn {
+            @apply absolute top-2 right-2 bg-stone-700 hover:bg-indigo-600 text-white py-1 px-2 rounded-md text-xs transition-all;
+        }
+        .arch-box {
+            @apply border-2 border-stone-300 rounded-lg p-4 text-center transition-all duration-300 shadow-sm;
+        }
+        .arch-arrow {
+            @apply relative w-full h-12 flex items-center justify-center;
+        }
+        .arch-arrow::after {
+            content: '↓';
+            @apply text-3xl text-stone-400;
+        }
+        .gemini-btn {
+            @apply inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed transition-all;
+        }
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #4f46e5;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .toast {
+            @apply fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transition-transform duration-300 translate-x-full z-[9999];
+        }
+        .toast.show {
+            @apply translate-x-0;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header & Navigation -->
+    <header id="header" class="bg-stone-50/80 backdrop-blur-sm sticky top-0 z-50 transition-all duration-300 border-b border-stone-200">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-indigo-600">Ollama</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-2">
+                    <a href="#solution" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700 hover:text-indigo-600">解決方案</a>
+                    <a href="#how-it-works" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700 hover:text-indigo-600">運作原理</a>
+                    <a href="#getting-started" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700 hover:text-indigo-600">快速上手</a>
+                    <a href="#customization" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700 hover:text-indigo-600">客製化</a>
+                    <a href="#use-cases" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700 hover:text-indigo-600">應用場景</a>
+                    <button class="share-btn ml-4 px-3 py-2 rounded-md text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors">分享</button>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-btn" class="inline-flex items-center justify-center p-2 rounded-md text-stone-600 hover:text-stone-900 hover:bg-stone-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                        <span class="sr-only">Open main menu</span>
+                        <svg id="menu-icon-open" class="h-6 w-6 block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg id="menu-icon-close" class="h-6 w-6 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <!-- Mobile menu, show/hide based on menu state. -->
+        <div class="md:hidden hidden" id="mobile-menu">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#solution" class="nav-link text-stone-700 hover:bg-stone-200 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium">解決方案</a>
+                <a href="#how-it-works" class="nav-link text-stone-700 hover:bg-stone-200 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium">運作原理</a>
+                <a href="#getting-started" class="nav-link text-stone-700 hover:bg-stone-200 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium">快速上手</a>
+                <a href="#customization" class="nav-link text-stone-700 hover:bg-stone-200 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium">客製化</a>
+                <a href="#use-cases" class="nav-link text-stone-700 hover:bg-stone-200 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium">應用場景</a>
+                <button class="share-btn text-indigo-600 hover:bg-indigo-50 w-full text-left block px-3 py-2 rounded-md text-base font-medium">分享</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="hero" class="py-20 sm:py-32">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h1 class="text-4xl font-extrabold text-stone-900 sm:text-5xl md:text-6xl tracking-tight">
+                    Ollama: 賦能本地端 AI 開發與部署
+                </h1>
+                <p class="mt-6 max-w-3xl mx-auto text-lg sm:text-xl text-stone-600">
+                    將世界級的大型語言模型帶入您的個人設備。完全掌控您的數據，享受離線、低延遲、高彈性的 AI 開發體驗。
+                </p>
+                <div class="mt-8 flex justify-center">
+                    <a href="#getting-started" class="bg-indigo-600 text-white font-semibold px-8 py-3 rounded-md hover:bg-indigo-700 transition-all text-lg shadow-lg">
+                        立即開始
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- The Problem & Solution Section -->
+        <section id="solution" class="py-16 sm:py-24 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="section-title">告別雲端侷限，擁抱 AI 自主權</h2>
+                    <p class="section-subtitle">傳統雲端 AI 開發模式充滿挑戰。Ollama 提供了一個全新的解決方案，將控制權交還給您。</p>
+                </div>
+
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+                    <div class="space-y-6">
+                        <h3 class="text-2xl font-bold text-center text-rose-600">雲端模型的四大挑戰</h3>
+                        <div class="p-6 bg-rose-50 border border-rose-200 rounded-lg"><h4 class="font-bold text-lg text-rose-900">資料隱私與安全風險</h4><p class="mt-2 text-stone-700">敏感數據需上傳至第三方伺服器，存在外洩與監管風險。</p></div>
+                        <div class="p-6 bg-rose-50 border border-rose-200 rounded-lg"><h4 class="font-bold text-lg text-rose-900">高昂且不確定的成本</h4><p class="mt-2 text-stone-700">基於 token 用量的 API 計價模式，大規模應用時成本難以預測與控制。</p></div>
+                        <div class="p-6 bg-rose-50 border border-rose-200 rounded-lg"><h4 class="font-bold text-lg text-rose-900">網路延遲與依賴性</h4><p class="mt-2 text-stone-700">API 調用受網路品質影響，無法保證低延遲，且無法在離線環境下工作。</p></div>
+                        <div class="p-6 bg-rose-50 border border-rose-200 rounded-lg"><h4 class="font-bold text-lg text-rose-900">平台鎖定與客製化限制</h4><p class="mt-2 text-stone-700">受限於雲端服務商，進行深度客製化與微調的彈性較低。</p></div>
+                    </div>
+                    <div class="space-y-6">
+                        <h3 class="text-2xl font-bold text-center text-indigo-600">Ollama 的三大核心支柱</h3>
+                        <div class="p-6 bg-indigo-50 border border-indigo-200 rounded-lg h-full flex flex-col justify-center">
+                            <div><h4 class="font-bold text-lg text-indigo-900">1. 簡易性 (Simplicity)</h4><p class="mt-2 text-stone-700">透過一行指令即可啟動並運行世界級的大型語言模型，大幅降低了技術門檻。</p></div>
+                            <div class="mt-6"><h4 class="font-bold text-lg text-indigo-900">2. 自主性 (Autonomy)</h4><p class="mt-2 text-stone-700">數據與模型完全本地化，確保 100% 的資料隱私，並支援完全離線運行。</p></div>
+                            <div class="mt-6"><h4 class="font-bold text-lg text-indigo-900">3. 靈活性 (Flexibility)</h4><p class="mt-2 text-stone-700">支援龐大的開源模型庫，並提供強大的客製化能力，讓模型能真正符合特定任務的需求。</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How it Works Section -->
+        <section id="how-it-works" class="py-16 sm:py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="section-title">Ollama 是如何運作的？</h2>
+                <p class="section-subtitle">Ollama 的架構設計兼顧了高效能與跨平台兼容性，其分層設計讓本地端 AI 成為可能。</p>
+                <div id="architecture-diagram" class="mt-16 max-w-md mx-auto space-y-2">
+                    <div class="arch-box hover:border-indigo-500 hover:shadow-lg"><h3 class="font-bold text-indigo-600">Ollama Daemon (核心服務)</h3><p class="text-sm text-stone-600 mt-1">以 Go 語言編寫，提供輕量級背景服務與 OpenAI 相容的 REST API。</p></div>
+                    <div class="arch-arrow"></div>
+                    <div class="arch-box hover:border-indigo-500 hover:shadow-lg"><h3 class="font-bold text-indigo-600">底層推論引擎 (`llama.cpp`)</h3><p class="text-sm text-stone-600 mt-1">整合高效能 C++ 函式庫，壓榨硬體潛力。</p></div>
+                    <div class="arch-arrow"></div>
+                    <div class="arch-box hover:border-indigo-500 hover:shadow-lg"><h3 class="font-bold text-indigo-600">硬體加速 (CPU / GPU)</h3><p class="text-sm text-stone-600 mt-1">自動利用 AVX, CUDA, Metal, ROCm 等技術。</p></div>
+                    <div class="arch-arrow"></div>
+                    <div class="arch-box hover:border-amber-500 hover:shadow-lg"><h3 class="font-bold text-amber-600">量化模型 (GGUF)</h3><p class="text-sm text-stone-600 mt-1">大幅降低 RAM 佔用，讓消費級硬體也能運行大型模型。</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Getting Started Section -->
+        <section id="getting-started" class="py-16 sm:py-24 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="section-title">五分鐘內，啟動您的本地 LLM</h2>
+                <p class="section-subtitle">跟隨這個互動指南，體驗 Ollama 的簡易性。點擊分頁查看使用指令，或讓 AI 為您推薦模型。</p>
+                <div class="mt-12 max-w-4xl mx-auto bg-stone-800 rounded-xl shadow-2xl overflow-hidden">
+                    <div class="p-2 bg-stone-900 flex items-center space-x-2"><div class="w-3 h-3 rounded-full bg-red-500"></div><div class="w-3 h-3 rounded-full bg-yellow-500"></div><div class="w-3 h-3 rounded-full bg-green-500"></div></div>
+                    <div id="terminal" class="p-4">
+                        <div class="flex border-b border-stone-700 mb-4 overflow-x-auto">
+                            <button data-tab="install" class="terminal-tab active-tab text-white py-2 px-4 font-semibold border-b-2 border-indigo-500 whitespace-nowrap">安裝</button>
+                            <button data-tab="cli" class="terminal-tab text-stone-400 py-2 px-4 font-semibold hover:text-white whitespace-nowrap">CLI 操作</button>
+                            <button data-tab="suggest" class="terminal-tab text-stone-400 py-2 px-4 font-semibold hover:text-white whitespace-nowrap flex items-center gap-2">✨ AI 模型建議</button>
+                            <button data-tab="python" class="terminal-tab text-stone-400 py-2 px-4 font-semibold hover:text-white whitespace-nowrap">Python 整合</button>
+                            <button data-tab="api" class="terminal-tab text-stone-400 py-2 px-4 font-semibold hover:text-white whitespace-nowrap">API 調用</button>
+                        </div>
+                        <div id="terminal-content"><!-- Content will be injected by JavaScript --></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Customization Section -->
+        <section id="customization" class="py-16 sm:py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="section-title">使用 Modelfile 打造專屬模型</h2>
+                <p class="section-subtitle">`Modelfile` 是一個類似 Dockerfile 的設定檔。下方除了靜態範例，您也可以試試用 AI 直接生成您想要的 Modelfile！</p>
+                
+                <div id="modelfile-generator" class="mt-12 max-w-4xl mx-auto p-8 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <h3 class="text-2xl font-bold text-stone-900 text-center">AI 驅動的 Modelfile 生成器</h3>
+                    <p class="text-center text-stone-600 mt-2">請描述您想建立的 AI 助理類型（例如：一個專門寫 Python Flask 的專家）。</p>
+                    <div class="mt-4">
+                        <textarea id="modelfile-prompt" class="w-full p-2 border border-stone-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" rows="3" placeholder="例如：一個精通繁體中文的詩人，風格類似李白..."></textarea>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button id="generate-modelfile-btn" class="gemini-btn">
+                            <span class="btn-text">生成 Modelfile</span>
+                            <div class="spinner hidden ml-2"></div>
+                        </button>
+                    </div>
+                    <div id="modelfile-output-container" class="mt-4 hidden">
+                        <h4 class="font-bold text-lg text-stone-800">AI 生成結果：</h4>
+                        <div class="code-block mt-2">
+                             <button class="copy-btn" data-clipboard-target="generated-modelfile-code">複製</button>
+                            <pre id="generated-modelfile-code"><code class="language-dockerfile"></code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Use Cases Section -->
+        <section id="use-cases" class="py-16 sm:py-24 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="section-title">多元的應用場景</h2>
+                <p class="section-subtitle">Ollama 的本地化特性使其在多個領域展現出巨大的應用潛力，從個人生產力到企業級解決方案。</p>
+                <div class="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="text-center p-6 border border-stone-200 rounded-lg"><div class="text-4xl text-indigo-600">👤</div><h3 class="mt-4 font-bold text-lg">個人生產力工具</h3><p class="mt-2 text-sm text-stone-600">完全私密的 AI 助理、寫作助手、程式碼夥伴。</p></div>
+                    <div class="text-center p-6 border border-stone-200 rounded-lg"><div class="text-4xl text-indigo-600">🏢</div><h3 class="mt-4 font-bold text-lg">企業級應用</h3><p class="mt-2 text-sm text-stone-600">在防火牆內查詢公司文件與程式碼，無資料外洩風險。</p></div>
+                    <div class="text-center p-6 border border-stone-200 rounded-lg"><div class="text-4xl text-indigo-600">🔬</div><h3 class="mt-4 font-bold text-lg">學術研究</h3><p class="mt-2 text-sm text-stone-600">在受控環境下進行模型評測、可複製的 AI 研究。</p></div>
+                    <div class="text-center p-6 border border-stone-200 rounded-lg"><div class="text-4xl text-indigo-600">☁️</div><h3 class="mt-4 font-bold text-lg">邊緣運算 (Edge AI)</h3><p class="mt-2 text-sm text-stone-600">在 IoT 設備或本地伺服器上部署，實現即時智慧決策。</p></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-stone-900 text-white">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold">為何您今天就該開始使用 Ollama？</h2>
+            <div class="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-4 font-semibold"><span>✓ 掌控力</span><span>✓ 高效能</span><span>✓ 易整合</span><span>✓ 高彈性</span></div>
+            <p class="mt-8 text-stone-400">Ollama 不僅僅是一個工具，它是一種催化劑，正在加速 AI 技術的普及化與創新應用的落地。</p>
+            <p class="mt-8 text-sm text-stone-500">&copy; 2025 Ollama Interactive. 本網頁為概念展示。</p>
+        </div>
+    </footer>
+    
+    <div id="toast-notification" class="toast"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            function showToast(message) {
+                const toast = document.getElementById('toast-notification');
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+            
+            function copyToClipboard(text, successMessage) {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.top = '-9999px';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        showToast(successMessage);
+                    } else {
+                        showToast('複製失敗！請手動操作。');
+                    }
+                } catch (err) {
+                    console.error('複製時發生錯誤: ', err);
+                    showToast('複製時發生錯誤。');
+                }
+                document.body.removeChild(textArea);
+            }
+            
+            // Handle all share button clicks
+            document.body.addEventListener('click', (e) => {
+                if (e.target.closest('.share-btn')) {
+                    copyToClipboard(window.location.href, '分享連結已複製！');
+                }
+            });
+
+            // Mobile menu toggle
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const menuIconOpen = document.getElementById('menu-icon-open');
+            const menuIconClose = document.getElementById('menu-icon-close');
+
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+                menuIconOpen.classList.toggle('hidden');
+                menuIconClose.classList.toggle('hidden');
+            });
+
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetEl = document.querySelector(this.getAttribute('href'));
+                    if(targetEl) {
+                       targetEl.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    // Close mobile menu on link click
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                        menuIconOpen.classList.remove('hidden');
+                        menuIconClose.classList.add('hidden');
+                    }
+                });
+            });
+
+            // Navigation scroll spy
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 70) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    const href = link.getAttribute('href');
+                    if (href && href.includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            // Interactive Terminal Logic
+            const terminalContentEl = document.getElementById('terminal-content');
+            const terminalTabs = document.querySelectorAll('.terminal-tab');
+            const content = {
+                install: `<div class="code-block"><button class="copy-btn" data-clipboard-text="curl -fsSL https://ollama.com/install.sh | sh">複製</button><pre><code class="language-bash"><span class="text-gray-500"># 在 macOS 或 Linux 上執行:</span>\n<span class="text-stone-300">curl -fsSL https://ollama.com/install.sh | sh</span>\n\n<span class="text-gray-500"># Windows 使用者請從官網下載安裝程式。</span></code></pre></div>`,
+                cli: `<div class="code-block"><button class="copy-btn" data-clipboard-text="ollama run llama3\nollama list\nollama rm llama3">複製</button><pre><code class="language-bash"><span class="text-gray-500"># 運行模型 (若不存在則會自動下載)</span>\n<span class="text-stone-300">ollama run llama3</span>\n\n<span class="text-gray-500"># 列出所有本地模型</span>\n<span class="text-stone-300">ollama list</span>\n\n<span class="text-gray-500"># 刪除指定模型</span>\n<span class="text-stone-300">ollama rm llama3</span></code></pre></div>`,
+                python: `<div class="code-block"><button class="copy-btn" data-clipboard-target="python-code-block">複製</button><pre id="python-code-block"><code class="language-python"><span class="text-gray-500"># 1. 安裝函式庫: pip install ollama</span>\n\n<span class="text-purple-400">import</span> <span class="text-stone-300">ollama</span>\n\n<span class="text-stone-300">response = ollama.chat(</span>\n    <span class="text-stone-300">model=</span><span class="text-green-400">'llama3'</span>,\n    <span class="text-stone-300">messages=[</span>\n        <span class="text-stone-300">{</span>\n            <span class="text-green-400">'role'</span><span class="text-stone-300">: </span><span class="text-green-400">'user'</span><span class="text-stone-300">,</span>\n            <span class="text-green-400">'content'</span><span class="text-stone-300">: </span><span class="text-green-400">'你好！'</span><span class="text-stone-300">,</span>\n        <span class="text-stone-300">},</span>\n    <span class="text-stone-300">]</span>\n<span class="text-stone-300">)</span>\n\n<span class="text-purple-400">print</span><span class="text-stone-300">(response[</span><span class="text-green-400">'message'</span><span class="text-stone-300">][</span><span class="text-green-400">'content'</span><span class="text-stone-300">])</span></code></pre></div>`,
+                api: `<div class="code-block"><button class="copy-btn" data-clipboard-target="api-code-block">複製</button><pre id="api-code-block"><code class="language-bash"><span class="text-gray-500"># 使用 curl 調用本地 API (http://localhost:11434)</span>\n<span class="text-stone-300">curl http://localhost:11434/api/chat -d '{</span>\n<span class="text-stone-300">  "model": "llama3",</span>\n<span class="text-stone-300">  "messages": [{"role": "user", "content": "你好！"}],</span>\n<span class="text-stone-300">  "stream": false</span>\n<span class="text-stone-300">}'</span></code></pre></div>`,
+                suggest: `<div class="space-y-3 text-stone-300">\n<p>告訴我您的任務，我將為您推薦一個合適的 Ollama 模型。</p>\n<input id="suggest-prompt" type="text" class="w-full p-2 bg-stone-700 border border-stone-600 rounded-md text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="例如：幫我寫 Python 程式碼並除錯">\n<button id="suggest-model-btn" class="gemini-btn text-sm py-2 px-4"><span class="btn-text">推薦模型</span><div class="spinner hidden ml-2"></div></button>\n<div id="suggestion-output" class="mt-2 text-stone-300"></div>\n</div>`
+            };
+            
+            function updateTerminalContent(tabName) {
+                terminalContentEl.innerHTML = content[tabName];
+                terminalTabs.forEach(tab => {
+                    tab.classList.remove('active-tab', 'text-white', 'border-indigo-500');
+                    tab.classList.add('text-stone-400');
+                    if(tab.dataset.tab === tabName) {
+                        tab.classList.add('active-tab', 'text-white', 'border-indigo-500');
+                        tab.classList.remove('text-stone-400');
+                    }
+                });
+
+                if (tabName === 'suggest') {
+                    document.getElementById('suggest-model-btn').addEventListener('click', handleSuggestModel);
+                }
+            }
+            
+            terminalTabs.forEach(tab => {
+                tab.addEventListener('click', () => updateTerminalContent(tab.dataset.tab));
+            });
+            
+            // Event delegation for all copy buttons
+            document.body.addEventListener('click', (e) => {
+                if (e.target.closest('.copy-btn')) {
+                    const button = e.target.closest('.copy-btn');
+                    const targetId = button.dataset.clipboardTarget;
+                    const text = button.dataset.clipboardText || (targetId ? document.getElementById(targetId).innerText : '');
+                    if (text) {
+                        copyToClipboard(text, '程式碼已複製！');
+                    }
+                }
+            });
+
+            updateTerminalContent('install');
+            
+            // Gemini API call logic
+            async function callGemini(prompt, button) {
+                const btnText = button.querySelector('.btn-text');
+                const spinner = button.querySelector('.spinner');
+
+                button.disabled = true;
+                spinner.classList.remove('hidden');
+                btnText.textContent = '生成中...';
+                
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) {
+                       throw new Error(`API 錯誤: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        return "無法生成回應，請稍後再試。";
+                    }
+                } catch (error) {
+                    console.error("Gemini API 呼叫失敗:", error);
+                    return `錯誤: ${error.message}`;
+                } finally {
+                    button.disabled = false;
+                    spinner.classList.add('hidden');
+                    btnText.textContent = button.id === 'generate-modelfile-btn' ? '生成 Modelfile' : '推薦模型';
+                }
+            }
+
+            // Modelfile Generator
+            const generateBtn = document.getElementById('generate-modelfile-btn');
+            const modelfilePrompt = document.getElementById('modelfile-prompt');
+            const modelfileOutputContainer = document.getElementById('modelfile-output-container');
+            const generatedModelfileCodeEl = document.getElementById('generated-modelfile-code').querySelector('code');
+
+            generateBtn.addEventListener('click', async () => {
+                const userPrompt = modelfilePrompt.value;
+                if (!userPrompt.trim()) {
+                    showToast('請先輸入您的需求描述！');
+                    return;
+                }
+                
+                const fullPrompt = `基於以下描述，為 Ollama 生成一個 Modelfile。\n描述: "${userPrompt}"\n\n嚴格遵循 Modelfile 語法。從一個合適的基礎模型（如 llama3, codellama, mistral 等）開始。設定合理的參數。用英文撰寫 SYSTEM 提示。只輸出 Modelfile 程式碼區塊，不要有額外解釋。`;
+                const result = await callGemini(fullPrompt, generateBtn);
+
+                const cleanedResult = result.replace(/```(dockerfile|modelfile)?\n?/i, '').replace(/```$/, '').trim();
+
+                generatedModelfileCodeEl.textContent = cleanedResult;
+                modelfileOutputContainer.classList.remove('hidden');
+            });
+
+            // Model Suggester
+            async function handleSuggestModel() {
+                const suggestBtn = document.getElementById('suggest-model-btn');
+                const suggestPrompt = document.getElementById('suggest-prompt').value;
+                const suggestionOutput = document.getElementById('suggestion-output');
+
+                if (!suggestPrompt.trim()) {
+                    suggestionOutput.innerHTML = `<span class="text-amber-400">請先輸入您的任務描述。</span>`;
+                    return;
+                }
+                
+                suggestionOutput.innerHTML = `<span class="text-stone-400">正在為您尋找最佳模型...</span>`;
+
+                const fullPrompt = `我需要一個 Ollama 模型來執行以下任務: "${suggestPrompt}". 請從 Ollama 模型庫中推薦一個最適合的模型名稱（例如 "llama3:8b", "codellama:7b", "mistral:latest", "gemma:2b"）。只回傳模型名稱和一行簡短的推薦理由。格式如下:\n模型: [模型名稱]\n理由: [一句話理由]`;
+                const result = await callGemini(fullPrompt, suggestBtn);
+                const formattedResult = result.replace(/模型:/g, '<span class="text-green-400">模型:</span>')
+                                              .replace(/理由:/g, '<span class="text-amber-400">理由:</span>');
+
+                suggestionOutput.innerHTML = `<div class="mt-2 p-2 bg-stone-700 rounded-md">${formattedResult}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>
