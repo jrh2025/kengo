@@ -165,8 +165,7 @@
 
 const CLIENT_ID = '681635780010-91s530nejt7a9rq9icifh2mvpr2h0gon.apps.googleusercontent.com'; // <-- 請貼上您的用戶端 ID
 
-// ** FIX **: Added userinfo.profile and userinfo.email scopes to get user details.
-// 權限範圍：增加了 userinfo.profile 和 userinfo.email 以便獲取使用者資訊。
+// 權限範圍：包含了存取雲端硬碟檔案、讀取個人資料和 Email 的權限。
 const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
 
 const TODO_FILE_NAME = 'my-todo-list-data.json';
@@ -244,12 +243,12 @@ function handleAuthClick() {
         }
     };
 
-    if (gapi.client.getToken() === null) {
-        // Prompt the user to grant access to the new scopes.
-        tokenClient.requestAccessToken({ prompt: 'consent' });
-    } else {
-        tokenClient.requestAccessToken({ prompt: '' });
-    }
+    // ** FIX **: Always prompt for consent when the button is clicked.
+    // This is more robust and ensures the user grants all necessary scopes,
+    // especially after the scope list has been updated in the code.
+    // 修正：總是在點擊按鈕時要求授權，以確保使用者授予所有必要的權限，
+    // 特別是在程式碼更新了權限範圍之後，此作法更加穩健。
+    tokenClient.requestAccessToken({ prompt: 'consent' });
 }
 
 function handleSignoutClick() {
