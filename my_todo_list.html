@@ -42,6 +42,11 @@
             border-radius: 0.5rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
+        /* Style for disabled button */
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
     </style>
     <!-- Google API Scripts -->
     <script src="https://apis.google.com/js/api.js"></script>
@@ -58,8 +63,8 @@
         <!-- Authentication & Loading -->
         <div id="auth-container">
             <p class="mb-4">請登入您的 Google 帳號以開始使用。</p>
-            <button id="authorize_button" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-blue-700 transition-colors">
-                使用 Google 帳號登入
+            <button id="authorize_button" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-blue-700 transition-colors" disabled>
+                正在載入...
             </button>
         </div>
         
@@ -148,11 +153,12 @@
 // 5. 前往「API 和服務」 > 「OAuth 同意畫面」：
 //    - 選擇「外部」。
 //    - 填寫應用程式名稱 (例如 "我的雲端待辦清單") 和您的使用者支援電子郵件。
-//    - 其他欄位可暫時留空，捲到最下方並儲存。
+//    - 將您的網域加入「已授權的網域」。
+//    - 儲存後，將應用程式「發布」，或將您的帳號加入「測試人員」。
 // 6. 前往「API 和服務」 > 「憑證」：
 //    - 點擊「+ 建立憑證」，選擇「OAuth 用戶端 ID」。
 //    - 應用程式類型選擇「網頁應用程式」。
-//    - 在「已授權的 JavaScript 來源」中，新增您測試此檔案的網址 (例如 `http://localhost:8000` 或 `http://127.0.0.1:8000`)。
+//    - 在「已授權的 JavaScript 來源」中，新增您網站的正式網址 (例如 `https://your-username.github.io`)。
 //    - 點擊建立，您會得到一組「用戶端 ID」。
 // 7. 將您獲得的「用戶端 ID」貼到下方的 `CLIENT_ID` 變數中。
 // =================================================================================
@@ -161,12 +167,6 @@ const CLIENT_ID = '681635780010-91s530nejt7a9rq9icifh2mvpr2h0gon.apps.googleuser
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 const TODO_FILE_NAME = 'my-todo-list-data.json';
 
-// --- 多人共用設計原理 ---
-// 這個應用程式透過將資料儲存在個別使用者的 Google Drive 中，來實現多人獨立管理清單的功能。
-// 1. 登入時，程式會請求存取「當前登入者」的 Google Drive。
-// 2. 所有資料操作（讀取、寫入、建立檔案）都在該使用者的個人雲端空間進行。
-// 3. 當另一位使用者登入時，程式會切換到新使用者的雲端空間，從而確保資料完全隔離。
-// 檔案 `my-todo-list-data.json` 對於每位使用者來說，都是其個人雲端硬碟中的獨立檔案。
 
 // --- Global Variables ---
 let tokenClient;
@@ -189,8 +189,8 @@ let currentPage = 1;
 let itemsPerPage = 10;
 let sortBy = 'updatedAt';
 
+// --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Load Google APIs ---
     gapi.load('client', initializeGapiClient);
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
@@ -198,8 +198,8 @@ document.addEventListener('DOMContentLoaded', () => {
         callback: '', // Will be set dynamically
     });
     gisInited = true;
+    checkApisLoaded();
 
-    // --- Event Listeners ---
     authorizeButton.onclick = handleAuthClick;
     signoutButton.onclick = handleSignoutClick;
     
@@ -211,15 +211,33 @@ async function initializeGapiClient() {
         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
     });
     gapiInited = true;
+    checkApisLoaded();
 }
 
+function checkApisLoaded() {
+    if (gapiInited && gisInited) {
+        authorizeButton.disabled = false;
+        authorizeButton.textContent = '使用 Google 帳號登入';
+    }
+}
+
+// --- Authentication Flow ---
 function handleAuthClick() {
     tokenClient.callback = async (resp) => {
-        if (resp.error !== undefined) {
-            throw (resp);
+        try {
+            if (resp.error !== undefined) {
+                console.error('Error getting access token:', resp);
+                alert(`授權時發生錯誤: ${resp.error_description || resp.error || '未知錯誤'}`);
+                updateUiForLoggedOut();
+                return;
+            }
+            updateUiForLoggedIn();
+            await loadDataFromDrive();
+        } catch (err) {
+            console.error('An error occurred during the login process:', err);
+            alert('登入或讀取資料過程中發生未預期的錯誤。');
+            handleSignoutClick();
         }
-        updateUiForLoggedIn();
-        await loadDataFromDrive();
     };
 
     if (gapi.client.getToken() === null) {
@@ -236,9 +254,12 @@ function handleSignoutClick() {
             gapi.client.setToken('');
             updateUiForLoggedOut();
         });
+    } else {
+        updateUiForLoggedOut();
     }
 }
 
+// --- UI Updates ---
 function updateUiForLoggedIn() {
     authContainer.classList.add('hidden');
     userProfile.classList.remove('hidden');
@@ -264,9 +285,14 @@ function updateUiForLoggedOut() {
     driveFileId = null;
 }
 
-// --- Google Drive Functions (Operating on the authenticated user's Drive) ---
-
+// --- Google Drive Functions ---
 async function loadDataFromDrive() {
+    let loadingTimeout = setTimeout(() => {
+        console.error("Loading from Drive timed out.");
+        alert("從 Google Drive 讀取資料逾時，請檢查您的網路連線並重試。");
+        handleSignoutClick();
+    }, 15000); // 15-second timeout
+
     try {
         const response = await gapi.client.drive.files.list({
             q: `name='${TODO_FILE_NAME}' and trashed=false`,
@@ -277,55 +303,39 @@ async function loadDataFromDrive() {
         if (response.result.files && response.result.files.length > 0) {
             driveFileId = response.result.files[0].id;
             const fileContentResponse = await gapi.client.drive.files.get({
-                fileId: driveFileId,
-                alt: 'media'
+                fileId: driveFileId, alt: 'media'
             });
 
             const fileContent = fileContentResponse.result;
-            // Handle different possible content types from Drive
             if (fileContent && typeof fileContent === 'object') {
                 todos = Array.isArray(fileContent) ? fileContent : [];
             } else if (typeof fileContent === 'string' && fileContent.trim()) {
-                try {
-                    const parsed = JSON.parse(fileContent);
-                    todos = Array.isArray(parsed) ? parsed : [];
-                } catch (e) {
-                    console.error("Could not parse file content from Drive.", e);
-                    alert('您雲端硬碟中的待辦事項檔案格式錯誤，將暫時以空白清單開始。');
-                    todos = [];
-                }
+                try { todos = JSON.parse(fileContent); } catch (e) { todos = []; }
             } else {
-                // File is empty or content is null/undefined
                 todos = [];
             }
         } else {
-            // File doesn't exist, create it
             const createResponse = await gapi.client.drive.files.create({
-                resource: {
-                    name: TODO_FILE_NAME,
-                    mimeType: 'application/json',
-                },
+                resource: { name: TODO_FILE_NAME, mimeType: 'application/json' },
                 fields: 'id'
             });
             driveFileId = createResponse.result.id;
             todos = [];
             await saveDataToDrive();
         }
-        
         render();
-
     } catch (err) {
         console.error("Error loading/creating Drive file:", err);
-        if (err.result && err.result.error && err.result.error.code === 403) {
-             alert('存取 Google Drive 時被拒絕。請確認您已授予必要的權限，且您的應用程式 OAuth 設定正確（例如已加入測試人員）。');
+        if (err.result?.error?.code === 403) {
+             alert('存取 Google Drive 時被拒絕。請確認 OAuth 設定正確（例如已加入測試人員）。');
         } else {
-             alert('無法從 Google Drive 讀取或建立檔案。請檢查瀏覽器開發者主控台的錯誤訊息以獲取更多資訊。');
+             alert('無法從 Google Drive 讀取或建立檔案。請檢查主控台的錯誤訊息。');
         }
         handleSignoutClick();
     } finally {
-        // This block ensures the UI is always updated correctly after the async operation.
+        clearTimeout(loadingTimeout);
         loadingIndicator.classList.add('hidden');
-        if (gapi.client.getToken() !== null) { // Only show content if user is still logged in
+        if (gapi.client.getToken() !== null) {
             mainAppContent.classList.remove('hidden');
         }
     }
@@ -340,7 +350,7 @@ async function saveDataToDrive() {
     const blob = new Blob([content], { type: 'application/json' });
 
     try {
-        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+        const response = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
             method: 'PATCH',
             headers: {
                 'Authorization': `Bearer ${gapi.client.getToken().access_token}`,
@@ -348,16 +358,17 @@ async function saveDataToDrive() {
             },
             body: blob
         });
+        if (!response.ok) {
+            throw new Error(`Failed to save to Drive. Status: ${response.status}`);
+        }
     } catch (err) {
         console.error("Error saving data to Drive:", err);
         alert('儲存資料到 Google Drive 時發生錯誤。');
+        throw err; // Re-throw to be caught by the calling function if needed
     }
 }
 
-// ===============================================================
-// The rest of the app logic remains unchanged
-// ===============================================================
-
+// --- App Logic & DOM Manipulation ---
 function setupAppEventListeners() {
     const addForm = document.getElementById('add-todo-form');
     const sortBySelect = document.getElementById('sort-by');
@@ -375,7 +386,6 @@ function setupAppEventListeners() {
         const newTodoDueDateInput = document.getElementById('new-todo-due-date');
         const text = newTodoTextInput.value.trim();
         const dueDate = newTodoDueDateInput.value;
-
         if (text) {
             const now = new Date().toISOString();
             const newTodo = { id: Date.now(), text: text, isComplete: false, dueDate: dueDate || null, createdAt: now, updatedAt: now };
@@ -389,49 +399,36 @@ function setupAppEventListeners() {
     todoListContainer.addEventListener('click', (e) => {
         const targetButton = e.target.closest('button');
         if (!targetButton) return;
-        
         const taskItem = e.target.closest('.task-item');
         const todoId = parseInt(taskItem.dataset.id, 10);
-        let needsRender = false;
-
+        let needsSave = false;
         if (targetButton.classList.contains('delete-btn')) {
             todos = todos.filter(todo => todo.id !== todoId);
-            needsRender = true;
+            needsSave = true;
         } else if (targetButton.classList.contains('complete-btn')) {
             const todo = todos.find(todo => todo.id === todoId);
             if (todo) {
                 todo.isComplete = !todo.isComplete;
                 todo.updatedAt = new Date().toISOString();
-                needsRender = true;
+                needsSave = true;
             }
         } else if (targetButton.classList.contains('edit-btn')) {
             const todo = todos.find(todo => todo.id === todoId);
             if (todo) showEditModal(todo);
         }
-        if (needsRender) renderAndSave();
+        if (needsSave) renderAndSave(); else render();
     });
 
-    sortBySelect.addEventListener('change', (e) => {
-        sortBy = e.target.value;
-        render();
-    });
-
-    itemsPerPageSelect.addEventListener('change', (e) => {
-        itemsPerPage = parseInt(e.target.value, 10);
-        currentPage = 1;
-        render();
-    });
-
+    sortBySelect.addEventListener('change', (e) => { sortBy = e.target.value; render(); });
+    itemsPerPageSelect.addEventListener('change', (e) => { itemsPerPage = parseInt(e.target.value, 10); currentPage = 1; render(); });
     cancelEditBtn.addEventListener('click', hideEditModal);
     saveEditBtn.addEventListener('click', () => {
         const editTodoIdInput = document.getElementById('edit-todo-id');
         const editTodoTextInput = document.getElementById('edit-todo-text');
         const editTodoDueDateInput = document.getElementById('edit-todo-due-date');
-        
         const id = parseInt(editTodoIdInput.value, 10);
         const newText = editTodoTextInput.value.trim();
         const newDueDate = editTodoDueDateInput.value;
-        
         if (newText) {
             const todo = todos.find(todo => todo.id === id);
             if (todo) {
@@ -453,30 +450,23 @@ function renderAndSave() {
 function render() {
     const todoListContainer = document.getElementById('todo-list');
     const paginationControls = document.getElementById('pagination-controls');
-
     const sortedTodos = [...todos].sort((a, b) => {
         if (sortBy === 'dueDate') {
             if (!a.dueDate) return 1; if (!b.dueDate) return -1;
             return new Date(a.dueDate) - new Date(b.dueDate);
-        } else {
-            return new Date(b.updatedAt) - new Date(a.updatedAt);
         }
+        return new Date(b.updatedAt) - new Date(a.updatedAt);
     });
-
     const totalPages = Math.ceil(sortedTodos.length / itemsPerPage);
     if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedTodos = sortedTodos.slice(startIndex, startIndex + itemsPerPage);
-
     todoListContainer.innerHTML = '';
     if (paginatedTodos.length === 0) {
         todoListContainer.innerHTML = `<div class="text-center text-gray-500 py-8 bg-white rounded-lg shadow-sm"><p>太棒了！目前沒有待辦事項。</p></div>`;
     } else {
-        paginatedTodos.forEach(todo => {
-            todoListContainer.appendChild(createTodoElement(todo));
-        });
+        paginatedTodos.forEach(todo => todoListContainer.appendChild(createTodoElement(todo)));
     }
-    
     renderPagination(totalPages);
 }
 
@@ -484,21 +474,9 @@ function createTodoElement(todo) {
     const div = document.createElement('div');
     div.className = `task-item bg-white p-4 rounded-lg shadow-sm flex items-center gap-4 transition-all duration-300 ${todo.isComplete ? 'completed' : ''}`;
     div.dataset.id = todo.id;
-    
     const dueDateText = todo.dueDate ? `完成期限: ${todo.dueDate}` : '未設定期限';
     const isOverdue = todo.dueDate && !todo.isComplete && new Date(todo.dueDate) < new Date().setHours(0,0,0,0);
-
-    div.innerHTML = `
-        <div class="checkmark text-green-500 text-2xl font-bold">✔️</div>
-        <div class="flex-grow">
-            <p class="task-text text-lg font-medium">${escapeHTML(todo.text)}</p>
-            <p class="text-sm text-gray-500 ${isOverdue ? 'text-red-500 font-semibold' : ''}">${dueDateText}</p>
-        </div>
-        <div class="flex items-center gap-2 flex-shrink-0">
-            <button class="complete-btn p-2 rounded-full hover:bg-green-100 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></button>
-            <button class="edit-btn p-2 rounded-full hover:bg-yellow-100 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" /></svg></button>
-            <button class="delete-btn p-2 rounded-full hover:bg-red-100 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-        </div>`;
+    div.innerHTML = `<div class="checkmark text-green-500 text-2xl font-bold">✔️</div><div class="flex-grow"><p class="task-text text-lg font-medium">${escapeHTML(todo.text)}</p><p class="text-sm text-gray-500 ${isOverdue ? 'text-red-500 font-semibold' : ''}">${dueDateText}</p></div><div class="flex items-center gap-2 flex-shrink-0"><button class="complete-btn p-2 rounded-full hover:bg-green-100 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></button><button class="edit-btn p-2 rounded-full hover:bg-yellow-100 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" /></svg></button><button class="delete-btn p-2 rounded-full hover:bg-red-100 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div>`;
     return div;
 }
 
@@ -506,19 +484,16 @@ function renderPagination(totalPages) {
     const paginationControls = document.getElementById('pagination-controls');
     paginationControls.innerHTML = '';
     if (totalPages <= 1) return;
-
     const prevButton = document.createElement('button');
     prevButton.textContent = '上一頁';
     prevButton.className = 'px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed';
     prevButton.disabled = currentPage === 1;
     prevButton.addEventListener('click', () => { if (currentPage > 1) { currentPage--; render(); } });
     paginationControls.appendChild(prevButton);
-
     const pageInfo = document.createElement('span');
     pageInfo.textContent = `第 ${currentPage} / ${totalPages} 頁`;
     pageInfo.className = 'px-4 py-2 text-gray-700';
     paginationControls.appendChild(pageInfo);
-    
     const nextButton = document.createElement('button');
     nextButton.textContent = '下一頁';
     nextButton.className = 'px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -543,12 +518,7 @@ function escapeHTML(str) {
     p.appendChild(document.createTextNode(str));
     return p.innerHTML;
 }
-
 </script>
-
-</body>
-</html>
-
 
 </body>
 </html>
