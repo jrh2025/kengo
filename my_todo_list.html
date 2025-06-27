@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雲端待辦事項清單 (支援多人獨立使用)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #9ca3af; /* gray-400 */
+        }
+        .task-item.completed .checkmark {
+            opacity: 1;
+        }
+        .checkmark {
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); display: flex;
+            justify-content: center; align-items: center; z-index: 50;
+        }
+        .modal-content {
+            background-color: white; padding: 2rem; border-radius: 0.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 90%; max-width: 500px;
+        }
+        /* Hide main content until logged in */
+        #main-app-content.hidden {
+            display: none;
+        }
+        #auth-container, #loading-indicator {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+    </style>
+    <!-- Google API Scripts -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-700">我的雲端待辦清單</h1>
+            <p class="text-gray-500 mt-2">使用 Google 帳號隨時隨地管理您的任務</p>
+        </header>
+
+        <!-- Authentication & Loading -->
+        <div id="auth-container">
+            <p class="mb-4">請登入您的 Google 帳號以開始使用。</p>
+            <button id="authorize_button" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow hover:bg-blue-700 transition-colors">
+                使用 Google 帳號登入
+            </button>
+        </div>
+        
+        <div id="user-profile" class="hidden items-center justify-between bg-white p-3 rounded-lg shadow-sm mb-6">
+            <p id="user-info" class="text-sm text-gray-600"></p>
+            <button id="signout_button" class="bg-red-500 text-white text-sm font-semibold py-1.5 px-3 rounded-lg hover:bg-red-600 transition-colors">登出</button>
+        </div>
+
+        <div id="loading-indicator" class="hidden">
+            <p>正在從您的 Google Drive 讀取資料，請稍候...</p>
+        </div>
+
+
+        <!-- Main App Content (Initially Hidden) -->
+        <div id="main-app-content" class="hidden">
+            <!-- Input Form -->
+            <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                <h2 class="text-2xl font-semibold mb-4">新增任務</h2>
+                <form id="add-todo-form" class="flex flex-col sm:flex-row items-center gap-4">
+                    <input type="text" id="new-todo-text" placeholder="輸入新的待辦事項..." class="flex-grow w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                        <input type="date" id="new-todo-due-date" class="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                        <button type="submit" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow">新增</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Controls: Sorting, Pagination -->
+            <div class="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <label for="sort-by" class="font-medium">排序方式:</label>
+                    <select id="sort-by" class="border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="updatedAt">依新增/修改時間</option>
+                        <option value="dueDate">依完成時間</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="items-per-page" class="font-medium">每頁顯示:</label>
+                    <select id="items-per-page" class="border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Todo List -->
+            <div id="todo-list" class="space-y-4"></div>
+            
+            <!-- Pagination Controls -->
+            <div id="pagination-controls" class="flex justify-center items-center mt-8 gap-2"></div>
+        </div>
+
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3 class="text-xl font-semibold mb-4">修改任務</h3>
+            <input type="hidden" id="edit-todo-id">
+            <div class="mb-4">
+                <label for="edit-todo-text" class="block text-sm font-medium text-gray-700 mb-1">任務內容</label>
+                <input type="text" id="edit-todo-text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="mb-6">
+                <label for="edit-todo-due-date" class="block text-sm font-medium text-gray-700 mb-1">完成時間</label>
+                <input type="date" id="edit-todo-due-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex justify-end gap-4">
+                <button id="cancel-edit-btn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition">取消</button>
+                <button id="save-edit-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">儲存變更</button>
+            </div>
+        </div>
+    </div>
+
+
+<script type="text/javascript">
+// =================================================================================
+// !! 重要設定：請依照以下步驟獲取您自己的 Google API 金鑰 !!
+// =================================================================================
+// 1. 前往 Google Cloud Console: https://console.cloud.google.com/
+// 2. 建立一個新專案。
+// 3. 在左側選單中，前往「API 和服務」 > 「資訊主頁」。
+// 4. 點擊「+ 啟用 API 與服務」，搜尋並啟用「Google Drive API」。
+// 5. 前往「API 和服務」 > 「OAuth 同意畫面」：
+//    - 選擇「外部」。
+//    - 填寫應用程式名稱 (例如 "我的雲端待辦清單") 和您的使用者支援電子郵件。
+//    - 其他欄位可暫時留空，捲到最下方並儲存。
+// 6. 前往「API 和服務」 > 「憑證」：
+//    - 點擊「+ 建立憑證」，選擇「OAuth 用戶端 ID」。
+//    - 應用程式類型選擇「網頁應用程式」。
+//    - 在「已授權的 JavaScript 來源」中，新增您測試此檔案的網址 (例如 `http://localhost:8000` 或 `http://127.0.0.1:8000`)。
+//    - 點擊建立，您會得到一組「用戶端 ID」。
+// 7. 將您獲得的「用戶端 ID」貼到下方的 `CLIENT_ID` 變數中。
+// =================================================================================
+
+const CLIENT_ID = '681635780010-91s530nejt7a9rq9icifh2mvpr2h0gon.apps.googleusercontent.com'; // <-- 請貼上您的用戶端 ID
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const TODO_FILE_NAME = 'my-todo-list-data.json';
+
+// --- 多人共用設計原理 ---
+// 這個應用程式透過將資料儲存在個別使用者的 Google Drive 中，來實現多人獨立管理清單的功能。
+// 1. 登入時，程式會請求存取「當前登入者」的 Google Drive。
+// 2. 所有資料操作（讀取、寫入、建立檔案）都在該使用者的個人雲端空間進行。
+// 3. 當另一位使用者登入時，程式會切換到新使用者的雲端空間，從而確保資料完全隔離。
+// 檔案 `my-todo-list-data.json` 對於每位使用者來說，都是其個人雲端硬碟中的獨立檔案。
+
+// --- Global Variables ---
+let tokenClient;
+let gapiInited = false;
+let gisInited = false;
+let driveFileId = null;
+
+// DOM Elements
+const authorizeButton = document.getElementById('authorize_button');
+const signoutButton = document.getElementById('signout_button');
+const authContainer = document.getElementById('auth-container');
+const userProfile = document.getElementById('user-profile');
+const userInfo = document.getElementById('user-info');
+const loadingIndicator = document.getElementById('loading-indicator');
+const mainAppContent = document.getElementById('main-app-content');
+
+// App State
+let todos = [];
+let currentPage = 1;
+let itemsPerPage = 10;
+let sortBy = 'updatedAt';
+
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Load Google APIs ---
+    gapi.load('client', initializeGapiClient);
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: '', // Will be set dynamically
+    });
+    gisInited = true;
+
+    // --- Event Listeners ---
+    authorizeButton.onclick = handleAuthClick;
+    signoutButton.onclick = handleSignoutClick;
+    
+    setupAppEventListeners();
+});
+
+async function initializeGapiClient() {
+    await gapi.client.init({
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+    });
+    gapiInited = true;
+}
+
+function handleAuthClick() {
+    tokenClient.callback = async (resp) => {
+        if (resp.error !== undefined) {
+            throw (resp);
+        }
+        updateUiForLoggedIn();
+        await loadDataFromDrive();
+    };
+
+    if (gapi.client.getToken() === null) {
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+    } else {
+        tokenClient.requestAccessToken({ prompt: '' });
+    }
+}
+
+function handleSignoutClick() {
+    const token = gapi.client.getToken();
+    if (token !== null) {
+        google.accounts.oauth2.revoke(token.access_token, () => {
+            gapi.client.setToken('');
+            updateUiForLoggedOut();
+        });
+    }
+}
+
+function updateUiForLoggedIn() {
+    authContainer.classList.add('hidden');
+    userProfile.classList.remove('hidden');
+    userProfile.classList.add('flex');
+    loadingIndicator.classList.remove('hidden');
+    mainAppContent.classList.add('hidden');
+
+    gapi.client.oauth2.userinfo.get().then(response => {
+        const profile = response.result;
+        userInfo.textContent = `歡迎, ${profile.name} (${profile.email})`;
+    });
+}
+
+function updateUiForLoggedOut() {
+    authContainer.classList.remove('hidden');
+    userProfile.classList.add('hidden');
+    userProfile.classList.remove('flex');
+    loadingIndicator.classList.add('hidden');
+    mainAppContent.classList.add('hidden');
+    document.getElementById('todo-list').innerHTML = '';
+    document.getElementById('pagination-controls').innerHTML = '';
+    todos = [];
+    driveFileId = null;
+}
+
+// --- Google Drive Functions (Operating on the authenticated user's Drive) ---
+
+async function loadDataFromDrive() {
+    try {
+        const response = await gapi.client.drive.files.list({
+            q: `name='${TODO_FILE_NAME}' and trashed=false`,
+            spaces: 'drive',
+            fields: 'files(id, name)',
+        });
+
+        if (response.result.files && response.result.files.length > 0) {
+            driveFileId = response.result.files[0].id;
+            const fileContentResponse = await gapi.client.drive.files.get({
+                fileId: driveFileId,
+                alt: 'media'
+            });
+            todos = fileContentResponse.result || [];
+        } else {
+            const createResponse = await gapi.client.drive.files.create({
+                resource: {
+                    name: TODO_FILE_NAME,
+                    mimeType: 'application/json',
+                },
+                fields: 'id'
+            });
+            driveFileId = createResponse.result.id;
+            todos = [];
+            await saveDataToDrive();
+        }
+        
+        loadingIndicator.classList.add('hidden');
+        mainAppContent.classList.remove('hidden');
+        render();
+
+    } catch (err) {
+        console.error("Error loading/creating Drive file:", err);
+        alert('無法從 Google Drive 讀取或建立檔案。請檢查主控台中的錯誤訊息。');
+        handleSignoutClick();
+    }
+}
+
+async function saveDataToDrive() {
+    if (!driveFileId) {
+        console.error("No Drive file ID. Cannot save.");
+        return;
+    }
+    const content = JSON.stringify(todos, null, 2);
+    const blob = new Blob([content], { type: 'application/json' });
+
+    try {
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${gapi.client.getToken().access_token}`,
+                'Content-Type': 'application/json',
+            },
+            body: blob
+        });
+    } catch (err) {
+        console.error("Error saving data to Drive:", err);
+        alert('儲存資料到 Google Drive 時發生錯誤。');
+    }
+}
+
+// ===============================================================
+// The rest of the app logic remains unchanged
+// ===============================================================
+
+function setupAppEventListeners() {
+    const addForm = document.getElementById('add-todo-form');
+    const sortBySelect = document.getElementById('sort-by');
+    const itemsPerPageSelect = document.getElementById('items-per-page');
+    const todoListContainer = document.getElementById('todo-list');
+    const saveEditBtn = document.getElementById('save-edit-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    
+    itemsPerPage = parseInt(itemsPerPageSelect.value, 10);
+    sortBy = sortBySelect.value;
+    
+    addForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const newTodoTextInput = document.getElementById('new-todo-text');
+        const newTodoDueDateInput = document.getElementById('new-todo-due-date');
+        const text = newTodoTextInput.value.trim();
+        const dueDate = newTodoDueDateInput.value;
+
+        if (text) {
+            const now = new Date().toISOString();
+            const newTodo = { id: Date.now(), text: text, isComplete: false, dueDate: dueDate || null, createdAt: now, updatedAt: now };
+            todos.unshift(newTodo);
+            newTodoTextInput.value = '';
+            newTodoDueDateInput.value = '';
+            renderAndSave();
+        }
+    });
+
+    todoListContainer.addEventListener('click', (e) => {
+        const targetButton = e.target.closest('button');
+        if (!targetButton) return;
+        
+        const taskItem = e.target.closest('.task-item');
+        const todoId = parseInt(taskItem.dataset.id, 10);
+        let needsRender = false;
+
+        if (targetButton.classList.contains('delete-btn')) {
+            todos = todos.filter(todo => todo.id !== todoId);
+            needsRender = true;
+        } else if (targetButton.classList.contains('complete-btn')) {
+            const todo = todos.find(todo => todo.id === todoId);
+            if (todo) {
+                todo.isComplete = !todo.isComplete;
+                todo.updatedAt = new Date().toISOString();
+                needsRender = true;
+            }
+        } else if (targetButton.classList.contains('edit-btn')) {
+            const todo = todos.find(todo => todo.id === todoId);
+            if (todo) showEditModal(todo);
+        }
+        if (needsRender) renderAndSave();
+    });
+
+    sortBySelect.addEventListener('change', (e) => {
+        sortBy = e.target.value;
+        render();
+    });
+
+    itemsPerPageSelect.addEventListener('change', (e) => {
+        itemsPerPage = parseInt(e.target.value, 10);
+        currentPage = 1;
+        render();
+    });
+
+    cancelEditBtn.addEventListener('click', hideEditModal);
+    saveEditBtn.addEventListener('click', () => {
+        const editTodoIdInput = document.getElementById('edit-todo-id');
+        const editTodoTextInput = document.getElementById('edit-todo-text');
+        const editTodoDueDateInput = document.getElementById('edit-todo-due-date');
+        
+        const id = parseInt(editTodoIdInput.value, 10);
+        const newText = editTodoTextInput.value.trim();
+        const newDueDate = editTodoDueDateInput.value;
+        
+        if (newText) {
+            const todo = todos.find(todo => todo.id === id);
+            if (todo) {
+                todo.text = newText;
+                todo.dueDate = newDueDate || null;
+                todo.updatedAt = new Date().toISOString();
+                hideEditModal();
+                renderAndSave();
+            }
+        }
+    });
+}
+
+function renderAndSave() {
+    render();
+    saveDataToDrive();
+}
+
+function render() {
+    const todoListContainer = document.getElementById('todo-list');
+    const paginationControls = document.getElementById('pagination-controls');
+
+    const sortedTodos = [...todos].sort((a, b) => {
+        if (sortBy === 'dueDate') {
+            if (!a.dueDate) return 1; if (!b.dueDate) return -1;
+            return new Date(a.dueDate) - new Date(b.dueDate);
+        } else {
+            return new Date(b.updatedAt) - new Date(a.updatedAt);
+        }
+    });
+
+    const totalPages = Math.ceil(sortedTodos.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedTodos = sortedTodos.slice(startIndex, startIndex + itemsPerPage);
+
+    todoListContainer.innerHTML = '';
+    if (paginatedTodos.length === 0) {
+        todoListContainer.innerHTML = `<div class="text-center text-gray-500 py-8 bg-white rounded-lg shadow-sm"><p>太棒了！目前沒有待辦事項。</p></div>`;
+    } else {
+        paginatedTodos.forEach(todo => {
+            todoListContainer.appendChild(createTodoElement(todo));
+        });
+    }
+    
+    renderPagination(totalPages);
+}
+
+function createTodoElement(todo) {
+    const div = document.createElement('div');
+    div.className = `task-item bg-white p-4 rounded-lg shadow-sm flex items-center gap-4 transition-all duration-300 ${todo.isComplete ? 'completed' : ''}`;
+    div.dataset.id = todo.id;
+    
+    const dueDateText = todo.dueDate ? `完成期限: ${todo.dueDate}` : '未設定期限';
+    const isOverdue = todo.dueDate && !todo.isComplete && new Date(todo.dueDate) < new Date().setHours(0,0,0,0);
+
+    div.innerHTML = `
+        <div class="checkmark text-green-500 text-2xl font-bold">✔️</div>
+        <div class="flex-grow">
+            <p class="task-text text-lg font-medium">${escapeHTML(todo.text)}</p>
+            <p class="text-sm text-gray-500 ${isOverdue ? 'text-red-500 font-semibold' : ''}">${dueDateText}</p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <button class="complete-btn p-2 rounded-full hover:bg-green-100 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></button>
+            <button class="edit-btn p-2 rounded-full hover:bg-yellow-100 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" /></svg></button>
+            <button class="delete-btn p-2 rounded-full hover:bg-red-100 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+        </div>`;
+    return div;
+}
+
+function renderPagination(totalPages) {
+    const paginationControls = document.getElementById('pagination-controls');
+    paginationControls.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const prevButton = document.createElement('button');
+    prevButton.textContent = '上一頁';
+    prevButton.className = 'px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed';
+    prevButton.disabled = currentPage === 1;
+    prevButton.addEventListener('click', () => { if (currentPage > 1) { currentPage--; render(); } });
+    paginationControls.appendChild(prevButton);
+
+    const pageInfo = document.createElement('span');
+    pageInfo.textContent = `第 ${currentPage} / ${totalPages} 頁`;
+    pageInfo.className = 'px-4 py-2 text-gray-700';
+    paginationControls.appendChild(pageInfo);
+    
+    const nextButton = document.createElement('button');
+    nextButton.textContent = '下一頁';
+    nextButton.className = 'px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed';
+    nextButton.disabled = currentPage === totalPages;
+    nextButton.addEventListener('click', () => { if (currentPage < totalPages) { currentPage++; render(); } });
+    paginationControls.appendChild(nextButton);
+}
+
+function showEditModal(todo) {
+    document.getElementById('edit-todo-id').value = todo.id;
+    document.getElementById('edit-todo-text').value = todo.text;
+    document.getElementById('edit-todo-due-date').value = todo.dueDate;
+    document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+function hideEditModal() {
+    document.getElementById('edit-modal').classList.add('hidden');
+}
+
+function escapeHTML(str) {
+    const p = document.createElement("p");
+    p.appendChild(document.createTextNode(str));
+    return p.innerHTML;
+}
+
+</script>
+
+</body>
+</html>
