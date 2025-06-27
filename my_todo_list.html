@@ -157,7 +157,7 @@
 // 7. 將您獲得的「用戶端 ID」貼到下方的 `CLIENT_ID` 變數中。
 // =================================================================================
 
-const CLIENT_ID = '681635780010-91s530nejt7a9rq9icifh2mvpr2h0gon.apps.googleusercontent.com'; // <-- 請貼上您的用戶端 ID
+const CLIENT_ID = 'YOUR_CLIENT_ID.apps.googleusercontent.com'; // <-- 請貼上您的用戶端 ID
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 const TODO_FILE_NAME = 'my-todo-list-data.json';
 
@@ -280,8 +280,26 @@ async function loadDataFromDrive() {
                 fileId: driveFileId,
                 alt: 'media'
             });
-            todos = fileContentResponse.result || [];
+
+            const fileContent = fileContentResponse.result;
+            // Handle different possible content types from Drive
+            if (fileContent && typeof fileContent === 'object') {
+                todos = Array.isArray(fileContent) ? fileContent : [];
+            } else if (typeof fileContent === 'string' && fileContent.trim()) {
+                try {
+                    const parsed = JSON.parse(fileContent);
+                    todos = Array.isArray(parsed) ? parsed : [];
+                } catch (e) {
+                    console.error("Could not parse file content from Drive.", e);
+                    alert('您雲端硬碟中的待辦事項檔案格式錯誤，將暫時以空白清單開始。');
+                    todos = [];
+                }
+            } else {
+                // File is empty or content is null/undefined
+                todos = [];
+            }
         } else {
+            // File doesn't exist, create it
             const createResponse = await gapi.client.drive.files.create({
                 resource: {
                     name: TODO_FILE_NAME,
@@ -294,14 +312,22 @@ async function loadDataFromDrive() {
             await saveDataToDrive();
         }
         
-        loadingIndicator.classList.add('hidden');
-        mainAppContent.classList.remove('hidden');
         render();
 
     } catch (err) {
         console.error("Error loading/creating Drive file:", err);
-        alert('無法從 Google Drive 讀取或建立檔案。請檢查主控台中的錯誤訊息。');
+        if (err.result && err.result.error && err.result.error.code === 403) {
+             alert('存取 Google Drive 時被拒絕。請確認您已授予必要的權限，且您的應用程式 OAuth 設定正確（例如已加入測試人員）。');
+        } else {
+             alert('無法從 Google Drive 讀取或建立檔案。請檢查瀏覽器開發者主控台的錯誤訊息以獲取更多資訊。');
+        }
         handleSignoutClick();
+    } finally {
+        // This block ensures the UI is always updated correctly after the async operation.
+        loadingIndicator.classList.add('hidden');
+        if (gapi.client.getToken() !== null) { // Only show content if user is still logged in
+            mainAppContent.classList.remove('hidden');
+        }
     }
 }
 
@@ -519,6 +545,10 @@ function escapeHTML(str) {
 }
 
 </script>
+
+</body>
+</html>
+
 
 </body>
 </html>
