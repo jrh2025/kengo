@@ -231,7 +231,7 @@ function handleAuthClick() {
                 updateUiForLoggedOut();
                 return;
             }
-            updateUiForLoggedIn();
+            await updateUiForLoggedIn(); // Wait for user info before loading data
             await loadDataFromDrive();
         } catch (err) {
             console.error('An error occurred during the login process:', err);
@@ -260,18 +260,28 @@ function handleSignoutClick() {
 }
 
 // --- UI Updates ---
-function updateUiForLoggedIn() {
+async function updateUiForLoggedIn() {
     authContainer.classList.add('hidden');
     userProfile.classList.remove('hidden');
     userProfile.classList.add('flex');
     loadingIndicator.classList.remove('hidden');
     mainAppContent.classList.add('hidden');
 
-    gapi.client.oauth2.userinfo.get().then(response => {
+    try {
+        // ** FIX **: Use the direct request method which is more reliable.
+        const response = await gapi.client.request({
+            path: 'https://www.googleapis.com/oauth2/v3/userinfo'
+        });
         const profile = response.result;
         userInfo.textContent = `歡迎, ${profile.name} (${profile.email})`;
-    });
+    } catch (err) {
+        console.error("Error fetching user profile:", err);
+        userInfo.textContent = '無法載入使用者資訊。';
+        // Decide if you want to sign out the user or let them continue
+        // For now, we let them continue, but show an error.
+    }
 }
+
 
 function updateUiForLoggedOut() {
     authContainer.classList.remove('hidden');
@@ -315,7 +325,6 @@ async function loadDataFromDrive() {
                 todos = [];
             }
         } else {
-            // ** NEW **: Use robust multipart upload to create the initial file.
             await createAndUploadInitialFile();
         }
         render();
@@ -337,11 +346,6 @@ async function loadDataFromDrive() {
     }
 }
 
-/**
- * ** NEW/REFACTORED FUNCTION **
- * Creates the initial data file using a robust multipart upload.
- * This sends metadata and content in a single request.
- */
 async function createAndUploadInitialFile() {
     console.log("File not found. Attempting to create a new one...");
     const initialContent = JSON.stringify([], null, 2); // Start with an empty array
