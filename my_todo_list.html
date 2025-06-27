@@ -235,7 +235,7 @@ function handleAuthClick() {
             await loadDataFromDrive();
         } catch (err) {
             console.error('An error occurred during the login process:', err);
-            alert('登入或讀取資料過程中發生未預期的錯誤。');
+            alert('登入或讀取資料過程中發生未預期的錯誤。請檢查開發者主控台以獲取詳細資訊。');
             handleSignoutClick();
         }
     };
@@ -315,23 +315,19 @@ async function loadDataFromDrive() {
                 todos = [];
             }
         } else {
-            const createResponse = await gapi.client.drive.files.create({
-                resource: { name: TODO_FILE_NAME, mimeType: 'application/json' },
-                fields: 'id'
-            });
-            driveFileId = createResponse.result.id;
-            todos = [];
-            await saveDataToDrive();
+            // ** NEW **: Use robust multipart upload to create the initial file.
+            await createAndUploadInitialFile();
         }
         render();
     } catch (err) {
-        console.error("Error loading/creating Drive file:", err);
+        console.error("Error loading or creating Drive file:", err);
+        const errorMessage = err.result?.error?.message || err.message || '未知錯誤';
         if (err.result?.error?.code === 403) {
-             alert('存取 Google Drive 時被拒絕。請確認 OAuth 設定正確（例如已加入測試人員）。');
+             alert(`存取 Google Drive 時被拒絕: ${errorMessage}。請確認 OAuth 設定正確（例如已加入測試人員）。`);
         } else {
-             alert('無法從 Google Drive 讀取或建立檔案。請檢查主控台的錯誤訊息。');
+             alert(`無法從 Google Drive 讀取或建立檔案: ${errorMessage}。請檢查主控台。`);
         }
-        handleSignoutClick();
+        throw err; // Re-throw to be caught by the higher-level catch block
     } finally {
         clearTimeout(loadingTimeout);
         loadingIndicator.classList.add('hidden');
@@ -340,6 +336,47 @@ async function loadDataFromDrive() {
         }
     }
 }
+
+/**
+ * ** NEW/REFACTORED FUNCTION **
+ * Creates the initial data file using a robust multipart upload.
+ * This sends metadata and content in a single request.
+ */
+async function createAndUploadInitialFile() {
+    console.log("File not found. Attempting to create a new one...");
+    const initialContent = JSON.stringify([], null, 2); // Start with an empty array
+    const fileMetadata = {
+        name: TODO_FILE_NAME,
+        mimeType: 'application/json',
+    };
+
+    const blob = new Blob([initialContent], { type: 'application/json' });
+    const metadataBlob = new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' });
+
+    const formData = new FormData();
+    formData.append('metadata', metadataBlob);
+    formData.append('file', blob);
+
+    const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${gapi.client.getToken().access_token}`,
+        },
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.json();
+        console.error('Multipart upload failed:', errorBody);
+        throw new Error(`Failed to create file with multipart upload. Status: ${response.status}`);
+    }
+
+    const newFile = await response.json();
+    console.log("Successfully created new file with ID:", newFile.id);
+    driveFileId = newFile.id;
+    todos = []; // Set state to match the newly created empty file
+}
+
 
 async function saveDataToDrive() {
     if (!driveFileId) {
@@ -359,12 +396,12 @@ async function saveDataToDrive() {
             body: blob
         });
         if (!response.ok) {
-            throw new Error(`Failed to save to Drive. Status: ${response.status}`);
+            const errorBody = await response.json();
+            throw new Error(`Failed to save to Drive. Status: ${response.status}, Body: ${JSON.stringify(errorBody)}`);
         }
     } catch (err) {
         console.error("Error saving data to Drive:", err);
         alert('儲存資料到 Google Drive 時發生錯誤。');
-        throw err; // Re-throw to be caught by the calling function if needed
     }
 }
 
