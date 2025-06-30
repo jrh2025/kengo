@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google 登入展示 (純前端實現)</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f7f6; }
+        .container { width: 90%; max-width: 500px; padding: 40px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
+        #g_id_signin { display: flex; justify-content: center; margin-bottom: 20px; }
+        .status { margin-top: 20px; padding: 15px; border: 1px dashed #f00; border-radius: 5px; background-color: #fff5f5; text-align: left; word-wrap: break-word; }
+        h1 { color: #4285F4; }
+        img.profile-pic { width: 80px; height: 80px; border-radius: 50%; margin-top: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .user-info-container { display: none; } /* 預設隱藏 */
+    </style>
+</head>
+<body>
+
+    <div id="login-container" class="container">
+        <h1>網站登入</h1>
+        <p>使用 Google 帳號進行個人化顯示</p>
+
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+        <div id="g_id_onload"
+             data-client_id="56751946757-p98mgneq0ua5731lsvbi6bag34h7iugl.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse">
+        </div>
+        
+        <div class="g_id_signin"
+             data-type="standard"
+             data-theme="outline"
+             data-text="sign_in_with"
+             data-shape="rectangular"
+             data-logo_alignment="left">
+        </div>
+    </div>
+
+    <div id="user-info-container" class="container user-info-container">
+        <h1 id="welcome-message"></h1>
+        <img id="user-picture" class="profile-pic" src="" alt="User profile picture">
+        <p id="user-email"></p>
+        <div class="status">
+            <h4>⚠️ 安全性警告 ⚠️</h4>
+            <p>此資訊直接在您的瀏覽器中解碼，未經後端伺服器安全驗證。它僅用於無關安全性的 UI 個人化，請勿用於授權任何敏感操作或顯示受保護的內容。</p>
+        </div>
+        <button onclick="signOut()">登出</button>
+    </div>
+
+    <script>
+        // 當使用者成功登入後，Google 會呼叫此函式
+        function handleCredentialResponse(response) {
+            console.log("從 Google 收到的 ID Token: ", response.credential);
+
+            // 【核心步驟】在純前端模式下，我們直接解碼 Token
+            // 這一步在真實的安全應用中是「嚴格禁止」的！
+            try {
+                const decodedToken = jwt_decode(response.credential);
+                updateUIAfterLogin(decodedToken);
+            } catch (error) {
+                console.error("解碼 Token 失敗:", error);
+                alert("登入憑證處理失敗，請稍後再試。");
+            }
+        }
+
+        function updateUIAfterLogin(userInfo) {
+            document.getElementById('login-container').style.display = 'none';
+            const userInfoContainer = document.getElementById('user-info-container');
+            
+            document.getElementById('welcome-message').innerText = `歡迎您，${userInfo.name}`;
+            document.getElementById('user-email').innerText = `Email: ${userInfo.email}`;
+            document.getElementById('user-picture').src = userInfo.picture;
+            
+            userInfoContainer.style.display = 'block';
+        }
+
+        // 登出函式
+        function signOut() {
+            // 在純前端應用中，登出最簡單的方式就是重新載入頁面，回到初始狀態
+            location.reload();
+        }
+
+        // 簡易的 JWT 解碼函式，僅用於前端演示
+        // 它只讀取 payload，不驗證簽章，因此是不安全的
+        function jwt_decode(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+    </script>
+
+</body>
+</html>
