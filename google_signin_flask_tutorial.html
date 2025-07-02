@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用 Flask 與 Google 帳號實現安全網站登入：標準實踐指南</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 2em 3em;
+            border-radius: 12px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        h1, h2, h3 {
+            color: #1f2937;
+            line-height: 1.4;
+            margin-top: 1.8em;
+            margin-bottom: 0.8em;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.3em;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            border-bottom: 2px solid #d1d5db;
+        }
+
+        h2 {
+            font-size: 2em;
+        }
+
+        h3 {
+            font-size: 1.5em;
+            border-bottom: none;
+        }
+
+        p, li {
+            font-size: 1.1em;
+            color: #4b5563;
+        }
+        
+        ul, ol {
+            padding-left: 25px;
+        }
+
+        strong, b {
+            color: #0056b3;
+        }
+
+        .code-container {
+            position: relative;
+            margin: 1.5em 0;
+        }
+
+        pre {
+            background-color: #1E1E1E;
+            color: #D4D4D4;
+            padding: 1.5em;
+            border-radius: 8px;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+        
+        pre code {
+            font-family: 'SF Mono', 'Consolas', 'Menlo', 'Courier New', monospace;
+            font-size: 1em;
+            background: none;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background-color: #4a5568;
+            color: #e2e8f0;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            opacity: 0.8;
+            transition: opacity 0.2s, background-color 0.2s;
+        }
+
+        .copy-btn:hover {
+            opacity: 1;
+            background-color: #2d3748;
+        }
+        
+        /* Syntax Highlighting Styles */
+        .token.comment { color: #6A9955; }
+        .token.keyword { color: #569CD6; }
+        .token.string { color: #CE9178; }
+        .token.function { color: #DCDCAA; }
+        .token.decorator { color: #C586C0; }
+        .token.number { color: #B5CEA8; }
+        .token.operator { color: #D4D4D4; }
+        .token.class-name { color: #4EC9B0; }
+        .token.punctuation { color: #D4D4D4; }
+        /* HTML specific */
+        .token.tag { color: #569CD6; }
+        .token.attr-name { color: #9CDCFE; }
+        .token.attr-value { color: #CE9178; }
+        /* Bash specific */
+        .token.shell-keyword { color: #C586C0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>使用 Flask 與 Google 帳號實現安全網站登入：標準實踐指南</h1>
+
+        <h2>1. 總覽 (Overview)</h2>
+        <p>本文件旨在提供一份從零開始的完整教學，說明如何將 Google 安全登入功能整合至一個使用 Python Flask 框架開發的網站應用程式。我們將遵循業界推薦的最佳實踐，確保驗證流程的安全性與使用者體驗的流暢性。</p>
+        
+        <h3>核心技術棧:</h3>
+        <ul>
+            <li><b>後端框架:</b> Python 3 + Flask</li>
+            <li><b>前端驗證:</b> Google Identity Services (GIS) library</li>
+            <li><b>認證協定:</b> OpenID Connect (OIDC) 1.0 on top of OAuth 2.0</li>
+            <li><b>使用者狀態管理:</b> Flask Session (Server-side sessions)</li>
+        </ul>
+
+        <h3>核心安全原則:</h3>
+        <p>本指南遵循的核心安全原則是「<b>後端權威驗證 (Backend-Authoritative Verification)</b>」。前端（使用者瀏覽器）僅負責獲取由 Google 核發的 ID Token，並將其傳送至後端。所有關於該 Token 的驗證、解析以及使用者 session 的建立，都必須在安全的後端伺服器環境中完成。</p>
+
+        <h2>2. 專案成品預覽 (Final Project Preview)</h2>
+        <p>完成本指南後，您的專案將擁有以下標準結構：</p>
+        <div class="code-container">
+            <pre><code class="language-bash">/my-secure-app
+├── app.py          <span class="token comment"># Flask 後端主應用程式</span>
+└── templates/      <span class="token comment"># 存放所有 HTML 樣板的資料夾</span>
+    ├── index.html  <span class="token comment"># 網站首頁與登入頁面</span>
+    └── dashboard.html <span class="token comment"># 使用者登入後才能看見的儀表板頁面</span></code></pre>
+            <button class="copy-btn">複製</button>
+        </div>
+
+        <h2>3. 前置作業：環境與憑證準備</h2>
+        <p>在撰寫程式碼之前，必須先完成以下設定。</p>
+        
+        <h3>3.1. Python 環境準備</h3>
+        <ul>
+            <li><b>安裝 Python:</b> 請確保您的系統已安裝 Python 3.8 或更高版本。</li>
+            <li>
+                <b>安裝必要套件:</b> 打開您的終端機或命令提示字元，執行以下指令：
+                <div class="code-container">
+                    <pre><code class="language-bash">pip install Flask google-auth requests</code></pre>
+                    <button class="copy-btn">複製</button>
+                </div>
+            </li>
+        </ul>
+
+        <h3>3.2. Google Cloud Platform 設定</h3>
+        <p>您的應用程式必須在 Google 註冊，才能使用其登入服務。</p>
+        <ol>
+            <li><b>建立專案:</b> 前往 Google Cloud Console 並建立一個新專案。</li>
+            <li>
+                <b>設定 OAuth 同意畫面:</b>
+                <ul>
+                    <li>在左側導覽列選擇「API 和服務」>「OAuth 同意畫面」。</li>
+                    <li>選擇「<b>外部 (External)</b>」，點擊「建立」。</li>
+                    <li>填寫必要的應用程式資訊（應用程式名稱、使用者支援電子郵件、開發人員聯絡資訊）。</li>
+                    <li>在「範圍」步驟，您暫時不需要新增任何範圍，可以直接儲存並繼續。</li>
+                    <li>在「測試使用者」步驟，可以將您自己的 Google 帳號加入，以便在開發階段進行測試。</li>
+                </ul>
+            </li>
+            <li>
+                <b>建立 OAuth 2.0 用戶端 ID:</b>
+                <ul>
+                    <li>在左側導覽列選擇「API 和服務」>「憑證」。</li>
+                    <li>點擊頂部的「+ 建立憑證」，選擇「OAuth 2.0 用戶端 ID」。</li>
+                    <li>應用程式類型選擇「<b>網頁應用程式</b>」。</li>
+                    <li>為您的憑證命名（例如 Web App Dev）。</li>
+                    <li>在「<b>已授權的 JavaScript 來源</b>」區塊，點擊「+ 新增 URI」，並加入以下兩行：
+                        <div class="code-container">
+                            <pre><code class="language-text">http://127.0.0.1:5000
+http://localhost:5000</code></pre>
+                            <button class="copy-btn">複製</button>
+                        </div>
+                    </li>
+                    <li>點擊「建立」。</li>
+                </ul>
+            </li>
+            <li><b>複製您的用戶端 ID:</b> 建立成功後，您會看到一個彈出視窗顯示您的「<b>用戶端 ID</b>」。請將其複製下來，稍後我們會在 <code>index.html</code> 中使用它。</li>
+        </ol>
+
+        <h2>4. 程式碼實作 (Code Implementation)</h2>
+        <p>現在，我們開始撰寫應用程式的程式碼。</p>
+
+        <h3>4.1. 後端主程式 (app.py)</h3>
+        <p>這是應用的核心，負責處理路由、驗證邏輯和使用者 session 管理。請將以下內容儲存為 <code>app.py</code>。</p>
+        <div class="code-container">
+            <pre><code class="language-python"><span class="token keyword">import</span> os
+<span class="token keyword">from</span> flask <span class="token keyword">import</span> <span class="token class-name">Flask</span>, session, request, jsonify, render_template, redirect, url_for
+<span class="token keyword">from</span> google.oauth2 <span class="token keyword">import</span> id_token
+<span class="token keyword">from</span> google.auth.transport <span class="token keyword">import</span> requests
+
+<span class="token comment"># --- App Configuration ---</span>
+app = <span class="token class-name">Flask</span>(__name__)
+
+<span class="token comment"># 從環境變數讀取 Flask 的 Secret Key，這是保護 session 的關鍵</span>
+<span class="token comment"># 在啟動應用前必須設定此環境變數</span>
+app.secret_key = os.environ.get(<span class="token string">'SECRET_KEY'</span>)
+<span class="token keyword">if</span> <span class="token keyword">not</span> app.secret_key:
+    <span class="token keyword">raise</span> <span class="token class-name">ValueError</span>(<span class="token string">"錯誤：找不到 SECRET_KEY 環境變數。請設定後再啟動應用程式。"</span>)
+
+<span class="token comment"># 從環境變數讀取 Google Client ID，如果沒有，則設為 None</span>
+<span class="token comment"># 雖然主要在前端使用，但在後端驗證時也需要它</span>
+CLIENT_ID = os.environ.get(<span class="token string">'GOOGLE_CLIENT_ID'</span>)
+<span class="token keyword">if</span> <span class="token keyword">not</span> CLIENT_ID:
+    <span class="token keyword">raise</span> <span class="token class-name">ValueError</span>(<span class="token string">"錯誤：找不到 GOOGLE_CLIENT_ID 環境變數。請設定後再啟動。"</span>)
+
+
+<span class="token comment"># --- Routes ---</span>
+<span class="token decorator">@app.route('/')</span>
+<span class="token keyword">def</span> <span class="token function">home</span>():
+    <span class="token triple-quoted-string string">"""渲染首頁，如果使用者已登入，則直接導向儀表板。"""</span>
+    <span class="token keyword">if</span> <span class="token string">'user'</span> <span class="token keyword">in</span> session:
+        <span class="token keyword">return</span> redirect(url_for(<span class="token string">'dashboard'</span>))
+    <span class="token keyword">return</span> render_template(<span class="token string">'index.html'</span>)
+
+<span class="token decorator">@app.route('/api/verify-token', methods=['POST'])</span>
+<span class="token keyword">def</span> <span class="token function">verify_token</span>():
+    <span class="token triple-quoted-string string">"""
+    接收前端傳來的 Google ID Token，進行驗證，並建立使用者 session。
+    """</span>
+    <span class="token keyword">try</span>:
+        data = request.get_json()
+        token = data.get(<span class="token string">'token'</span>)
+        <span class="token keyword">if</span> <span class="token keyword">not</span> token:
+            <span class="token keyword">return</span> jsonify({<span class="token string">"success"</span>: <span class="token boolean">False</span>, <span class="token string">"error"</span>: <span class="token string">"缺少 Token。"</span>}), <span class="token number">400</span>
+
+        <span class="token comment"># 使用 Google 的函式庫來驗證 ID Token</span>
+        <span class="token comment"># 它會檢查簽章、過期時間、發行者，以及 aud (audience) 欄位是否與我們的 Client ID 相符</span>
+        idinfo = id_token.verify_oauth2_token(token, requests.<span class="token class-name">Request</span>(), CLIENT_ID)
+        
+        <span class="token comment"># 驗證成功，將使用者資訊存入 session</span>
+        <span class="token comment"># session 是一個安全的、儲存在伺服器端的儲存空間</span>
+        session[<span class="token string">'user'</span>] = {
+            <span class="token string">'id'</span>: idinfo[<span class="token string">'sub'</span>],
+            <span class="token string">'name'</span>: idinfo.get(<span class="token string">'name'</span>),
+            <span class="token string">'email'</span>: idinfo.get(<span class="token string">'email'</span>),
+            <span class="token string">'picture'</span>: idinfo.get(<span class="token string">'picture'</span>)
+        }
+                
+        <span class="token keyword">return</span> jsonify({<span class="token string">"success"</span>: <span class="token boolean">True</span>})
+
+    <span class="token keyword">except</span> <span class="token class-name">ValueError</span> <span class="token keyword">as</span> e:
+        <span class="token comment"># Token 驗證失敗 (例如：偽造的、過期的、audience 不符)</span>
+        <span class="token keyword">return</span> jsonify({<span class="token string">"success"</span>: <span class="token boolean">False</span>, <span class="token string">"error"</span>: <span class="token string">f"無效的 Token: {e}"</span>}), <span class="token number">401</span>
+    <span class="token keyword">except</span> <span class="token class-name">Exception</span> <span class="token keyword">as</span> e:
+        <span class="token keyword">return</span> jsonify({<span class="token string">"success"</span>: <span class="token boolean">False</span>, <span class="token string">"error"</span>: <span class="token string">f"伺服器內部錯誤: {e}"</span>}), <span class="token number">500</span>
+
+<span class="token decorator">@app.route('/dashboard')</span>
+<span class="token keyword">def</span> <span class="token function">dashboard</span>():
+    <span class="token triple-quoted-string string">"""
+    儀表板頁面，只有在 session 中存在使用者資訊時才能訪問。
+    """</span>
+    <span class="token keyword">if</span> <span class="token string">'user'</span> <span class="token keyword">not</span> <span class="token keyword">in</span> session:
+        <span class="token keyword">return</span> redirect(url_for(<span class="token string">'home'</span>))
+        
+    <span class="token comment"># 從 session 中取出使用者資訊，傳遞給 HTML 樣板</span>
+    user_info = session[<span class="token string">'user'</span>]
+    <span class="token keyword">return</span> render_template(<span class="token string">'dashboard.html'</span>, user=user_info)
+
+<span class="token decorator">@app.route('/logout')</span>
+<span class="token keyword">def</span> <span class="token function">logout</span>():
+    <span class="token triple-quoted-string string">"""清除使用者 session 以實現登出。"""</span>
+    session.pop(<span class="token string">'user'</span>, <span class="token boolean">None</span>)
+    <span class="token keyword">return</span> redirect(url_for(<span class="token string">'home'</span>))
+
+<span class="token comment"># --- Main Execution ---</span>
+<span class="token keyword">if</span> __name__ == <span class="token string">'__main__'</span>:
+    <span class="token comment"># debug=True 僅適用於開發環境</span>
+    <span class="token comment"># port=5000 是 Flask 預設的埠號</span>
+    app.run(debug=<span class="token boolean">True</span>, port=<span class="token number">5000</span>)
+</code></pre>
+            <button class="copy-btn">複製</button>
+        </div>
+
+        <h3>4.2. 登入頁面 (templates/index.html)</h3>
+        <p>這是使用者首先看到的頁面。請將以下內容儲存為 <code>index.html</code>，並放置在 <code>templates</code> 資料夾中。</p>
+        <div class="code-container">
+            <pre><code class="language-html"><span class="token doctype">&lt;!DOCTYPE html&gt;</span>
+<span class="token tag">&lt;html <span class="token attr-name">lang</span>="<span class="token attr-value">zh-Hant</span>"&gt;</span>
+<span class="token tag">&lt;head&gt;</span>
+    <span class="token tag">&lt;meta <span class="token attr-name">charset</span>="<span class="token attr-value">UTF-8</span>"&gt;</span>
+    <span class="token tag">&lt;meta <span class="token attr-name">name</span>="<span class="token attr-value">viewport</span>" <span class="token attr-name">content</span>="<span class="token attr-value">width=device-width, initial-scale=1.0</span>"&gt;</span>
+    <span class="token tag">&lt;title&gt;</span>安全登入系統<span class="token tag">&lt;/title&gt;</span>
+    <span class="token tag">&lt;style&gt;</span>
+        <span class="token-selector">body</span> { <span class="token-property">font-family</span>: <span class="token-string">-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;</span> <span class="token-property">display</span>: <span class="token-string">flex;</span> <span class="token-property">justify-content</span>: <span class="token-string">center;</span> <span class="token-property">align-items</span>: <span class="token-string">center;</span> <span class="token-property">height</span>: <span class="token-string">100vh;</span> <span class="token-property">margin</span>: <span class="token-string">0;</span> <span class="token-property">background-color</span>: <span class="token-string">#f5f7fa;</span> }
+        <span class="token-selector">.login-container</span> { <span class="token-property">width</span>: <span class="token-string">90%;</span> <span class="token-property">max-width</span>: <span class="token-string">420px;</span> <span class="token-property">padding</span>: <span class="token-string">40px;</span> <span class="token-property">background-color</span>: <span class="token-string">#ffffff;</span> <span class="token-property">border-radius</span>: <span class="token-string">10px;</span> <span class="token-property">box-shadow</span>: <span class="token-string">0 8px 30px rgba(0, 0, 0, 0.12);</span> <span class="token-property">text-align</span>: <span class="token-string">center;</span> }
+        <span class="token-selector">h1</span> { <span class="token-property">color</span>: <span class="token-string">#1f2937;</span> <span class="token-property">font-weight</span>: <span class="token-string">600;</span> <span class="token-property">margin-bottom</span>: <span class="token-string">10px;</span> }
+        <span class="token-selector">p</span> { <span class="token-property">color</span>: <span class="token-string">#6b7280;</span> <span class="token-property">margin-bottom</span>: <span class="token-string">30px;</span> }
+        <span class="token-selector">#g_id_signin</span> { <span class="token-property">display</span>: <span class="token-string">flex;</span> <span class="token-property">justify-content</span>: <span class="token-string">center;</span> <span class="token-property">margin-bottom</span>: <span class="token-string">20px;</span> }
+        <span class="token-selector">.status-message</span> { <span class="token-property">margin-top</span>: <span class="token-string">20px;</span> <span class="token-property">color</span>: <span class="token-string">#dc2626;</span> <span class="token-property">height</span>: <span class="token-string">20px;</span> <span class="token-property">font-size</span>: <span class="token-string">0.9em;</span> }
+    <span class="token tag">&lt;/style&gt;</span>
+    <span class="token comment">&lt;!-- 記得將下面的 YOUR_CLIENT_ID.apps.googleusercontent.com 替換成你自己的 Client ID --&gt;</span>
+    <span class="token tag">&lt;script <span class="token attr-name">src</span>="<span class="token attr-value">https://accounts.google.com/gsi/client</span>" <span class="token attr-name">async</span> <span class="token attr-name">defer</span>&gt;</span><span class="token tag">&lt;/script&gt;</span>
+<span class="token tag">&lt;/head&gt;</span>
+<span class="token tag">&lt;body&gt;</span>
+    <span class="token tag">&lt;div <span class="token attr-name">class</span>="<span class="token attr-value">login-container</span>"&gt;</span>
+        <span class="token tag">&lt;h1&gt;</span>歡迎使用本系統<span class="token tag">&lt;/h1&gt;</span>
+        <span class="token tag">&lt;p&gt;</span>請使用您的 Google 帳號安全登入<span class="token tag">&lt;/p&gt;</span>
+        
+        <span class="token tag">&lt;div <span class="token attr-name">id</span>="<span class="token attr-value">g_id_onload</span>"
+             <span class="token attr-name">data-client_id</span>="<span class="token attr-value">YOUR_CLIENT_ID.apps.googleusercontent.com</span>"
+             <span class="token attr-name">data-callback</span>="<span class="token attr-value">handleCredentialResponse</span>"&gt;
+        <span class="token tag">&lt;/div&gt;</span>
+        
+        <span class="token tag">&lt;div <span class="token attr-name">class</span>="<span class="token attr-value">g_id_signin</span>"
+             <span class="token attr-name">data-type</span>="<span class="token attr-value">standard</span>"
+             <span class="token attr-name">data-theme</span>="<span class="token attr-value">filled_blue</span>"
+             <span class="token attr-name">data-text</span>="<span class="token attr-value">continue_with</span>"
+             <span class="token attr-name">data-shape</span>="<span class="token attr-value">rectangular</span>"
+             <span class="token attr-name">data-logo_alignment</span>="<span class="token attr-value">left</span>"&gt;
+        <span class="token tag">&lt;/div&gt;</span>
+
+        <span class="token tag">&lt;div <span class="token attr-name">id</span>="<span class="token attr-value">status</span>" <span class="token attr-name">class</span>="<span class="token attr-value">status-message</span>"&gt;</span><span class="token tag">&lt;/div&gt;</span>
+    <span class="token tag">&lt;/div&gt;
+
+    <span class="token tag">&lt;script&gt;</span>
+        <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">handleCredentialResponse</span>(<span class="token parameter">response</span>) {
+            <span class="token keyword">const</span> statusDiv = <span class="token-object">document</span>.<span class="token function">getElementById</span>(<span class="token string">'status'</span>);
+            statusDiv.innerText = <span class="token string">"驗證中，請稍候..."</span>;
+            
+            <span class="token keyword">try</span> {
+                <span class="token keyword">const</span> res = <span class="token keyword">await</span> <span class="token function">fetch</span>(<span class="token string">'/api/verify-token'</span>, {
+                    <span class="token-property">method</span>: <span class="token string">'POST'</span>,
+                    <span class="token-property">headers</span>: { <span class="token string">'Content-Type'</span>: <span class="token string">'application/json'</span> },
+                    <span class="token-property">body</span>: <span class="token-object">JSON</span>.<span class="token function">stringify</span>({ <span class="token-property">token</span>: response.credential }),
+                });
+
+                <span class="token keyword">const</span> data = <span class="token keyword">await</span> res.<span class="token function">json</span>();
+                <span class="token keyword">if</span> (res.ok && data.success) {
+                    statusDiv.innerText = <span class="token string">"登入成功！正在跳轉..."</span>;
+                    <span class="token-object">window</span>.location.href = <span class="token string">'/dashboard'</span>;
+                } <span class="token keyword">else</span> {
+                    <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">Error</span>(data.error || <span class="token string">'後端驗證失敗。'</span>);
+                }
+            } <span class="token keyword">catch</span> (error) {
+                <span class="token-object">console</span>.<span class="token function">error</span>(<span class="token string">'登入時發生錯誤:'</span>, error);
+                statusDiv.innerText = <span class="token string">`登入失敗：<span class="token-variable">${error.message}</span>`</span>;
+            }
+        }
+    <span class="token tag">&lt;/script&gt;</span>
+<span class="token tag">&lt;/body&gt;</span>
+<span class="token tag">&lt;/html&gt;</span></code></pre>
+            <button class="copy-btn">複製</button>
+        </div>
+
+        <h3>4.3. 儀表板頁面 (templates/dashboard.html)</h3>
+        <p>這是登入後的使用者專屬頁面。請將以下內容儲存為 <code>dashboard.html</code>，並放置在 <code>templates</code> 資料夾中。</p>
+        <div class="code-container">
+            <pre><code class="language-html"><span class="token doctype">&lt;!DOCTYPE html&gt;</span>
+<span class="token tag">&lt;html <span class="token attr-name">lang</span>="<span class="token attr-value">zh-Hant</span>"&gt;</span>
+<span class="token tag">&lt;head&gt;</span>
+    <span class="token tag">&lt;meta <span class="token attr-name">charset</span>="<span class="token attr-value">UTF-8</span>"&gt;</span>
+    <span class="token tag">&lt;meta <span class="token attr-name">name</span>="<span class="token attr-value">viewport</span>" <span class="token attr-name">content</span>="<span class="token attr-value">width=device-width, initial-scale=1.0</span>"&gt;</span>
+    <span class="token tag">&lt;title&gt;</span>儀表板<span class="token tag">&lt;/title&gt;</span>
+    <span class="token tag">&lt;style&gt;</span>
+        <span class="token-selector">body</span> { <span class="token-property">font-family</span>: <span class="token-string">-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;</span> <span class="token-property">background-color</span>: <span class="token-string">#f5f7fa;</span> <span class="token-property">color</span>: <span class="token-string">#1f2937;</span> <span class="token-property">margin</span>: <span class="token-string">0;</span> <span class="token-property">padding</span>: <span class="token-string">40px;</span> }
+        <span class="token-selector">.dashboard-container</span> { <span class="token-property">max-width</span>: <span class="token-string">800px;</span> <span class="token-property">margin</span>: <span class="token-string">auto;</span> <span class="token-property">background-color</span>: <span class="token-string">#ffffff;</span> <span class="token-property">padding</span>: <span class="token-string">40px;</span> <span class="token-property">border-radius</span>: <span class="token-string">10px;</span> <span class="token-property">box-shadow</span>: <span class="token-string">0 8px 30px rgba(0, 0, 0, 0.12);</span> }
+        <span class="token-selector">.user-profile</span> { <span class="token-property">display</span>: <span class="token-string">flex;</span> <span class="token-property">align-items</span>: <span class="token-string">center;</span> <span class="token-property">margin-bottom</span>: <span class="token-string">30px;</span> }
+        <span class="token-selector">.user-profile img</span> { <span class="token-property">width</span>: <span class="token-string">80px;</span> <span class="token-property">height</span>: <span class="token-string">80px;</span> <span class="token-property">border-radius</span>: <span class="token-string">50%;</span> <span class="token-property">margin-right</span>: <span class="token-string">20px;</span> }
+        <span class="token-selector">.user-info h1</span> { <span class="token-property">margin</span>: <span class="token-string">0 0 5px 0;</span> <span class="token-property">font-size</span>: <span class="token-string">1.8em;</span> }
+        <span class="token-selector">.user-info p</span> { <span class="token-property">margin</span>: <span class="token-string">0;</span> <span class="token-property">color</span>: <span class="token-string">#6b7280;</span> }
+        <span class="token-selector">a.logout-btn</span> { <span class="token-property">display</span>: <span class="token-string">inline-block;</span> <span class="token-property">margin-top</span>: <span class="token-string">30px;</span> <span class="token-property">text-decoration</span>: <span class="token-string">none;</span> <span class="token-property">background-color</span>: <span class="token-string">#e5e7eb;</span> <span class="token-property">color</span>: <span class="token-string">#374151;</span> <span class="token-property">padding</span>: <span class="token-string">10px 20px;</span> <span class="token-property">border-radius</span>: <span class="token-string">5px;</span> <span class="token-property">font-weight</span>: <span class="token-string">500;</span> <span class="token-property">transition</span>: <span class="token-string">background-color 0.2s;</span> }
+        <span class="token-selector">a.logout-btn:hover</span> { <span class="token-property">background-color</span>: <span class="token-string">#d1d5db;</span> }
+    <span class="token tag">&lt;/style&gt;</span>
+<span class="token tag">&lt;/head&gt;</span>
+<span class="token tag">&lt;body&gt;</span>
+    <span class="token tag">&lt;div <span class="token attr-name">class</span>="<span class="token attr-value">dashboard-container</span>"&gt;</span>
+        <span class="token tag">&lt;div <span class="token attr-name">class</span>="<span class="token attr-value">user-profile</span>"&gt;</span>
+            <span class="token tag">&lt;img <span class="token attr-name">src</span>="<span class="token attr-value">{{ user.picture }}</span>" <span class="token attr-name">alt</span>="<span class="token attr-value">User Profile Picture</span>"&gt;</span>
+            <span class="token tag">&lt;div <span class="token attr-name">class</span>="<span class="token attr-value">user-info</span>"&gt;</span>
+                <span class="token tag">&lt;h1&gt;</span>歡迎回來，{{ user.name }}！<span class="token tag">&lt;/h1&gt;</span>
+                <span class="token tag">&lt;p&gt;</span>{{ user.email }}<span class="token tag">&lt;/p&gt;</span>
+            <span class="token tag">&lt;/div&gt;</span>
+        <span class="token tag">&lt;/div&gt;</span>
+        
+        <span class="token tag">&lt;p&gt;</span>這是一個受保護的頁面，只有成功登入的使用者才能看見。<span class="token tag">&lt;/p&gt;</span>
+        
+        <span class="token tag">&lt;a <span class="token attr-name">href</span>="<span class="token attr-value">{{ url_for('logout') }}</span>" <span class="token attr-name">class</span>="<span class="token attr-value">logout-btn</span>"&gt;</span>登出<span class="token tag">&lt;/a&gt;</span>
+    <span class="token tag">&lt;/div&gt;</span>
+<span class="token tag">&lt;/body&gt;</span>
+<span class="token tag">&lt;/html&gt;</span></code></pre>
+            <button class="copy-btn">複製</button>
+        </div>
+
+        <h2>5. 在 Windows 上運行您的應用程式</h2>
+        <ol>
+            <li>開啟<b>命令提示字元 (cmd)</b>。</li>
+            <li><b>導覽至專案目錄</b>：使用 <code>cd</code> 指令切換到您建立的 <code>my-secure-app</code> 資料夾。</li>
+            <li>
+                <b>設定環境變數 (非常重要)</b>：
+                <ul>
+                    <li>
+                        <b>產生 Secret Key:</b> 在 cmd 中執行以下指令並複製結果。
+                        <div class="code-container">
+                            <pre><code class="language-bash">python -c <span class="token string">"import secrets; print(secrets.token_hex(24))"</span></code></pre>
+                            <button class="copy-btn">複製</button>
+                        </div>
+                    </li>
+                    <li>
+                        <b>設定 Secret Key:</b> 執行 <code>set SECRET_KEY="您剛剛複製的長字串"</code>。<br>
+                        (或者，若使用 PowerShell，請執行 <code>$env:SECRET_KEY = "您剛剛複製的長字串"</code>)
+                        <div class="code-container">
+                            <pre><code class="language-bash"><span class="token shell-keyword">set</span> SECRET_KEY="&lt;Your-Generated-Secret-Key&gt;"</code></pre>
+                            <button class="copy-btn">複製</button>
+                        </div>
+                    </li>
+                    <li>
+                        <b>設定 Client ID:</b> 執行 <code>set GOOGLE_CLIENT_ID="您從 GCP 複製的用戶端 ID"</code>。<br>
+                        (或者，若使用 PowerShell，請執行 <code>$env:GOOGLE_CLIENT_ID = "您從 GCP 複製的用戶端 ID"</code>)
+                        <div class="code-container">
+                            <pre><code class="language-bash"><span class="token shell-keyword">set</span> GOOGLE_CLIENT_ID="&lt;Your-Client-ID-From-GCP&gt;"</code></pre>
+                            <button class="copy-btn">複製</button>
+                        </div>
+                    </li>
+                    <li><b>提醒:</b> <code>set</code> 指令僅在當前視窗有效。關閉後需重新設定。</li>
+                </ul>
+            </li>
+            <li>
+                <b>啟動 Flask 伺服器:</b> 在<b>同一個</b> cmd 視窗中，執行：
+                <div class="code-container">
+                    <pre><code class="language-bash">flask run</code></pre>
+                    <button class="copy-btn">複製</button>
+                </div>
+            </li>
+            <li><b>測試:</b> 打開瀏覽器，訪問 <a href="http://127.0.0.1:5000" target="_blank">http://127.0.0.1:5000</a>。您應該會看到登入頁面，並可以完成整個登入、跳轉至儀表板、再登出的流程。</li>
+        </ol>
+
+        <h2>6. 疑難排解 (Troubleshooting)</h2>
+        <ul>
+            <li>
+                <b>錯誤: </b> <code>ValueError: No SECRET_KEY set...</code>
+                <p><b>原因:</b> 您沒有在啟動伺服器前設定 SECRET_KEY 環境變數，或是在另一個 cmd 視窗中設定的。<br><b>解決:</b> 請回到步驟 5.3，確保在執行 <code>flask run</code> 的<b>同一個視窗</b>內設定了環境變數。</p>
+            </li>
+            <li>
+                <b>錯誤: </b> <code>Token used too early... Check that your computer's clock is set correctly</code>
+                <p><b>原因:</b> 您電腦的系統時間與網路標準時間有誤差。<br><b>解決:</b> 在 Windows 的「日期與時間」設定中，點擊「立即同步」按鈕校準時間，然後重啟 Flask 伺服器。</p>
+            </li>
+            <li>
+                <b>錯誤: </b>Google 登入彈窗顯示錯誤 (如 <code>idpiframe_initialization_failed</code>)
+                <p><b>原因:</b> <code>index.html</code> 中的 Client ID 不正確，或您在 GCP 設定的「已授權的 JavaScript 來源」不正確。<br><b>解決:</b> 確認 Client ID 已正確複製貼上。確認 GCP 的來源 URI 包含了 <code>http://127.0.0.1:5000</code> 和 <code>http://localhost:5000</code>。</p>
+            </li>
+        </ul>
+
+        <h2>7. 結論與後續步驟</h2>
+        <p>恭喜！您已成功建構一個安全、基於 session 的 Google 登入系統。這為您的專案打下了堅實的基礎。</p>
+        
+        <h3>後續可行的發展方向包括：</h3>
+        <ul>
+            <li><b>資料庫整合:</b> 將使用者資訊儲存至資料庫（如 PostgreSQL 或 SQLite）。</li>
+            <li><b>生產環境部署:</b> 將應用程式部署至雲端平台（如 Heroku, AWS, GCP），並使用生產級的網頁伺服器（如 Gunicorn, Waitress）取代 Flask 的開發伺服器。</li>
+            <li><b>前端框架整合:</b> 將後端作為 API，與 Vue.js 或 React 等現代前端框架結合。</li>
+        </ul>
+    </div>
+
+    <script>
+        document.querySelectorAll('.copy-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const pre = button.parentElement.querySelector('pre');
+                const text = pre.innerText;
+
+                navigator.clipboard.writeText(text).then(() => {
+                    button.innerText = '已複製!';
+                    button.style.backgroundColor = '#48BB78';
+                    setTimeout(() => {
+                        button.innerText = '複製';
+                        button.style.backgroundColor = '#4a5568';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    button.innerText = '失敗';
+                    setTimeout(() => {
+                        button.innerText = '複製';
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
