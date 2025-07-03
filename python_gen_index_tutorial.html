@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教學：使用 Python 打造互動式網頁索引</title>
+    <style>
+        /* 教學頁面本身的樣式 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8; /* 加寬行距 */
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 2rem 3rem;
+        }
+        h1, h2, h3 {
+            color: #343a40;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 0.5rem;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+        h1 { font-size: 2.5rem; }
+        h2 { font-size: 2rem; }
+        h3 { 
+            font-size: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        p, li {
+            font-size: 1.1rem;
+            color: #212529;
+            margin-bottom: 1rem;
+        }
+        .code-wrapper {
+            position: relative;
+            margin: 1.5rem 0;
+        }
+        pre {
+            background-color: #282c34; /* 黑底 */
+            color: #abb2bf; /* 亮色文字 */
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre;
+            font-family: "Fira Code", "Courier New", monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #444c56;
+            color: #adbac7;
+            border: 1px solid #5a626d;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s, background-color 0.2s;
+            font-family: sans-serif;
+            font-size: 0.8rem;
+        }
+        .copy-btn:hover {
+            opacity: 1;
+            background-color: #5a626d;
+        }
+        .copy-btn:active {
+            background-color: #6a727d;
+        }
+        /* 語法高亮 */
+        .code-keyword { color: #c678dd; }
+        .code-string { color: #98c379; }
+        .code-comment { color: #7f848e; }
+        .code-function { color: #61afef; }
+        .code-number { color: #d19a66; }
+        .code-builtin { color: #e5c07b; }
+        .code-variable { color: #abb2bf; }
+        .info-box {
+            background-color: #e7f3fe;
+            border-left: 5px solid #2196F3;
+            padding: 1rem 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            border: none;
+            color: #1a73e8;
+        }
+        .command {
+            background-color: #282c34;
+            color: #abb2bf;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-family: "Fira Code", "Courier New", monospace;
+        }
+        .command-wrapper {
+             position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>教學：使用 Python 打造互動式網頁索引</h1>
+
+        <div class="info-box">
+            <h3>學習目標</h3>
+            <p>本教學將引導您編寫一個 Python 腳本，此腳本能自動掃描指定目錄下的所有 HTML 檔案，並生成一個名為 `index.html` 的主索引頁。這個索引頁不僅僅是靜態列表，它內建了互動式的排序功能，讓使用者可以在瀏覽器中即時依「檔案標題」或「修改日期」進行排序，無需重新整理頁面。</p>
+        </div>
+
+        <h2>核心架構：Python 與 JavaScript 的協作</h2>
+        <p>此方案採用了現代網頁開發中的「混合渲染」思想，巧妙地結合了 Python 和 JavaScript 的各自優勢：</p>
+        <ul>
+            <li><strong>Python 腳本 (`generate_index.py`) 的角色</strong>：作為後端資料處理器。它的任務是存取伺服器或本機的檔案系統，掃描所有網頁檔案，並將檔案的關鍵資訊（如檔名、從 HTML 內文提取的標題、最後編輯日期）整理成一個 JavaScript 陣列格式（JSON），然後將這個陣列直接寫入 `index.html` 的樣板檔案中。</li>
+            <li><strong>`index.html` 的角色</strong>：作為前端互動介面。當使用者用瀏覽器打開它時，其內建的 JavaScript 程式碼會讀取由 Python 注入的資料陣列，並動態地將列表呈現在頁面上。頁面上的排序按鈕都綁定了 JavaScript 事件，點擊後會直接在使用者端對資料進行排序，並即時更新畫面，提供流暢的使用者體驗。</li>
+        </ul>
+
+        <h2>步驟一：Python 程式碼詳解 (`generate_index.py`)</h2>
+        <p>讓我們分段解析這個核心的 Python 腳本。</p>
+
+        <h3>1. 匯入必要的模組</h3>
+        <p>腳本首先需要匯入幾個 Python 內建的標準函式庫來處理檔案、時間、正規表示式和 JSON 資料。</p>
+        <div class="code-wrapper">
+            <pre><code class="language-python"><span class="code-keyword">import</span> os
+<span class="code-keyword">import</span> re
+<span class="code-keyword">import</span> json
+<span class="code-keyword">from</span> datetime <span class="code-keyword">import</span> datetime
+<span class="code-keyword">from</span> html <span class="code-keyword">import</span> escape</code></pre>
+        </div>
+        <ul>
+            <li><code>os</code>: 用於與作業系統互動，如此處用於列出目錄中的檔案、取得檔案路徑和最後修改時間。</li>
+            <li><code>re</code>: 正規表示式模組，用於從 HTML 檔案內容中精準地搜尋並提取 <code>&lt;title&gt;</code> 標籤。</li>
+            <li><code>json</code>: 用於將 Python 的資料結構（如此處的 list of dictionaries）轉換為 JSON 格式的字串，以便安全地嵌入到 JavaScript 中。</li>
+            <li><code>datetime</code>: 用於處理與檔案時間相關的資訊，並將其轉換為標準格式。</li>
+            <li><code>html.escape</code>: 一個安全工具，用於轉義 HTML 特殊字元，防止潛在的跨網站指令碼（XSS）攻擊。雖然在此情境下風險較低，但養成使用它的習慣是很好的做法。</li>
+        </ul>
+        
+        <h3>2. 函式 `get_html_title`：讀取網頁標題</h3>
+        <p>這個輔助函式負責打開指定的 HTML 檔案，並從中提取出 <code>&lt;title&gt;</code> 標籤內的文字。這是為了讓索引列表顯示更具可讀性的標題，而非僅僅是檔名。</p>
+        <div class="code-wrapper">
+            <pre><code class="language-python"><span class="code-keyword">def</span> <span class="code-function">get_html_title</span>(filepath):
+    <span class="code-comment">"""從 HTML 檔案中提取 &lt;title&gt; 標籤的內容。"""</span>
+    <span class="code-keyword">try</span>:
+        <span class="code-keyword">with</span> <span class="code-builtin">open</span>(filepath, <span class="code-string">'r'</span>, encoding=<span class="code-string">'utf-8'</span>) <span class="code-keyword">as</span> f:
+            content = f.read()
+            match = re.search(<span class="code-string">r'&lt;title[^&gt;]*&gt;(.*?)&lt;/title&gt;'</span>, content, re.IGNORECASE | re.DOTALL)
+            <span class="code-keyword">if</span> match:
+                <span class="code-keyword">return</span> match.group(<span class="code-number">1</span>).strip()
+    <span class="code-keyword">except</span> Exception <span class="code-keyword">as</span> e:
+        <span class="code-builtin">print</span>(<span class="code-string">f"警告：無法讀取或解析檔案 {filepath}: {e}"</span>)
+    <span class="code-keyword">return</span> <span class="code-keyword">None</span></code></pre>
+        </div>
+        <ul>
+            <li><code>try...except</code>: 穩健的錯誤處理。如果檔案不存在、沒有讀取權限或編碼錯誤，程式會印出警告並繼續執行，而不會崩潰。</li>
+            <li><code>with open(...)</code>: 使用上下文管理器來開啟檔案，確保檔案在讀取完畢後會被自動關閉。指定 <code>encoding='utf-8'</code> 是處理包含中文等非 ASCII 字元網頁的關鍵。</li>
+            <li><code>re.search(...)</code>: 這是核心的搜尋邏輯。正規表示式 <code>r'&lt;title[^&gt;]*&gt;(.*?)&lt;/title&gt;'</code> 會尋找 <code>&lt;title&gt;</code> 標籤，並捕獲其中的所有內容。<code>re.IGNORECASE</code> 使其不區分大小寫（例如 <code>&lt;TITLE&gt;</code> 也能匹配），<code>re.DOTALL</code> 讓 <code>.</code> 可以匹配包括換行符在內的任何字元。</li>
+            <li><code>match.group(1).strip()</code>: 如果找到了匹配項，<code>group(1)</code> 會提取第一個括號中捕獲的內容（也就是標題文字），<code>.strip()</code> 則是用來移除文字前後多餘的空白或換行。</li>
+        </ul>
+
+        <h3>3. 主函式 `create_interactive_index`：生成索引頁</h3>
+        <p>這是整個腳本的主體，負責執行所有核心任務：掃描檔案、收集資料、準備 HTML 模板，並最終生成 `index.html`。</p>
+        
+        <h4>3.1 掃描目錄並收集檔案資訊</h4>
+        <p>此區塊會遍歷當前目錄，找出所有 HTML 檔案（忽略 `index.html` 本身），並為每個檔案建立一個包含其屬性的字典。</p>
+        <div class="code-wrapper">
+            <pre><code class="language-python">    directory = <span class="code-string">'.'</span>
+    <span class="code-builtin">print</span>(<span class="code-string">f"正在掃描目錄: {os.path.abspath(directory)}"</span>)
+    
+    file_data_list = []
+    <span class="code-keyword">for</span> filename <span class="code-keyword">in</span> os.listdir(directory):
+        <span class="code-keyword">if</span> filename.lower().endswith((<span class="code-string">'.html'</span>, <span class="code-string">'.htm'</span>)) <span class="code-keyword">and</span> filename.lower() != <span class="code-string">'index.html'</span>:
+            filepath = os.path.join(directory, filename)
+            title = get_html_title(filepath)
+            
+            file_data_list.append({
+                <span class="code-string">'href'</span>: filename,
+                <span class="code-string">'title'</span>: title <span class="code-keyword">if</span> title <span class="code-keyword">else</span> filename,
+                <span class="code-string">'mtime'</span>: datetime.fromtimestamp(os.path.getmtime(filepath)).isoformat()
+            })
+            <span class="code-builtin">print</span>(<span class="code-string">f"  - 處理檔案: {filename}"</span>)</code></pre>
+        </div>
+        <ul>
+            <li><code>os.listdir('.')</code>: 列出目前目錄（<code>.</code> 代表當前目錄）下的所有檔案和資料夾名稱。</li>
+            <li><code>if filename.lower().endswith(...)</code>: 條件判斷，確保只處理副檔名為 <code>.html</code> 或 <code>.htm</code> 的檔案，且排除將要生成的 <code>index.html</code>，避免自我循環。</li>
+            <li><code>file_data_list.append({...})</code>: 將每個檔案的資訊以字典形式加入列表中。</li>
+            <li><code>'title': title if title else filename</code>: 如果成功從檔案中提取到標題，就使用該標題；否則，使用檔名作為備用標題。</li>
+            <li><code>datetime.fromtimestamp(...).isoformat()</code>: 獲取檔案的最後修改時間（一個時間戳），並將其轉換為 ISO 8601 標準格式的字串（例如 <code>"2025-07-03T14:30:00"</code>）。這種格式可以被 JavaScript 的 <code>new Date()</code> 建構函式直接、準確地解析。</li>
+        </ul>
+        
+        <h4>3.2 將資料轉換為 JSON</h4>
+        <p>將 Python 的 list 轉換為 JSON 格式的字串，這是實現資料注入的關鍵一步。</p>
+        <div class="code-wrapper">
+            <pre><code class="language-python">    json_data = json.dumps(file_data_list, ensure_ascii=<span class="code-keyword">False</span>)</code></pre>
+        </div>
+        <ul>
+            <li><code>json.dumps(...)</code>: 將 `file_data_list` 序列化為 JSON 字串。</li>
+            <li><code>ensure_ascii=False</code>: 這個參數非常重要，它告訴 `json.dumps` 直接輸出 Unicode 字元（如中文字），而不是將它們轉義成 <code>\uXXXX</code> 的形式。這使得生成的 HTML 原始碼更具可讀性。</li>
+        </ul>
+        
+        <h4>3.3 準備 HTML 模板與注入資料</h4>
+        <p>此處使用 Python 的 f-string 功能來建立一個巨大的字串，這個字串就是 `index.html` 的完整內容。它包含了 HTML 結構、CSS 樣式以及最重要的 JavaScript 互動邏輯。</p>
+        <div class="code-wrapper">
+            <pre><code class="language-python">    html_template = <span class="code-string">f"""&lt;!DOCTYPE html&gt;
+&lt;html lang="zh-Hant"&gt;
+&lt;head&gt;
+    &lt;!-- ... CSS 和其他 head 內容 ... --&gt;
+    &lt;title&gt;文件索引 (可排序)&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;!-- ... HTML 頁面結構，包含排序按鈕和列表容器 ... --&gt;
+    &lt;div class="container"&gt;
+        &lt;h1&gt;文件索引&lt;/h1&gt;
+        &lt;div class="sort-controls"&gt;
+            &lt;!-- ... 四個排序按鈕 ... --&gt;
+        &lt;/div&gt;
+        &lt;ul id="file-list"&gt;&lt;/ul&gt;
+    &lt;/div&gt;
+
+    &lt;script&gt;
+        // --- 步驟 1: Python 注入的資料 ---
+        <span class="code-keyword">const</span> fileData = {json_data};
+
+        // --- 步驟 2: 渲染與互動邏輯 ---
+        <span class="code-keyword">const</span> fileListElement = document.getElementById('file-list');
+        // ... (渲染列表、設定按鈕樣式、綁定點擊事件的 JS 程式碼) ...
+
+        // --- 步驟 4: 初始載入 ---
+        document.getElementById('sort-title-asc').click(); // 預設排序
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+"""</span></code></pre>
+        </div>
+        <p>在模板中，最關鍵的一行是：</p>
+        <div class="code-wrapper">
+            <pre><code class="language-javascript"><span class="code-keyword">const</span> fileData = {json_data};</code></pre>
+        </div>
+        <p>當 f-string 被求值時，變數 <code>{json_data}</code> 會被前面生成的 JSON 字串所取代，從而將所有檔案資料直接嵌入到 `index.html` 的 JavaScript 程式碼中。</p>
+        
+        <h4>3.4 寫入檔案與主程式執行區塊</h4>
+        <p>最後，腳本將含有完整內容的 `html_template` 字串寫入到 `index.html` 檔案中，並提供一個程式進入點。</p>
+        <div class="code-wrapper">
+            <pre><code class="language-python">    <span class="code-keyword">try</span>:
+        <span class="code-keyword">with</span> <span class="code-builtin">open</span>(<span class="code-string">'index.html'</span>, <span class="code-string">'w'</span>, encoding=<span class="code-string">'utf-8'</span>) <span class="code-keyword">as</span> f:
+            f.write(html_template)
+        <span class="code-builtin">print</span>(<span class="code-string">"\n成功生成具備互動排序功能的 index.html！"</span>)
+    <span class="code-keyword">except</span> Exception <span class="code-keyword">as</span> e:
+        <span class="code-builtin">print</span>(<span class="code-string">f"\n寫入 index.html 時發生錯誤: {e}"</span>)
+
+<span class="code-keyword">if</span> __name__ == <span class="code-string">'__main__'</span>:
+    create_interactive_index()</code></pre>
+        </div>
+        <ul>
+            <li><code>if __name__ == '__main__':</code>: 這是 Python 的一個標準慣例。它確保只有當這個檔案被直接執行（而不是被其他腳本匯入）時，<code>create_interactive_index()</code> 函式才會被呼叫。</li>
+        </ul>
+        
+        <h2>步驟二：完整程式碼與執行方式</h2>
+        <p>以下是您可以直接複製使用的完整 `generate_index.py` 腳本。</p>
+        
+        <h3>完整 `generate_index.py` 腳本</h3>
+        <div class="code-wrapper">
+        <pre><code class="language-python"><span class="code-keyword">import</span> os
+<span class="code-keyword">import</span> re
+<span class="code-keyword">import</span> json
+<span class="code-keyword">from</span> datetime <span class="code-keyword">import</span> datetime
+<span class="code-keyword">from</span> html <span class="code-keyword">import</span> escape
+
+<span class="code-keyword">def</span> <span class="code-function">get_html_title</span>(filepath):
+    <span class="code-comment">"""從 HTML 檔案中提取 &lt;title&gt; 標籤的內容。"""</span>
+    <span class="code-keyword">try</span>:
+        <span class="code-keyword">with</span> <span class="code-builtin">open</span>(filepath, <span class="code-string">'r'</span>, encoding=<span class="code-string">'utf-8'</span>) <span class="code-keyword">as</span> f:
+            content = f.read()
+            match = re.search(<span class="code-string">r'&lt;title[^&gt;]*&gt;(.*?)&lt;/title&gt;'</span>, content, re.IGNORECASE | re.DOTALL)
+            <span class="code-keyword">if</span> match:
+                <span class="code-keyword">return</span> match.group(<span class="code-number">1</span>).strip()
+    <span class="code-keyword">except</span> Exception <span class="code-keyword">as</span> e:
+        <span class="code-builtin">print</span>(<span class="code-string">f"警告：無法讀取或解析檔案 {filepath}: {e}"</span>)
+    <span class="code-keyword">return</span> <span class="code-keyword">None</span>
+
+<span class="code-keyword">def</span> <span class="code-function">create_interactive_index</span>():
+    <span class="code-comment">"""
+    生成一個 index.html，其中包含所有檔案資料的 JSON 物件和
+    用於客戶端排序的 JavaScript 程式碼。
+    """</span>
+    directory = <span class="code-string">'.'</span>
+    <span class="code-builtin">print</span>(<span class="code-string">f"正在掃描目錄: {os.path.abspath(directory)}"</span>)
+    
+    file_data_list = []
+    <span class="code-keyword">for</span> filename <span class="code-keyword">in</span> os.listdir(directory):
+        <span class="code-keyword">if</span> filename.lower().endswith((<span class="code-string">'.html'</span>, <span class="code-string">'.htm'</span>)) <span class="code-keyword">and</span> filename.lower() != <span class="code-string">'index.html'</span>:
+            filepath = os.path.join(directory, filename)
+            title = get_html_title(filepath)
+            
+            file_data_list.append({
+                <span class="code-string">'href'</span>: filename,
+                <span class="code-string">'title'</span>: title <span class="code-keyword">if</span> title <span class="code-keyword">else</span> filename,
+                <span class="code-string">'mtime'</span>: datetime.fromtimestamp(os.path.getmtime(filepath)).isoformat()
+            })
+            <span class="code-builtin">print</span>(<span class="code-string">f"  - 處理檔案: {filename}"</span>)
+            
+    json_data = json.dumps(file_data_list, ensure_ascii=<span class="code-keyword">False</span>)
+    
+    html_template = <span class="code-string">f"""&lt;!DOCTYPE html&gt;
+&lt;html lang="zh-Hant"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;文件索引 (可排序)&lt;/title&gt;
+    &lt;style&gt;
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; background-color: #f8f9fa; color: #212529; margin: 0; padding: 2rem; }}
+        .container {{ max-width: 800px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); padding: 2rem; }}
+        h1 {{ color: #343a40; border-bottom: 2px solid #dee2e6; padding-bottom: 0.5rem; margin-top: 0; }}
+        .sort-controls {{ margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }}
+        .sort-controls button {{ background-color: #e9ecef; border: 1px solid #dee2e6; color: #495057; padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.9rem; transition: background-color 0.2s, color 0.2s; }}
+        .sort-controls button.active {{ background-color: #007bff; color: white; border-color: #007bff; }}
+        .sort-controls button:hover:not(.active) {{ background-color: #dee2e6; }}
+        ul {{ list-style-type: none; padding: 0; }}
+        li {{ margin-bottom: 0.75rem; }}
+        a {{ text-decoration: none; color: #007bff; font-size: 1.1rem; transition: color 0.2s; }}
+        a:hover, a:focus {{ color: #0056b3; }}
+        .footer {{ margin-top: 2rem; text-align: center; font-size: 0.9rem; color: #6c757d; }}
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="container"&gt;
+        &lt;h1&gt;文件索引&lt;/h1&gt;
+        &lt;div class="sort-controls"&gt;
+            &lt;span&gt;排序方式：&lt;/span&gt;
+            &lt;button id="sort-title-asc"&gt;標題 (A-Z)&lt;/button&gt;
+            &lt;button id="sort-title-desc"&gt;標題 (Z-A)&lt;/button&gt;
+            &lt;button id="sort-date-desc"&gt;日期 (新到舊)&lt;/button&gt;
+            &lt;button id="sort-date-asc"&gt;日期 (舊到新)&lt;/button&gt;
+        &lt;/div&gt;
+        &lt;ul id="file-list"&gt;&lt;/ul&gt;
+        &lt;div class="footer"&gt;
+            此頁面由 Python 腳本於 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} 自動生成。
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;script&gt;
+        const fileData = {json_data};
+        const fileListElement = document.getElementById('file-list');
+        const sortButtons = document.querySelectorAll('.sort-controls button');
+        let currentActiveButton = null;
+
+        function renderList(data) {{
+            fileListElement.innerHTML = '';
+            if (data.length === 0) {{
+                fileListElement.innerHTML = '&lt;li&gt;此目錄中未找到其他 HTML 檔案。&lt;/li&gt;';
+                return;
+            }}
+            data.forEach(item => {{
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = item.href;
+                a.textContent = item.title;
+                li.appendChild(a);
+                fileListElement.appendChild(li);
+            }});
+        }}
+
+        function setActiveButton(button) {{
+            if (currentActiveButton) {{
+                currentActiveButton.classList.remove('active');
+            }}
+            button.classList.add('active');
+            currentActiveButton = button;
+        }}
+
+        document.getElementById('sort-title-asc').addEventListener('click', (e) => {{
+            fileData.sort((a, b) => a.title.localeCompare(b.title, 'zh-Hant'));
+            renderList(fileData);
+            setActiveButton(e.target);
+        }});
+
+        document.getElementById('sort-title-desc').addEventListener('click', (e) => {{
+            fileData.sort((a, b) => b.title.localeCompare(a.title, 'zh-Hant'));
+            renderList(fileData);
+            setActiveButton(e.target);
+        }});
+
+        document.getElementById('sort-date-desc').addEventListener('click', (e) => {{
+            fileData.sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
+            renderList(fileData);
+            setActiveButton(e.target);
+        }});
+
+        document.getElementById('sort-date-asc').addEventListener('click', (e) => {{
+            fileData.sort((a, b) => new Date(a.mtime) - new Date(b.mtime));
+            renderList(fileData);
+            setActiveButton(e.target);
+        }});
+
+        document.getElementById('sort-title-asc').click();
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+"""</span>
+
+    <span class="code-keyword">try</span>:
+        <span class="code-keyword">with</span> <span class="code-builtin">open</span>(<span class="code-string">'index.html'</span>, <span class="code-string">'w'</span>, encoding=<span class="code-string">'utf-8'</span>) <span class="code-keyword">as</span> f:
+            f.write(html_template)
+        <span class="code-builtin">print</span>(<span class="code-string">"\n成功生成具備互動排序功能的 index.html！"</span>)
+    <span class="code-keyword">except</span> Exception <span class="code-keyword">as</span> e:
+        <span class="code-builtin">print</span>(<span class="code-string">f"\n寫入 index.html 時發生錯誤: {e}"</span>)
+
+<span class="code-keyword">if</span> __name__ == <span class="code-string">'__main__'</span>:
+    create_interactive_index()
+</code></pre>
+        </div>
+
+        <h3>執行與使用</h3>
+        <ol>
+            <li><strong>儲存腳本</strong>：將上面的完整程式碼儲存為 <code>generate_index.py</code> 檔案。</li>
+            <li><strong>放置檔案</strong>：將 `generate_index.py` 檔案與您想要建立索引的其他 <code>.html</code> 網頁檔案放在同一個目錄下。</li>
+            <li><strong>執行腳本</strong>：打開您的終端機或命令提示字元，切換到該目錄，然後執行以下指令：
+                <div class="command-wrapper">
+                    <pre class="command">python generate_index.py</pre>
+                </div>
+                執行後，您會看到腳本掃描檔案的過程，最後顯示成功訊息。同時，目錄下會生成一個全新的 `index.html` 檔案。
+            </li>
+            <li><strong>打開並互動</strong>：用任何現代瀏覽器打開這個新生成的 `index.html`。您會看到一個包含所有網頁連結的列表，以及四個排序按鈕。點擊按鈕，列表將會立即重新排序，無需等待頁面刷新。</li>
+        </ol>
+
+        <h2>方案優勢與前瞻性觀點</h2>
+        <p>這個方案不僅僅是一個簡單的工具，它體現了現代網頁開發的重要思想，具有多項優勢：</p>
+        <ul>
+            <li><strong>極佳的使用者體驗 (UX)</strong>：排序功能即時響應，互動流暢，讓使用者能快速找到所需資訊。</li>
+            <li><strong>高效能</strong>：所有資料都已預先載入頁面，排序操作僅在客戶端記憶體中完成，速度極快，沒有網路延遲。</li>
+            <li><strong>架構清晰，易於維護</strong>：Python 負責後端資料處理，JavaScript 專注於前端互動，分工明確。未來若想增加新功能（如按檔案大小排序）或修改介面，可以分別獨立地修改 Python 或 HTML/JS/CSS 部分，互不干擾。</li>
+            <li><strong>前瞻性</strong>：這種「將資料與表現層分離，透過 JavaScript 進行動態渲染」的模式，是所有現代前端框架（如 React, Vue, Svelte）的核心思想。完成這個專案，相當於實現了這些大型框架的一個微型、無依賴的純粹版本，有助於理解更進階的前端開發模式。</li>
+        </ul>
+    </div>
+    <script>
+        function addCopyButtons() {
+            document.querySelectorAll('pre').forEach(block => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-wrapper';
+
+                const copyButton = document.createElement('button');
+                copyButton.className = 'copy-btn';
+                copyButton.textContent = '複製';
+
+                const originalContent = block.innerText;
+
+                copyButton.addEventListener('click', () => {
+                    navigator.clipboard.writeText(originalContent).then(() => {
+                        copyButton.textContent = '已複製!';
+                        setTimeout(() => {
+                            copyButton.textContent = '複製';
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('無法複製程式碼: ', err);
+                        copyButton.textContent = '失敗';
+                    });
+                });
+
+                if (block.parentNode.tagName !== 'BODY') {
+                    block.parentNode.insertBefore(wrapper, block);
+                    wrapper.appendChild(block);
+                    wrapper.appendChild(copyButton);
+                }
+            });
+        }
+        document.addEventListener('DOMContentLoaded', addCopyButtons);
+    </script>
+</body>
+</html>
