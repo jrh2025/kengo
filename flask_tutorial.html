@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Flask 框架初探</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            line-height: 1.9;
+            color: #343a40;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 30px 45px;
+            border-radius: 12px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.07);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 12px;
+            margin-top: 1.8em;
+            margin-bottom: 1em;
+        }
+        h1 {
+            font-size: 2.6em;
+            text-align: center;
+            border-bottom: none;
+        }
+        h2 {
+            font-size: 2em;
+        }
+        h3 {
+            font-size: 1.5em;
+            border-bottom-style: dashed;
+        }
+        p, li {
+            font-size: 1.1em;
+            margin-bottom: 1.2em;
+        }
+        .code-block-container {
+            position: relative;
+            margin: 30px 0;
+        }
+        pre {
+            background-color: #1e1e1e;
+            color: #dcdcdc;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.98em;
+            line-height: 1.6;
+        }
+        code {
+            font-family: inherit;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s, background-color 0.3s;
+            font-size: 0.9em;
+        }
+        .code-block-container:hover .copy-btn {
+            opacity: 0.8;
+        }
+        .copy-btn:hover {
+            opacity: 1;
+            background-color: #007bff;
+        }
+        .code-explanation {
+            background-color: #fdfdfd;
+            border-left: 4px solid #17a2b8;
+            padding: 20px 25px;
+            margin: 25px 0;
+            font-size: 1.05em;
+            border-radius: 0 8px 8px 0;
+        }
+        .code-explanation p {
+            margin: 0.6em 0;
+        }
+        .code-explanation strong {
+            color: #17a2b8;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+        .note {
+            background-color: #e9ecef;
+            border-left: 4px solid #6c757d;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .file-structure {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            padding: 15px 20px;
+            border-radius: 5px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        }
+
+        /* Syntax Highlighting */
+        .code-keyword { color: #569cd6; }
+        .code-string { color: #ce9178; }
+        .code-comment { color: #6a9955; }
+        .code-decorator { color: #d7ba7d; }
+        .code-function { color: #dcdcaa; }
+        .code-variable { color: #9cdcfe; }
+        .code-number { color: #b5cea8; }
+        .html-tag { color: #569cd6; }
+        .html-attr-name { color: #9cdcfe; }
+        .html-attr-value { color: #ce9178; }
+        .jinja-statement { color: #c586c0; }
+        .jinja-variable { color: #4ec9b0; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Python Flask 框架初探</h1>
+        <p class="note">本文件旨在提供一份給初學者實用的 Flask 學習資源，從基礎概念到進階應用，並對每個程式碼範例提供詳盡的步驟解說。</p>
+
+        <h2>第一章：核心概念與特點</h2>
+        <p>Flask 是一個基於 Python 的「微框架」，其核心設計哲學是保持精簡、彈性與高度可擴充性。它建立在兩個關鍵的函式庫之上：<strong>Werkzeug</strong> (一個強大的 WSGI 工具庫，處理底層的請求與回應) 和 <strong>Jinja2</strong> (一個功能豐富的樣板引擎，用於渲染 HTML 頁面)。</p>
+        
+        <h2>第二章：基礎與進階程式碼實踐</h2>
+        <p>本章節將透過一系列由淺入深的程式碼範例，展示 Flask 的核心功能。</p>
+
+        <h3>2.1 基礎應用："Hello, World!"</h3>
+        <p>一個最簡單的 Flask 應用程式，完美展示了其簡潔之美。一個完整的應用僅需數行程式碼即可啟動。</p>
+        
+        <div class="code-block-container">
+            <button class="copy-btn">複製</button>
+            <pre><code><span class="code-comment"># 1. 匯入 Flask 類別</span>
+<span class="code-keyword">from</span> flask <span class="code-keyword">import</span> Flask
+
+<span class="code-comment"># 2. 建立 Flask 應用程式實例</span>
+<span class="code-variable">app</span> = Flask(__name__)
+
+<span class="code-comment"># 3. 定義路由與視圖函式</span>
+<span class="code-decorator">@app.route</span>(<span class="code-string">'/'</span>)
+<span class="code-keyword">def</span> <span class="code-function">hello_world</span>():
+    <span class="code-keyword">return</span> <span class="code-string">'Hello, World!'</span>
+
+<span class="code-comment"># 4. 啟動伺服器</span>
+<span class="code-keyword">if</span> __name__ == <span class="code-string">'__main__'</span>:
+    <span class="code-variable">app</span>.run(debug=<span class="code-keyword">True</span>)</code></pre>
+        </div>
+
+        <div class="code-explanation">
+            <h4>程式碼分段解說：</h4>
+            <p><strong>1. 匯入 Flask：</strong> <code>from flask import Flask</code> 這行程式碼從 `flask` 這個套件中匯入 `Flask` 這個類別，它是建立我們應用程式的基礎。</p>
+            <p><strong>2. 建立實例：</strong> <code>app = Flask(__name__)</code> 建立了 `Flask` 應用程式的一個實例 (instance)。`__name__` 是一個 Python 內建的變數，Flask 使用它來決定應用的根路徑，以便找到像是樣板 (templates) 或靜態檔案 (static files) 的資源。</p>
+            <p><strong>3. 定義路由：</strong> <code>@app.route('/')</code> 是一個裝飾器 (decorator)，它將一個 URL 路徑 (`/`) 與一個函式連結起來。這個過程稱為「路由」(Routing)。當使用者瀏覽網站的根目錄時，Flask 就知道要執行 `hello_world` 這個函式。</p>
+            <p><strong>4. 定義視圖函式：</strong> 緊接在路由下方的 <code>def hello_world(): ...</code> 就是「視圖函式」(View Function)。它的作用是處理請求並回傳一個回應。在此例中，它回傳的字串將會直接顯示在使用者的瀏覽器上。</p>
+            <p><strong>5. 啟動伺服器：</strong> <code>if __name__ == '__main__':</code> 確保只有當這個腳本被直接執行時，<code>app.run()</code> 才會被呼叫。<code>app.run(debug=True)</code> 會啟動一個內建的開發用伺服器。設定 `debug=True` 會啟用除錯模式，這不僅會在出錯時提供詳細的錯誤報告，還會在您修改程式碼並存檔後自動重新載入伺服器，是開發時的絕佳幫手。</p>
+        </div>
+
+        <h3>2.2 動態路由與 HTTP 方法</h3>
+        <p>Flask 不僅能處理靜態 URL，還能處理包含變數的動態 URL，並根據不同的 HTTP 請求方法（如 GET、POST）執行不同操作。</p>
+
+        <div class="code-block-container">
+            <button class="copy-btn">複製</button>
+            <pre><code><span class="code-keyword">from</span> flask <span class="code-keyword">import</span> Flask, request
+
+<span class="code-variable">app</span> = Flask(__name__)
+
+<span class="code-comment"># 使用 &lt;variable_name&gt; 從 URL 捕捉變數</span>
+<span class="code-decorator">@app.route</span>(<span class="code-string">'/user/&lt;username&gt;'</span>)
+<span class="code-keyword">def</span> <span class="code-function">show_user_profile</span>(<span class="code-variable">username</span>):
+    <span class="code-keyword">return</span> f<span class="code-string">'&lt;h1&gt;使用者名稱：{<span class="code-variable">username</span>}&lt;/h1&gt;'</span>
+
+<span class="code-comment"># 使用 &lt;type:variable_name&gt; 指定變數類型</span>
+<span class="code-decorator">@app.route</span>(<span class="code-string">'/post/&lt;int:post_id&gt;'</span>)
+<span class="code-keyword">def</span> <span class="code-function">show_post</span>(<span class="code-variable">post_id</span>):
+    <span class="code-keyword">return</span> f<span class="code-string">'&lt;h2&gt;文章 ID：{<span class="code-variable">post_id</span>} (類型為 {type(<span class="code-variable">post_id</span>).__name__})&lt;/h2&gt;'</span>
+
+<span class="code-comment"># 使用 methods 參數來指定支援的 HTTP 方法</span>
+<span class="code-decorator">@app.route</span>(<span class="code-string">'/login'</span>, methods=[<span class="code-string">'GET'</span>, <span class="code-string">'POST'</span>])
+<span class="code-keyword">def</span> <span class="code-function">login</span>():
+    <span class="code-keyword">if</span> request.method == <span class="code-string">'POST'</span>:
+        <span class="code-comment"># 處理表單提交</span>
+        <span class="code-keyword">return</span> <span class="code-string">'成功提交登入資訊'</span>
+    <span class="code-keyword">else</span>:
+        <span class="code-comment"># 顯示登入表單</span>
+        <span class="code-keyword">return</span> <span class="code-string">'&lt;form method="post"&gt;&lt;input type="submit" value="登入"&gt;&lt;/form&gt;'</span></code></pre>
+        </div>
+
+        <div class="code-explanation">
+            <h4>程式碼分段解說：</h4>
+            <p><strong>動態 URL：</strong> 在路由中使用 <code>&lt;variable_name&gt;</code> 語法，例如 <code>/user/&lt;username&gt;</code>。這會將 URL 中對應部分的值（例如 `/user/JohnDoe` 中的 `JohnDoe`）作為參數傳遞給視圖函式 <code>show_user_profile(username)</code>。</p>
+            <p><strong>URL 變數類型：</strong> 您可以指定 URL 變數的類型，例如 <code>&lt;int:post_id&gt;</code>。Flask 會自動驗證傳入的值是否為整數 (integer)，並將其轉換。如果使用者嘗試訪問 `/post/abc`，將會收到一個 404 Not Found 錯誤。</p>
+            <p><strong>指定 HTTP 方法：</strong> 預設情況下，路由只會回應 GET 請求。您可以透過 <code>methods</code> 參數傳遞一個包含所支援方法的列表，例如 <code>methods=['GET', 'POST']</code>。</p>
+            <p><strong>處理請求：</strong> 我們需要從 `flask` 匯入 `request` 物件。在視圖函式內部，可以透過 <code>request.method</code> 來判斷當前的請求是 GET 還是 POST，從而執行不同的程式碼邏輯。</p>
+        </div>
+        
+        <h3>2.3 HTML 樣板渲染</h3>
+        <p>直接在 Python 程式碼中回傳 HTML 字串很不方便且難以維護。Flask 使用強大的 Jinja2 樣板引擎，讓我們可以將 HTML 程式碼分離到獨立的 `.html` 檔案中，實現邏輯與表現層的分離。</p>
+
+        <h4>專案結構：</h4>
+        <div class="file-structure">
+            <pre><code>/my_project
+├── app.py
+└── /templates
+    └── index.html</code></pre>
+            <p><strong>重要：</strong>HTML 樣板檔案必須放在一個名為 `templates` 的資料夾內，Flask 會自動在此尋找。</p>
+        </div>
+
+        <h4>app.py 的程式碼：</h4>
+        <div class="code-block-container">
+            <button class="copy-btn">複製</button>
+            <pre><code><span class="code-keyword">from</span> flask <span class="code-keyword">import</span> Flask, render_template
+
+<span class="code-variable">app</span> = Flask(__name__)
+
+<span class="code-decorator">@app.route</span>(<span class="code-string">'/'</span>)
+<span class="code-keyword">def</span> <span class="code-function">index</span>():
+    <span class="code-variable">site_data</span> = {
+        <span class="code-string">'title'</span>: <span class="code-string">'歡迎'</span>,
+        <span class="code-string">'is_premium'</span>: <span class="code-keyword">True</span>,
+        <span class="code-string">'features'</span>: [<span class="code-string">'功能一'</span>, <span class="code-string">'功能二'</span>, <span class="code-string">'功能三'</span>]
+    }
+    <span class="code-keyword">return</span> render_template(<span class="code-string">'index.html'</span>, data=<span class="code-variable">site_data</span>)</code></pre>
+        </div>
+        
+        <h4>templates/index.html 的程式碼：</h4>
+        <div class="code-block-container">
+            <button class="copy-btn">複製</button>
+            <pre><code><span class="html-tag">&lt;!DOCTYPE html&gt;</span>
+<span class="html-tag">&lt;html&gt;</span>
+<span class="html-tag">&lt;head&gt;</span>
+    <span class="html-tag">&lt;title&gt;</span><span class="jinja-variable">{{ data.title }}</span><span class="html-tag">&lt;/title&gt;</span>
+<span class="html-tag">&lt;/head&gt;</span>
+<span class="html-tag">&lt;body&gt;</span>
+    <span class="jinja-statement">{% if data.is_premium %}</span>
+        <span class="html-tag">&lt;p&gt;</span>您好，尊貴的會員！<span class="html-tag">&lt;/p&gt;</span>
+    <span class="jinja-statement">{% endif %}</span>
+
+    <span class="html-tag">&lt;ul&gt;</span>
+    <span class="jinja-statement">{% for feature in data.features %}</span>
+        <span class="html-tag">&lt;li&gt;</span><span class="jinja-variable">{{ feature }}</span><span class="html-tag">&lt;/li&gt;</span>
+    <span class="jinja-statement">{% endfor %}</span>
+    <span class="html-tag">&lt;/ul&gt;</span>
+<span class="html-tag">&lt;/body&gt;</span>
+<span class="html-tag">&lt;/html&gt;</span></code></pre>
+        </div>
+        
+        <div class="code-explanation">
+            <h4>程式碼分段解說：</h4>
+            <p><strong>1. `render_template` 函式：</strong> 首先從 `flask` 匯入 `render_template`。這個函式會到 `templates` 資料夾中尋找指定的檔案，並將其渲染成最終的 HTML。</p>
+            <p><strong>2. 傳遞資料：</strong> 在 `app.py` 中，我們建立了一個字典 `site_data`。透過 <code>return render_template('index.html', data=site_data)</code>，我們將這個字典傳遞到樣板中。在樣板檔案裡，就可以透過 `data` 這個變數名稱來存取字典的內容。</p>
+            <p><strong>3. Jinja2 語法 - 變數：</strong> 在 `index.html` 中，使用 <code>{{ ... }}</code> 語法來顯示變數的值。例如，<code>{{ data.title }}</code> 會被渲染成 `site_data` 字典中 `title` 鍵對應的值。</p>
+            <p><strong>4. Jinja2 語法 - 控制結構：</strong> 使用 <code>{% ... %}</code> 語法來執行控制流程。
+                <ul>
+                    <li><code>{% if ... %} ... {% endif %}</code>：這是一個 `if` 判斷式。</li>
+                    <li><code>{% for ... %} ... {% endfor %}</code>：這是一個 `for` 迴圈，用於遍歷列表或字典。</li>
+                </ul>
+            </p>
+        </div>
+
+
+        <h3>2.5 使用藍圖 (Blueprints) 組織應用</h3>
+        <p>當應用程式規模逐漸變大，所有路由都放在同一個檔案會變得難以管理。藍圖 (Blueprints) 提供了一種將應用程式模組化的方法，可以將相關的路由組織在一起，提高專案的可維護性。</p>
+        
+        <h4>專案結構：</h4>
+        <div class="file-structure">
+            <pre><code>/my_project
+├── app.py         (主應用程式檔案)
+└── /views
+    ├── __init__.py  (讓 'views' 成為一個 Python 套件)
+    └── admin.py     (管理員相關的藍圖)
+</code></pre>
+        </div>
+
+        <h4>views/admin.py 的程式碼：</h4>
+        <div class="code-block-container">
+            <button class="copy-btn">複製</button>
+            <pre><code><span class="code-keyword">from</span> flask <span class="code-keyword">import</span> Blueprint
+
+<span class="code-comment"># 建立一個藍圖物件</span>
+<span class="code-comment"># 'admin' 是藍圖的名稱</span>
+<span class="code-comment"># __name__ 是為了讓藍圖知道自己的位置</span>
+<span class="code-comment"># url_prefix 會加在所有屬於此藍圖的路由前面</span>
+<span class="code-variable">admin_bp</span> = Blueprint(<span class="code-string">'admin'</span>, __name__, url_prefix=<span class="code-string">'/admin'</span>)
+
+<span class="code-decorator">@admin_bp.route</span>(<span class="code-string">'/'</span>)
+<span class="code-keyword">def</span> <span class="code-function">dashboard</span>():
+    <span class="code-keyword">return</span> <span class="code-string">'管理員儀表板'</span>
+
+<span class="code-decorator">@admin_bp.route</span>(<span class="code-string">'/users'</span>)
+<span class="code-keyword">def</span> <span class="code-function">manage_users</span>():
+    <span class="code-keyword">return</span> <span class="code-string">'使用者管理頁面'</span>
+</code></pre>
+        </div>
+
+        <h4>app.py (主檔案) 的程式碼：</h4>
+        <div class="code-block-container">
+            <button class="copy-btn">複製</button>
+            <pre><code><span class="code-keyword">from</span> flask <span class="code-keyword">import</span> Flask
+<span class="code-comment"># 從 views.admin 模組匯入我們建立的藍圖</span>
+<span class="code-keyword">from</span> views.admin <span class="code-keyword">import</span> admin_bp
+
+<span class="code-variable">app</span> = Flask(__name__)
+
+<span class="code-comment"># 在主應用程式上註冊藍圖</span>
+<span class="code-variable">app</span>.register_blueprint(admin_bp)
+
+<span class="code-comment"># 應用程式的其他路由...</span>
+<span class="code-decorator">@app.route</span>(<span class="code-string">'/'</span>)
+<span class="code-keyword">def</span> <span class="code-function">index</span>():
+    <span class="code-keyword">return</span> <span class="code-string">'這是首頁'</span>
+</code></pre>
+        </div>
+
+        <div class="code-explanation">
+            <h4>程式碼分段解說：</h4>
+            <p><strong>1. 建立藍圖：</strong> 在 `views/admin.py` 中，我們從 `flask` 匯入 `Blueprint`。然後建立一個藍圖實例 `admin_bp`。`url_prefix='/admin'` 參數非常重要，它代表這個藍圖中定義的所有路由，其 URL 都會以 `/admin` 開頭。</p>
+            <p><strong>2. 在藍圖上定義路由：</strong> 我們不再使用 `@app.route()`，而是改用藍圖物件的 `@admin_bp.route()` 來定義路由。例如，`dashboard` 函式的完整 URL 將是 `/admin/`，而 `manage_users` 的 URL 則是 `/admin/users`。</p>
+            <p><strong>3. 註冊藍圖：</strong> 在主應用程式檔案 `app.py` 中，我們匯入建立好的 `admin_bp`，然後使用 `app.register_blueprint(admin_bp)` 將其註冊到應用程式上。只有經過註冊，藍圖中定義的路由才會生效。</p>
+            <p><strong>好處：</strong> 使用藍圖可以讓您的專案結構更清晰，不同功能的程式碼被分開在不同的檔案中，便於團隊合作與長期維護。</p>
+        </div>
+
+    </div>
+
+    <script>
+        document.querySelectorAll('.copy-btn').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const btn = event.target;
+                const pre = btn.nextElementSibling;
+                if (!pre) return;
+                
+                const code = pre.querySelector('code');
+                const text = code.innerText;
+
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = btn.innerText;
+                    btn.innerText = '已複製!';
+                    btn.style.backgroundColor = '#28a745';
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.style.backgroundColor = '#007bff';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('無法複製程式碼: ', err);
+                    btn.innerText = '複製失敗';
+                    btn.style.backgroundColor = '#dc3545';
+                     setTimeout(() => {
+                        btn.innerText = '複製';
+                        btn.style.backgroundColor = '#6c757d';
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
