@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>從零開始：將您的網頁應用程式打包成 Windows 桌面軟體 — Electron 完整實戰教學</title>
+    <style>
+        /* --- General Body and Layout --- */
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Sans GB", "WenQuanYi Micro Hei", "Microsoft JhengHei", sans-serif;
+            line-height: 1.8;
+            color: #343a40;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 2em 3em;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+            border: 1px solid #dee2e6;
+        }
+
+        /* --- Typography --- */
+        h1, h2, h3 {
+            color: #212529;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 0.5em;
+            margin-top: 1.8em;
+            margin-bottom: 1.2em;
+        }
+        h1 {
+            font-size: 2.3em;
+            border-bottom-width: 3px;
+        }
+        h2 {
+            font-size: 1.9em;
+        }
+        h3 {
+            font-size: 1.5em;
+            border-bottom-style: dashed;
+        }
+        p, ul, ol {
+            margin-bottom: 1.2em;
+            font-size: 1.05em;
+        }
+        ul, ol {
+            padding-left: 25px;
+        }
+        li {
+            margin-bottom: 0.6em;
+        }
+        strong {
+            color: #0056b3;
+        }
+
+        /* --- Inline and Block Code Styling --- */
+        code.inline {
+            background-color: #e9ecef;
+            color: #bf4d28;
+            padding: 0.2em 0.5em;
+            border-radius: 5px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 0.9em;
+        }
+        .code-block-container {
+            position: relative;
+            margin: 2em 0;
+        }
+        pre {
+            background-color: #282c34;
+            color: #abb2bf;
+            padding: 1.8em;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 0.98em;
+            line-height: 1.6;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        pre code {
+            padding: 0;
+            background: none;
+            color: inherit;
+        }
+
+        /* --- Copy Button --- */
+        .copy-btn {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            background-color: #565e6d;
+            color: #e6e6e6;
+            border: none;
+            padding: 7px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.88em;
+            font-family: inherit;
+            opacity: 0;
+            transition: opacity 0.2s, background-color 0.2s, transform 0.1s;
+        }
+        .code-block-container:hover .copy-btn {
+            opacity: 0.8;
+        }
+        .copy-btn:hover {
+            opacity: 1;
+            background-color: #6a7385;
+        }
+        .copy-btn:active {
+            background-color: #4d5563;
+            transform: scale(0.97);
+        }
+
+        /* --- Syntax Highlighting Styles --- */
+        /* Common */
+        .hljs-comment { color: #5c6370; font-style: italic; }
+        .hljs-string { color: #98c379; }
+        .hljs-number { color: #d19a66; }
+        .hljs-keyword { color: #c678dd; }
+        .hljs-literal { color: #56b6c2; }
+        .hljs-punctuation { color: #abb2bf; }
+        
+        /* PowerShell */
+        .powershell .hljs-variable { color: #61afef; }
+        
+        /* Bash */
+        .bash .hljs-built_in { color: #e5c07b; }
+        
+        /* JSON */
+        .json .hljs-property { color: #e06c75; }
+        
+        /* JavaScript */
+        .javascript .hljs-title, .javascript .hljs-function { color: #61afef; }
+        .javascript .hljs-class-name { color: #e5c07b; }
+        .javascript .hljs-params { color: #abb2bf; }
+        .javascript .hljs-property { color: #e06c75; }
+
+    </style>
+    <script>
+        function copyCode(button) {
+            // Find the <pre> element within the same container
+            const pre = button.parentElement.querySelector('pre');
+            if (pre) {
+                const codeText = pre.innerText;
+                // Use the Clipboard API to copy text
+                navigator.clipboard.writeText(codeText).then(() => {
+                    const originalText = button.innerText;
+                    button.innerText = '已複製!';
+                    button.style.backgroundColor = '#28a745'; // Green for success
+                    // Revert the button text after 2 seconds
+                    setTimeout(() => {
+                        button.innerText = originalText;
+                        button.style.backgroundColor = ''; // Revert to original color
+                    }, 2000);
+                }).catch(err => {
+                    console.error('無法複製程式碼: ', err);
+                    button.innerText = '複製失敗';
+                    button.style.backgroundColor = '#dc3545'; // Red for error
+                });
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>從零開始：將您的網頁應用程式打包成 Windows 桌面軟體 — Electron 完整實戰教學</h1>
+        <p><em>以「Markdown & LaTeX 編輯器」專案為例</em></p>
+
+        <h2>前言</h2>
+        <p>本文件的目標是帶領一位擁有現成網頁專案（HTML/CSS/JS）的開發者，從零開始，一步步地使用 Electron 框架將其打包成一個專業的、可供發布的 Windows .exe 桌面應用程式安裝檔。本教學將以您提供的「Markdown & LaTeX 編輯器」專案為例，詳細記錄每一個步驟，並深入剖析過程中所有我們曾遇到的問題及其根本原因與解決方案。</p>
+        <p>「Markdown & LaTeX 編輯器」網頁版可至以下網頁直接按右鍵另存新檔下載</p>
+        <p><a href="https://jrh2025.github.io/kengo/markdown_latex_editor.html">https://jrh2025.github.io/kengo/markdown_latex_editor.html</a></p>
+
+        <h2>第一章：核心技術簡介</h2>
+        <p>在開始實作之前，讓我們先了解構成這個專案的三個核心技術。</p>
+        
+        <h3>1. Node.js</h3>
+        <p>Node.js 是一個讓 JavaScript 能夠在瀏覽器之外執行的環境。傳統上，JavaScript 只能在瀏覽器中運作來控制網頁互動，但 Node.js 的出現讓開發者可以用 JavaScript 來編寫後端服務、命令列工具，以及——如同我們這次的目標——桌面應用程式的底層邏輯。它是我們所有開發工具的基礎。</p>
+
+        <h3>2. npm (Node Package Manager)</h3>
+        <p>npm 是跟隨 Node.js 一同安裝的「套件管理器」。您可以將它想像成一個專為開發者打造的巨大軟體庫（或 App Store）。透過 npm，我們可以輕鬆地安裝、管理、更新專案所需的各種工具和函式庫（例如 Electron 框架本身）。<code class="inline">package.json</code> 檔案就是我們專案的「說明書」，記錄了所有依賴的套件和可執行的腳本指令。</p>
+
+        <h3>3. Electron</h3>
+        <p>Electron 是一個開源框架，它巧妙地將兩個強大的元件結合在一起：</p>
+        <ul>
+            <li><strong>Chromium</strong>：Google Chrome 瀏覽器的核心，負責渲染網頁介面 (HTML/CSS)。</li>
+            <li><strong>Node.js</strong>：在底層執行，讓您的應用程式擁有讀寫檔案、與作業系統互動等原生能力。</li>
+        </ul>
+        <p>透過 Electron，您幾乎可以將任何現有的網頁應用程式，不需做太多修改，就直接封裝成一個看起來、用起來都像原生軟體的桌面應用程式，並且可以跨平台（Windows, macOS, Linux）發布。</p>
+
+        <h2>第二章：開發環境設定</h2>
+        <p>一個穩定的開發環境是成功的基礎。</p>
+        
+        <h3>步驟 2.1：安裝 Node.js</h3>
+        <ul>
+            <li><strong>下載</strong>：請前往 Node.js 官方網站下載 <strong>LTS (長期支援)</strong> 版本。</li>
+            <li><strong>安裝</strong>：執行安裝檔，使用預設選項一路點擊「Next」完成安裝。</li>
+            <li><strong>驗證</strong>：開啟一個新的命令提示字元 (CMD 或 PowerShell)，分別輸入 <code class="inline">node -v</code> 和 <code class="inline">npm -v</code>，如果能看到版本號，代表安裝成功。</li>
+        </ul>
+
+        <h3>步驟 2.2：設定 PowerShell 執行原則 (Windows 必做)</h3>
+        <ul>
+            <li><strong>問題情境</strong>：在 Windows 系統上，當您後續執行 npm 相關指令時，可能會遇到終端機顯示紅色的錯誤訊息：「因為這個系統上已停用指令碼執行，所以無法載入...」。</li>
+            <li><strong>問題根源</strong>：這是 Windows PowerShell 預設的安全策略 (Execution Policy) 為 <code class="inline">Restricted</code> (限制) 所導致，它禁止執行任何未經簽署的腳本檔案，其中包含了 npm 運作時需要的一個名為 <code class="inline">npm.ps1</code> 的腳本。</li>
+            <li><strong>解決方案</strong>：
+                <ol>
+                    <li><strong>以系統管理員身分</strong>開啟 PowerShell：點擊「開始」，輸入 PowerShell，在圖示上按右鍵選擇「以系統管理員身分執行」。</li>
+                    <li>在視窗中輸入以下指令並按 Enter：</li>
+                </ol>
+            </li>
+        </ul>
+        <div class="code-block-container">
+            <button class="copy-btn" onclick="copyCode(this)">複製</button>
+            <pre><code class="powershell"><span class="hljs-keyword">Set-ExecutionPolicy</span> <span class="hljs-variable">RemoteSigned</span></code></pre>
+        </div>
+        <p>當系統詢問時，輸入 <code class="inline">Y</code> 或 <code class="inline">A</code> 並按 Enter 確認變更。</p>
+        
+        <h2>第三章：建立與打包您的 Electron 應用程式</h2>
+        <p>這是本教學的核心部分，我們將從建立專案開始，直到產出 .exe 安裝檔。</p>
+
+        <h3>步驟 3.1：建立專案結構</h3>
+        <ol>
+            <li>建立一個名為 <code class="inline">markdown-editor-app</code> 的專案資料夾。</li>
+            <li>將您原始的 <code class="inline">Markdown & LaTeX 編輯器.html</code> 檔案和 <code class="inline">Markdown & LaTeX 編輯器_files</code> 資料夾，完整地複製到其中。</li>
+            <li>開啟命令提示字元，並切換到此專案路徑下。</li>
+            <li>執行 <code class="inline">npm init -y</code> 來建立 <code class="inline">package.json</code> 檔案。</li>
+            <li>執行 <code class="inline">npm install --save-dev electron</code> 來安裝 Electron。</li>
+        </ol>
+        
+        <h3>步驟 3.2：安裝 Git (打包前置作業)</h3>
+        <ul>
+            <li><strong>問題情境</strong>：在後續整合打包工具時，程式檢查系統環境，出現 <code class="inline">Could not find git in environment</code> 的錯誤。</li>
+            <li><strong>問題根源</strong>：打包工具 Electron Forge 依賴 Git 版本控制軟體來進行專案管理和版本標記。</li>
+            <li><strong>解決方案</strong>：
+                <ol>
+                    <li><strong>下載</strong>：從 Git 官方網站下載 Windows 版本。</li>
+                    <li><strong>安裝</strong>：執行安裝檔，在「Adjusting your PATH environment」步驟中，務必選擇預設的推薦選項 <code class="inline">Git from the command line and also from 3rd-party software</code>。</li>
+                    <li><strong>驗證</strong>：<strong>關閉並重新開啟</strong>您的命令提示字元，輸入 <code class="inline">git --version</code>，若能看到版本號則代表成功。</li>
+                </ol>
+            </li>
+        </ul>
+
+        <h3>步驟 3.3：整合打包工具 (Electron Forge)</h3>
+         <ul>
+            <li><strong>問題情境</strong>：執行 <code class="inline">npx @electron-forge/cli import</code> 時，出現 <code class="inline">could not determine executable to run</code> 的紅色錯誤。</li>
+            <li><strong>問題根源</strong>：<code class="inline">npx</code> 指令在處理複雜的套件名稱時，有時會因快取或環境問題而混淆，無法確定要執行的目標。</li>
+            <li><strong>解決方案</strong>：在專案的命令提示字元中，執行以下指令。如果遇到錯誤，請改用更明確的兩步驟或最終方案：</li>
+        </ul>
+        <div class="code-block-container">
+            <button class="copy-btn" onclick="copyCode(this)">複製</button>
+            <pre><code class="bash"><span class="hljs-comment"># 方案一：先安裝後執行</span>
+npm install --save-dev @electron-forge/cli
+npx @electron-forge/cli import
+
+<span class="hljs-comment"># 方案二 (最終手段)：直接執行腳本路徑</span>
+.\\node_modules\\.bin\\electron-forge import</code></pre>
+        </div>
+
+        <h3>步驟 3.4：配置設定檔 (解決打包失敗)</h3>
+        <h4>修改 package.json</h4>
+        <ul>
+            <li><strong>問題情境</strong>：執行 <code class="inline">npm run make</code> 時，打包失敗並提示 <code class="inline">Authors is required</code> 或 <code class="inline">Description is required</code>。</li>
+            <li><strong>問題根源</strong>：打包工具對 <code class="inline">package.json</code> 的元數據有嚴格要求，<code class="inline">author</code> 和 <code class="inline">description</code> 欄位不能為空。此外，檔案中若有重複的 <code class="inline">description</code> 欄位，會導致填寫的內容被空值覆蓋。</li>
+            <li><strong>解決方案</strong>：打開 <code class="inline">package.json</code>，<strong>確實填寫 <code class="inline">author</code> 和 <code class="inline">description</code> 欄位</strong>，並<strong>刪除任何重複的鍵</strong>。</li>
+        </ul>
+        <h4>修改 main.js</h4>
+        <ul>
+            <li><strong>問題情境</strong>：打包出的 <code class="inline">Setup.exe</code> 安裝後，首次啟動時應用程式出現奇怪的綠色畫面或直接閃退，並在桌面產生 <code class="inline">debug.log</code> 檔案，內容包含 <code class="inline">icu_util.cc</code> 錯誤。</li>
+            <li><strong>問題根源</strong>：Windows 安裝程式在安裝後會用特殊的參數啟動應用程式以建立捷徑。我們的程式碼未處理這些特殊啟動事件，導致底層核心初始化失敗而崩潰。</li>
+            <li><strong>解決方案</strong>：打開 <code class="inline">main.js</code>，在檔案的最頂部加入 Squirrel 事件處理程式碼。</li>
+        </ul>
+        
+        <h3>步驟 3.5：執行最終打包</h3>
+        <p>所有設定都已修正，執行最終的打包指令：</p>
+        <div class="code-block-container">
+            <button class="copy-btn" onclick="copyCode(this)">複製</button>
+            <pre><code class="bash">npm run make</code></pre>
+        </div>
+        
+        <h2>第四章：發布與注意事項</h2>
+        <h3>步驟 4.1：找到並分享安裝檔</h3>
+        <ul>
+            <li>您的 <code class="inline">.exe</code> 安裝檔位於專案的 <code class="inline">out\make\squirrel.windows\x64</code> 資料夾內。</li>
+            <li>為了方便分享，建議將 <code class="inline">Setup.exe</code> 壓縮成 <code class="inline">.zip</code> 檔案。</li>
+            <li>您可以透過雲端硬碟、Email 或在 GitHub 建立 Release 的方式分享給他人。</li>
+        </ul>
+        
+        <h3>步驟 4.2：【重要】提醒使用者 Windows 安全警告</h3>
+        <ul>
+            <li>請務必提醒您的使用者，首次執行 <code class="inline">Setup.exe</code> 時，Windows 很可能會顯示藍色的「Windows 保護您的電腦」警告畫面。這是正常現象。</li>
+            <li><strong>解決方法</strong>：點擊「<strong>其他資訊</strong>」，然後點擊新出現的「<strong>仍要執行</strong>」按鈕即可安裝。</li>
+        </ul>
+
+        <h2>附錄：專案最終設定檔</h2>
+        <h3>package.json</h3>
+        <div class="code-block-container">
+            <button class="copy-btn" onclick="copyCode(this)">複製</button>
+            <pre><code class="json">{
+  <span class="hljs-property">"name"</span>: <span class="hljs-string">"markdown-editor-app"</span>,
+  <span class="hljs-property">"version"</span>: <span class="hljs-string">"1.0.0"</span>,
+  <span class="hljs-property">"description"</span>: <span class="hljs-string">"一個支援 Markdown 和 LaTeX 的桌面編輯器"</span>,
+  <span class="hljs-property">"main"</span>: <span class="hljs-string">"main.js"</span>,
+  <span class="hljs-property">"scripts"</span>: {
+    <span class="hljs-property">"start"</span>: <span class="hljs-string">"electron-forge start"</span>,
+    <span class="hljs-property">"package"</span>: <span class="hljs-string">"electron-forge package"</span>,
+    <span class="hljs-property">"make"</span>: <span class="hljs-string">"electron-forge make"</span>,
+    <span class="hljs-property">"test"</span>: <span class="hljs-string">"echo \"Error: no test specified\" && exit 1"</span>
+  },
+  <span class="hljs-property">"keywords"</span>: [],
+  <span class="hljs-property">"author"</span>: <span class="hljs-string">"jrh"</span>,
+  <span class="hljs-property">"license"</span>: <span class="hljs-string">"ISC"</span>,
+  <span class="hljs-property">"devDependencies"</span>: {
+    <span class="hljs-property">"@electron-forge/cli"</span>: <span class="hljs-string">"^7.8.1"</span>,
+    <span class="hljs-property">"@electron-forge/maker-deb"</span>: <span class="hljs-string">"^7.8.1"</span>,
+    <span class="hljs-property">"@electron-forge/maker-rpm"</span>: <span class="hljs-string">"^7.8.1"</span>,
+    <span class="hljs-property">"@electron-forge/maker-squirrel"</span>: <span class="hljs-string">"^7.8.1"</span>,
+    <span class="hljs-property">"@electron-forge/maker-zip"</span>: <span class="hljs-string">"^7.8.1"</span>,
+    <span class="hljs-property">"@electron-forge/plugin-auto-unpack-natives"</span>: <span class="hljs-string">"^7.8.1"</span>,
+    <span class="hljs-property">"@electron-forge/plugin-fuses"</span>: <span class="hljs-string">"^7.8.1"</span>,
+    <span class="hljs-property">"electron"</span>: <span class="hljs-string">"^27.2.0"</span>
+  },
+  <span class="hljs-property">"dependencies"</span>: {
+    <span class="hljs-property">"electron-squirrel-startup"</span>: <span class="hljs-string">"^1.0.1"</span>
+  }
+}</code></pre>
+        </div>
+
+        <h3>main.js</h3>
+        <div class="code-block-container">
+            <button class="copy-btn" onclick="copyCode(this)">複製</button>
+            <pre><code class="javascript"><span class="hljs-keyword">const</span> { app, BrowserWindow } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'electron'</span>);
+<span class="hljs-keyword">const</span> path = <span class="hljs-built_in">require</span>(<span class="hljs-string">'path'</span>);
+
+<span class="hljs-comment">// [關鍵步驟] 處理 Squirrel Windows 安裝程式的特殊啟動事件</span>
+<span class="hljs-keyword">if</span> (<span class="hljs-built_in">require</span>(<span class="hljs-string">'electron-squirrel-startup'</span>)) {
+    app.<span class="hljs-title">quit</span>();
+}
+
+<span class="hljs-keyword">const</span> <span class="hljs-title">createWindow</span> = () => {
+    <span class="hljs-comment">// 建立瀏覽器視窗。</span>
+    <span class="hljs-keyword">const</span> mainWindow = <span class="hljs-keyword">new</span> <span class="hljs-class-name">BrowserWindow</span>({
+        <span class="hljs-property">width</span>: <span class="hljs-number">1280</span>,
+        <span class="hljs-property">height</span>: <span class="hljs-number">800</span>,
+        <span class="hljs-property">webPreferences</span>: {
+            <span class="hljs-property">nodeIntegration</span>: <span class="hljs-literal">false</span>,
+            <span class="hljs-property">contextIsolation</span>: <span class="hljs-literal">true</span>,
+        }
+    });
+
+    <span class="hljs-comment">// 載入應用的 index.html。</span>
+    mainWindow.<span class="hljs-title">loadFile</span>(path.<span class="hljs-title">join</span>(__dirname, <span class="hljs-string">'Markdown & LaTeX 編輯器.html'</span>));
+};
+
+<span class="hljs-comment">// 當 Electron 完成初始化並準備好建立瀏覽器視窗時</span>
+<span class="hljs-comment">// 部分 API 只能在此事件發生後使用。</span>
+app.<span class="hljs-title">whenReady</span>().<span class="hljs-title">then</span>(() => {
+    <span class="hljs-title">createWindow</span>();
+
+    app.<span class="hljs-title">on</span>(<span class="hljs-string">'activate'</span>, () => {
+        <span class="hljs-comment">// 在 macOS 上，當點擊 dock 圖示且沒有其他視窗開啟時，</span>
+        <span class="hljs-comment">// 通常會重新建立一個視窗。</span>
+        <span class="hljs-keyword">if</span> (BrowserWindow.<span class="hljs-title">getAllWindows</span>().length === <span class="hljs-number">0</span>) {
+            <span class="hljs-title">createWindow</span>();
+        }
+    });
+});
+
+<span class="hljs-comment">// 除了 macOS 外，當所有視窗都關閉時結束應用程式。</span>
+app.<span class="hljs-title">on</span>(<span class="hljs-string">'window-all-closed'</span>, () => {
+    <span class="hljs-keyword">if</span> (process.platform !== <span class="hljs-string">'darwin'</span>) {
+        app.<span class="hljs-title">quit</span>();
+    }
+});
+</code></pre>
+        </div>
+    </div>
+</body>
+</html>
