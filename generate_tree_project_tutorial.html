@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動式本地檔案索引器：一個 Python 專案的完整生命週期筆記</title>
+    <style>
+        :root {
+            --main-bg-color: #f8f9fa;
+            --main-text-color: #212529;
+            --header-color: #005a9c; /* 主要深藍色 */
+            --accent-color: #007bff;
+            --code-bg-color: #1e1e1e;
+            --code-text-color: #d4d4d4;
+            --border-color: #dee2e6;
+            /* NEW: High-contrast style for inline code */
+            --inline-code-color: #004085; /* Darker, richer blue for text */
+            --inline-code-bg: #cfe2ff;   /* Light blue background for pill effect */
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            line-height: 2.0; /* 加寬行距 */
+            background-color: var(--main-bg-color);
+            color: var(--main-text-color);
+            padding: 2rem;
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        h1, h2, h3 {
+            color: var(--header-color);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 2.5rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            text-align: center;
+            border-bottom: 4px solid var(--header-color);
+        }
+
+        h2 {
+            font-size: 2rem;
+        }
+
+        h3 {
+            font-size: 1.6rem;
+            border-bottom-style: dashed;
+        }
+        
+        /* UPDATED: h4 style for better hierarchy */
+        h4 {
+            font-size: 1.3rem;
+            color: var(--header-color);
+            border-bottom: 1px solid #e0e0e0;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            padding-bottom: 0.4rem;
+        }
+
+        p, li {
+            font-size: 1.1rem;
+            text-align: justify;
+        }
+        
+        /* UPDATED: Style for inline code for maximum readability */
+        .inline-code {
+            padding: 0.2em 0.5em;
+            margin: 0 0.1em;
+            font-size: 95%;
+            color: var(--inline-code-color);
+            background-color: var(--inline-code-bg);
+            border: 1px solid #b6d4fe;
+            border-radius: 5px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .code-container {
+            background-color: var(--code-bg-color);
+            border-radius: 8px;
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            padding: 0.6rem 1rem;
+            color: #f1f1f1;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .copy-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .copy-btn:hover {
+            background-color: #0056b3;
+        }
+
+        pre {
+            margin: 0;
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+
+        code:not(.inline-code) { /* Apply only to code blocks, not inline code */
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: var(--code-text-color);
+            font-size: 1rem;
+            line-height: 1.8;
+            white-space: pre;
+        }
+        
+        /* --- Syntax Highlighting --- */
+        .py-comment { color: #6A9955; font-style: italic; }
+        .py-keyword { color: #569CD6; }
+        .py-string { color: #CE9178; }
+        .py-function { color: #DCDCAA; }
+        .py-class { color: #4EC9B0; }
+        .py-number { color: #B5CEA8; }
+        .py-operator { color: #D4D4D4; }
+        .py-decorator { color: #DCDCAA; }
+        .py-builtin { color: #4EC9B0; }
+
+        .bash-command { color: #9CDCFE; }
+        .bash-flag { color: #CE9178; }
+        .bash-param { color: #4EC9B0; }
+        
+        blockquote {
+            border-left: 5px solid var(--accent-color);
+            background-color: #e9ecef;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        strong {
+            color: var(--header-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>互動式本地檔案索引器：一個 Python 專案的完整生命週期筆記</h1>
+    
+    <section id="intro">
+        <h2>前言：一個專案的誕生</h2>
+        <p>在軟體開發中，最卓越的工具往往源於一個簡單的需求。本次我們的需求是：「快速地為一個專案目錄建立一個可導覽、可搜尋、可分享的索引」。這個看似簡單的目標，將帶領我們踏上一段涵蓋檔案系統操作、命令列介面設計、前後端分離、圖形化介面開發，乃至於應用程式部署的完整學習之旅。</p>
+        <p>本筆記將分為五個階段，忠實記錄我們如何逐步將一個基礎腳本，迭代引導成一個功能完備的微型應用程式。每一行關鍵程式碼都將附有詳細的解說，闡明其背後的「為什麼」。</p>
+        <blockquote>
+            <strong>核心技術棧：</strong>
+            <ul>
+                <li><strong>後端邏輯：</strong> Python</li>
+                <li><strong>網頁結構：</strong> HTML</li>
+                <li><strong>網頁樣式：</strong> CSS</li>
+                <li><strong>前端互動：</strong> JavaScript</li>
+                <li><strong>圖形介面：</strong> Tkinter</li>
+            </ul>
+        </blockquote>
+    </section>
+
+    <section id="stage1">
+        <h2>第一階段：奠定基石 — 生成基礎目錄樹</h2>
+        <p>此階段的目標是建立一個 Python 腳本，能掃描指定層數的目錄，並生成一個包含超連結的基礎 HTML 樹狀結構。</p>
+        
+        <h3>1.1 核心概念與技術選型</h3>
+        <ul>
+            <li><strong>路徑處理 (<code class="inline-code">pathlib</code>)：</strong> 我們選擇了現代的 <code class="inline-code">pathlib</code> 模組，它以物件導向的方式處理路徑，語法優雅且跨平台穩定。</li>
+            <li><strong>命令列介面 (<code class="inline-code">argparse</code>)：</strong> 使用 Python 標準函式庫 <code class="inline-code">argparse</code>，建立專業且使用者友善的命令列介面，提供自動化的說明文件與參數驗證。</li>
+            <li><strong>遞迴 (Recursion)：</strong> 採用遞迴函數來處理樹狀的目錄結構，這是最自然、最符合邏輯的解決方案。</li>
+        </ul>
+
+        <h3>1.2 第一版程式碼完整解析 (generate_tree.py)</h3>
+        <div class="code-container">
+            <div class="code-header">
+                <span>generate_tree.py</span>
+                <button class="copy-btn" onclick="copyCode(this)">複製</button>
+            </div>
+            <pre><code><span class="py-comment"># 檔名: generate_tree.py</span>
+
+<span class="py-comment"># --- 模組匯入 ---</span>
+<span class="py-keyword">import</span> argparse   <span class="py-comment"># 用於解析命令列參數</span>
+<span class="py-keyword">import</span> webbrowser   <span class="py-comment"># 用於在腳本結束後自動開啟瀏覽器</span>
+<span class="py-keyword">from</span> pathlib <span class="py-keyword">import</span> Path   <span class="py-comment"># 現代化的、物件導向的路徑處理函式庫</span>
+
+<span class="py-comment"># --- 常數定義 ---</span>
+DIR_ICON <span class="py-operator">=</span> <span class="py-string">'📁'</span>
+FILE_ICON <span class="py-operator">=</span> <span class="py-string">'📄'</span>
+
+<span class="py-comment"># --- HTML 模板 ---</span>
+<span class="py-comment"># 使用 f-string 模板，將 CSS 直接嵌入 HTML，實現單檔案交付的便利性。</span>
+HTML_TEMPLATE <span class="py-operator">=</span> <span class="py-string">"""
+&lt;!DOCTYPE html&gt;
+&lt;html lang="zh-Hant"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;title&gt;目錄樹索引&lt;/title&gt;
+    &lt;style&gt;
+        body { font-family: sans-serif; }
+        ul { list-style-type: none; padding-left: 20px; }
+        .icon { margin-right: 10px; }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;目錄樹索引&lt;/h1&gt;
+    {content}
+&lt;/body&gt;
+&lt;/html&gt;
+"""</span>
+
+<span class="py-keyword">def</span> <span class="py-function">generate_html_tree</span>(root_path: <span class="py-class">Path</span>, current_depth: <span class="py-builtin">int</span>, max_depth: <span class="py-builtin">int</span>) -&gt; <span class="py-builtin">str</span>:
+    <span class="py-string">"""遞迴生成目錄樹的 HTML 列表項目。"""</span>
+    <span class="py-keyword">if</span> current_depth <span class="py-operator">&gt;</span> max_depth: <span class="py-comment"># [遞迴的基石]：終止條件</span>
+        <span class="py-keyword">return</span> <span class="py-string">""</span>
+
+    <span class="py-keyword">try</span>:
+        items <span class="py-operator">=</span> <span class="py-builtin">sorted</span>(<span class="py-builtin">list</span>(root_path.iterdir()), key<span class="py-operator">=</span><span class="py-keyword">lambda</span> p: (p.is_file(), p.name.lower()))
+    <span class="py-keyword">except</span> <span class="py-class">PermissionError</span>:
+        <span class="py-keyword">return</span> <span class="py-string">'&lt;ul&gt;&lt;li&gt;🚫 無法存取此目錄&lt;/li&gt;&lt;/ul&gt;'</span>
+
+    html_content <span class="py-operator">=</span> <span class="py-string">"&lt;ul&gt;\n"</span>
+    <span class="py-keyword">for</span> item <span class="py-keyword">in</span> items:
+        <span class="py-keyword">if</span> item.name.startswith(<span class="py-string">'.'</span>) <span class="py-keyword">or</span> item.name <span class="py-operator">==</span> __file__:
+            <span class="py-keyword">continue</span>
+
+        <span class="py-keyword">if</span> item.is_dir(): <span class="py-comment"># [遞迴的核心]</span>
+            submenu <span class="py-operator">=</span> generate_html_tree(item, current_depth <span class="py-operator">+</span> <span class="py-number">1</span>, max_depth)
+            html_content <span class="py-operator">+=</span> <span class="py-string">f'&lt;li&gt;&lt;span class="icon"&gt;{DIR_ICON}&lt;/span&gt;&lt;a href="{item.as_posix()}"&gt;{item.name}&lt;/a&gt;{submenu}&lt;/li&gt;\n'</span>
+        <span class="py-keyword">else</span>:
+            html_content <span class="py-operator">+=</span> <span class="py-string">f'&lt;li&gt;&lt;span class="icon"&gt;{FILE_ICON}&lt;/span&gt;&lt;a href="{item.as_posix()}"&gt;{item.name}&lt;/a&gt;&lt;/li&gt;\n'</span>
+
+    html_content <span class="py-operator">+=</span> <span class="py-string">"&lt;/ul&gt;\n"</span>
+    <span class="py-keyword">return</span> html_content
+
+<span class="py-keyword">def</span> <span class="py-function">main</span>():
+    <span class="py-string">"""主執行函數：程序的入口點。"""</span>
+    parser <span class="py-operator">=</span> argparse.ArgumentParser(
+        description<span class="py-operator">=</span><span class="py-string">"遍歷目錄並生成一個帶有超連結的樹狀結構 HTML 索引檔案。"</span>,
+        formatter_class<span class="py-operator">=</span>argparse.RawTextHelpFormatter
+    )
+    parser.add_argument(
+        <span class="py-string">'--depth'</span>, type<span class="py-operator">=</span><span class="py-builtin">int</span>, default<span class="py-operator">=</span><span class="py-number">3</span>,
+        help<span class="py-operator">=</span><span class="py-string">'指定要遍歷的目錄層數。\n預設值為 3。'</span>
+    )
+    parser.add_argument(
+        <span class="py-string">'--output'</span>, type<span class="py-operator">=</span><span class="py-builtin">str</span>, default<span class="py-operator">=</span><span class="py-string">'directory_tree.html'</span>,
+        help<span class="py-operator">=</span><span class="py-string">'指定輸出的 HTML 檔案名稱。'</span>
+    )
+    args <span class="py-operator">=</span> parser.parse_args()
+
+    start_path <span class="py-operator">=</span> Path(__file__).parent.resolve()
+    <span class="py-builtin">print</span>(<span class="py-string">f"開始掃描目錄: {start_path}"</span>)
+
+    tree_content <span class="py-operator">=</span> generate_html_tree(start_path, <span class="py-number">1</span>, args.depth)
+    final_html <span class="py-operator">=</span> HTML_TEMPLATE.format(content<span class="py-operator">=</span>tree_content)
+
+    output_path <span class="py-operator">=</span> start_path / args.output
+    <span class="py-keyword">with</span> <span class="py-builtin">open</span>(output_path, <span class="py-string">'w'</span>, encoding<span class="py-operator">=</span><span class="py-string">'utf-8'</span>) <span class="py-keyword">as</span> f:
+        f.write(final_html)
+
+    <span class="py-builtin">print</span>(<span class="py-string">f"\n成功！HTML 索引已生成於: {output_path}"</span>)
+    webbrowser.open(<span class="py-string">f'file://{output_path}'</span>)
+
+<span class="py-keyword">if</span> __name__ <span class="py-operator">==</span> <span class="py-string">"__main__"</span>: <span class="py-comment"># [Python 的基石]</span>
+    main()
+</code></pre>
+        </div>
+
+        <h4>分段程式碼解說</h4>
+        
+        <h5>Part 1: 模組匯入與常數定義</h5>
+        <p>此區塊負責準備腳本運行的基礎。 <code class="inline-code">import argparse</code> 用於建立強大的命令列介面，讓使用者可以自訂掃描深度等參數。 <code class="inline-code">from pathlib import Path</code> 引入了現代化的路徑處理物件，相較於傳統的字串拼接，<code class="inline-code">Path</code> 物件的操作更安全、直觀且能無痛處理跨平台的路徑分隔符問題。 <code class="inline-code">webbrowser</code> 則是一個便利工具，可以在腳本執行成功後自動開啟生成的 HTML 檔案。</p>
+        
+        <h5>Part 2: <code>generate_html_tree</code> 遞迴函數</h5>
+        <p>這是整個專案的核心邏輯，一個設計精巧的遞迴函數。</p>
+        <ul>
+            <li><strong>終止條件：</strong> 函數首先檢查 <code class="inline-code">current_depth > max_depth</code>。這是遞迴設計的「基石」，確保函數在達到使用者指定的深度後停止自我呼叫，避免無限遞迴導致的程式崩潰。</li>
+            <li><strong>錯誤處理：</strong> 使用 <code class="inline-code">try...except PermissionError</code> 來優雅地處理因系統權限問題無法讀取目錄的情況，並返回一個友善的提示訊息。</li>
+            <li><strong>排序邏輯：</strong> <code class="inline-code">sorted(..., key=lambda p: (p.is_file(), p.name.lower()))</code> 是一個非常 Pythonic 的技巧。<code class="inline-code">p.is_file()</code> 會對檔案返回 <code class="inline-code">True</code>（等同於 1），對目錄返回 <code class="inline-code">False</code>（等同於 0）。因此，這個 <code class="inline-code">key</code> 會讓 <code class="inline-code">sorted</code> 函數先根據「是否為檔案」進行排序（目錄在前，檔案在後），在類型相同的情況下，再根據名稱的小寫字母進行排序。</li>
+            <li><strong>遞迴呼叫：</strong> 當遍歷到的 <code class="inline-code">item</code> 是一個目錄 (<code class="inline-code">item.is_dir()</code>) 時，函數會再次呼叫自己，並將深度 (<code class="inline-code">current_depth</code>) 加一，從而深入下一層目錄進行處理。這就是「遞迴的核心」。</li>
+            <li><strong>路徑格式化：</strong> <code class="inline-code">item.as_posix()</code> 是一個關鍵的跨平台處理。它會將 Windows 的路徑格式 (<code class="inline-code">\</code>) 轉換為網頁超連結(<code class="inline-code">href</code>)所要求的標準格式 (<code class="inline-code">/</code>)，確保連結在任何作業系統上都能正常作用。</li>
+        </ul>
+        
+        <h5>Part 3: <code>main</code> 主函數與腳本入口</h5>
+        <p><code class="inline-code">main</code> 函數是整個腳本的總指揮。它使用 <code class="inline-code">argparse</code> 來定義並解析命令列參數，如 <code class="inline-code">--depth</code> 和 <code class="inline-code">--output</code>。<code class="inline-code">Path(__file__).parent.resolve()</code> 是一個標準做法，用來取得當前腳本所在的絕對路徑，確保無論使用者從哪裡執行此腳本，掃描的起始點都是正確的。最後，它呼叫遞迴函數生成內容，填入 HTML 模板，並使用 <code class="inline-code">with open(...)</code> 安全地將結果寫入檔案。指定 <code class="inline-code">encoding='utf-8'</code> 是處理包含非英文字元（如中文）檔案名的關鍵，可有效避免亂碼問題。</p>
+        <p><code class="inline-code">if __name__ == "__main__":</code> 是 Python 腳本的標準入口點。這段程式碼確保只有當這個檔案被直接執行時，<code class="inline-code">main()</code> 函數才會被呼叫。如果此檔案被其他 Python 腳本作為模組匯入，則 <code class="inline-code">main()</code> 不會執行，這使得程式碼具有良好的模組化與可重用性。</p>
+
+    </section>
+    
+    <section id="stage2">
+        <h2>第二階段：功能增強 — 整合詳細資訊與互動搜尋</h2>
+        <p>此階段目標是在檔案旁增加大小和修改日期，並引入即時搜尋框。我們開始將職責劃分：Python 負責準備所有數據，而 JavaScript 則接管使用者互動。</p>
+
+        <h3>2.1 主要改動</h3>
+        <ul>
+            <li><strong>新增 <code class="inline-code">format_size</code> 輔助函數：</strong> 一個獨立的工具函數，負責將檔案大小的位元組數，轉換為 KB, MB, GB 等更易讀的格式。</li>
+            <li><strong>抓取檔案元數據：</strong> 在 <code class="inline-code">generate_html_tree</code> 中，使用 <code class="inline-code">item.stat()</code> 方法來抓取檔案的大小 (<code class="inline-code">st_size</code>)和修改時間 (<code class="inline-code">st_mtime</code>)。</li>
+            <li><strong>嵌入 JavaScript：</strong> 在 HTML 模板中新增 <code class="inline-code">&lt;input&gt;</code> 搜尋框和一段 <code class="inline-code">&lt;script&gt;</code> 程式碼，實現前端的即時搜尋功能。</li>
+        </ul>
+
+        <h3>2.2 第二版程式碼解析 (generate_tree_advanced.py)</h3>
+        <div class="code-container">
+            <div class="code-header">
+                <span>generate_tree_advanced.py (關鍵部分)</span>
+                <button class="copy-btn" onclick="copyCode(this)">複製</button>
+            </div>
+            <pre><code><span class="py-keyword">from</span> datetime <span class="py-keyword">import</span> datetime  <span class="py-comment"># 匯入 datetime 模組</span>
+
+<span class="py-comment"># ... HTML 模板新增了搜尋框和對應的 CSS ...</span>
+HTML_TEMPLATE <span class="py-operator">=</span> <span class="py-string">"""
+...
+&lt;input type="text" id="searchInput" onkeyup="searchTree()" placeholder="在此搜尋檔案或目錄..."&gt;
+...
+&lt;script&gt;
+function searchTree() {
+    const input = document.getElementById('searchInput'); // 取得使用者輸入
+    const filter = input.value.toLowerCase(); // 轉換為小寫以便不區分大小寫搜尋
+    const div = document.getElementById('rootTree');
+    const li_items = div.getElementsByTagName('li'); // 取得所有要過濾的列表項目
+
+    for (let i = 0; i < li_items.length; i++) {
+        const a = li_items[i].getElementsByTagName("a")[0]; // 取得連結元素
+        if (a) {
+            const txtValue = a.textContent || a.innerText; // 取得連結的文字
+            if (txtValue.toLowerCase().indexOf(filter) > -1) { // 檢查是否匹配
+                li_items[i].style.display = ""; // 匹配則顯示
+            } else {
+                li_items[i].style.display = "none"; // 不匹配則隱藏
+            }
+        }
+    }
+}
+&lt;/script&gt;
+...
+"""</span>
+
+<span class="py-keyword">def</span> <span class="py-function">format_size</span>(size_bytes: <span class="py-builtin">int</span>) -&gt; <span class="py-builtin">str</span>:
+    <span class="py-string">"""將位元組數轉換為人類可讀的格式 (KB, MB, GB)。"""</span>
+    <span class="py-keyword">if</span> size_bytes <span class="py-operator">==</span> <span class="py-number">0</span>: <span class="py-keyword">return</span> <span class="py-string">"0 B"</span>
+    power <span class="py-operator">=</span> <span class="py-number">1024</span>
+    n <span class="py-operator">=</span> <span class="py-number">0</span>
+    power_labels <span class="py-operator">=</span> {<span class="py-number">0</span>: <span class="py-string">'B'</span>, <span class="py-number">1</span>: <span class="py-string">'KB'</span>, <span class="py-number">2</span>: <span class="py-string">'MB'</span>, <span class="py-number">3</span>: <span class="py-string">'GB'</span>, <span class="py-number">4</span>: <span class="py-string">'TB'</span>}
+    <span class="py-keyword">while</span> size_bytes <span class="py-operator">&gt;=</span> power <span class="py-keyword">and</span> n <span class="py-operator">&lt;</span> <span class="py-builtin">len</span>(power_labels) <span class="py-operator">-</span> <span class="py-number">1</span>:
+        size_bytes <span class="py-operator">/=</span> power
+        n <span class="py-operator">+=</span> <span class="py-number">1</span>
+    <span class="py-keyword">return</span> <span class="py-string">f"{size_bytes:.2f} {power_labels[n]}"</span>
+
+<span class="py-keyword">def</span> <span class="py-function">generate_html_tree</span>(root_path: <span class="py-class">Path</span>, current_depth: <span class="py-builtin">int</span>, max_depth: <span class="py-builtin">int</span>) -&gt; <span class="py-builtin">str</span>:
+    <span class="py-comment"># ... 省略部分相同程式碼 ...</span>
+    <span class="py-keyword">for</span> item <span class="py-keyword">in</span> items:
+        <span class="py-comment"># ...</span>
+        <span class="py-keyword">if</span> item.is_dir():
+            <span class="py-comment"># ...</span>
+        <span class="py-keyword">else</span>:  <span class="py-comment"># 如果是檔案</span>
+            <span class="py-keyword">try</span>:
+                stat <span class="py-operator">=</span> item.stat()  <span class="py-comment"># [關鍵] 抓取檔案元數據</span>
+                size <span class="py-operator">=</span> format_size(stat.st_size) <span class="py-comment"># stat.st_size 是位元組數</span>
+                mtime <span class="py-operator">=</span> datetime.fromtimestamp(stat.st_mtime).strftime(<span class="py-string">'%Y-%m-%d %H:%M'</span>)
+            <span class="py-keyword">except</span> (<span class="py-class">OSError</span>, <span class="py-class">FileNotFoundError</span>):
+                size <span class="py-operator">=</span> <span class="py-string">"N/A"</span>
+                mtime <span class="py-operator">=</span> <span class="py-string">"N/A"</span>
+            
+            <span class="py-comment"># 將獲取到的 size 和 mtime 資訊加入到 HTML 中</span>
+            html_content <span class="py-operator">+=</span> <span class="py-string">f'''
+&lt;li&gt;
+    &lt;span class="icon"&gt;{FILE_ICON}&lt;/span&gt;&lt;a href="{item.as_posix()}"&gt;{item.name}&lt;/a&gt;
+    &lt;span class="file-info"&gt;
+        &lt;span class="info-size"&gt;{size}&lt;/span&gt;
+        &lt;span class="info-date"&gt;{mtime}&lt;/span&gt;
+    &lt;/span&gt;
+&lt;/li&gt;
+'''</span>
+    <span class="py-comment"># ...</span>
+    <span class="py-keyword">return</span> html_content
+</code></pre>
+        </div>
+        
+        <h4>分段程式碼解說</h4>
+        
+        <h5>Part 1: <code>format_size</code> 輔助函數</h5>
+        <p>這是一個典型的工具函數，其職責單一而明確：將一長串不易閱讀的位元組數字（如 <code class="inline-code">1572864</code>）轉換成對人類友善的格式（如 <code class="inline-code">1.50 MB</code>）。它透過一個 <code class="inline-code">while</code> 迴圈，不斷用 1024 去除原始大小，直到找到合適的單位（KB, MB, GB...）為止。這種將特定功能封裝成獨立函數的做法，是良好程式設計的體現，提高了程式碼的可讀性與可重用性。</p>
+        
+        <h5>Part 2: <code>generate_html_tree</code> 的升級</h5>
+        <p>此函數的核心改動在於處理檔案的 <code class="inline-code">else</code> 區塊。<code class="inline-code">item.stat()</code> 會執行一次系統呼叫，回傳一個包含檔案詳細資訊的物件。我們從中提取兩項關鍵數據：</p>
+        <ul>
+            <li><code class="inline-code">stat.st_size</code>：檔案的原始大小，以位元組為單位。</li>
+            <li><code class="inline-code">stat.st_mtime</code>：檔案的最後修改時間，它是一個 Unix 時間戳（自 1970 年 1 月 1 日以來的秒數）。</li>
+        </ul>
+        <p>接著，我們使用 <code class="inline-code">datetime.fromtimestamp()</code> 將時間戳轉換為人類可讀的日期時間物件，再用 <code class="inline-code">.strftime('%Y-%m-%d %H:%M')</code> 將其格式化為我們想要的字串形式。這些資訊最終被整合進 f-string，成為 HTML 的一部分。</p>
+        
+        <h5>Part 3: JavaScript <code>searchTree</code> 函數</h5>
+        <p>這是前端互動的開端。當使用者在 <code class="inline-code">id="searchInput"</code> 的輸入框中每次按下按鍵 (<code class="inline-code">onkeyup</code>) 時，這個函數就會被觸發。</p>
+        <ul>
+            <li>它首先取得輸入框的文字，並轉換為小寫，以便進行不區分大小寫的比對。</li>
+            <li>然後，它獲取頁面上所有的 <code class="inline-code">&lt;li&gt;</code> 元素（代表每一個檔案或目錄）。</li>
+            <li>接著透過一個 <code class="inline-code">for</code> 迴圈遍歷每一個 <code class="inline-code">&lt;li&gt;</code>，取得其內部的連結文字。</li>
+            <li>最後，使用 <code class="inline-code">.indexOf(filter) > -1</code> 來判斷連結文字是否包含使用者輸入的關鍵字。如果包含，就將該 <code class="inline-code">&lt;li&gt;</code> 的 CSS <code class="inline-code">display</code> 屬性設為空字串（恢復預設顯示）；如果不包含，則設為 <code class="inline-code">"none"</code> 將其隱藏。</li>
+        </ul>
+        <p>這個簡單的實作，以極低的成本達成了即時搜尋的效果，展現了前後端職責分離的初步思想。</p>
+
+    </section>
+
+    <section id="stage3">
+        <h2>第三階段：終極演化 — 實現全功能互動式排序</h2>
+        <p>此階段將工具提升至應用程式級別，允許使用者在前端根據名稱、大小、日期對目錄內容進行動態排序。</p>
+
+        <h3>3.1 架構哲學：數據驅動介面 (Data-Driven UI)</h3>
+        <p>我們採用了數據驅動的設計模式。利用 HTML5 的 <code class="inline-code">data-*</code> 屬性，將用於計算的<strong>原始數據</strong>（如未格式化的位元組大小、Unix 時間戳）從 Python 後端傳遞到前端。前端的排序行為完全由這些原始數據驅動，而非依賴已經格式化過的、不便於計算的顯示文字。</p>
+        
+        <h3>3.2 關鍵程式碼解析 (generate_tree_interactive.py)</h3>
+        <div class="code-container">
+            <div class="code-header">
+                <span>generate_tree_interactive.py (關鍵部分)</span>
+                <button class="copy-btn" onclick="copyCode(this)">複製</button>
+            </div>
+            <pre><code><span class="py-comment"># --- Python 端：generate_html_tree 函數改動 ---</span>
+<span class="py-keyword">def</span> <span class="py-function">generate_html_tree</span>(...):
+    <span class="py-comment"># ...</span>
+    <span class="py-keyword">for</span> item <span class="py-keyword">in</span> items:
+        <span class="py-keyword">try</span>:
+            stat <span class="py-operator">=</span> item.stat()
+            mtime <span class="py-operator">=</span> <span class="py-builtin">int</span>(stat.st_mtime)  <span class="py-comment"># [關鍵] 取得原始數據，整數的 Unix 時間戳</span>
+            size_bytes <span class="py-operator">=</span> stat.st_size      <span class="py-comment"># [關鍵] 取得原始的位元組數</span>
+        <span class="py-keyword">except</span> (<span class="py-class">OSError</span>, <span class="py-class">FileNotFoundError</span>):
+            mtime <span class="py-operator">=</span> <span class="py-number">0</span>
+            size_bytes <span class="py-operator">=</span> <span class="py-operator">-</span><span class="py-number">1</span>
+
+        <span class="py-keyword">if</span> item.is_dir():
+            html_content <span class="py-operator">+=</span> (
+                <span class="py-comment"># [關鍵] 將原始數據嵌入 data-* 屬性</span>
+                <span class="py-string">f'&lt;li data-type="dir" data-name="{item.name}" data-mtime="{mtime}" data-size="-1"&gt;'</span>
+                <span class="py-comment"># ... </span>
+            )
+        <span class="py-keyword">else</span>:  <span class="py-comment"># 如果是檔案</span>
+            html_content <span class="py-operator">+=</span> (
+                <span class="py-comment"># 同樣，將原始數據嵌入 data-* 屬性</span>
+                <span class="py-string">f'&lt;li data-type="file" data-name="{item.name}" data-mtime="{mtime}" data-size="{size_bytes}"&gt;'</span>
+                <span class="py-comment"># ...</span>
+            )
+    <span class="py-keyword">return</span> html_content
+
+<span class="py-comment"># --- JavaScript 端：排序引擎 ---</span>
+<span class="py-string">"""
+&lt;script&gt;
+function sortTree(criteria, direction, btnElement) {
+    // ... 更新按鈕 UI ...
+
+    const allLists = document.querySelectorAll('#rootTree, #rootTree ul'); // 選取所有列表
+    allLists.forEach(ul => {
+        const listItems = Array.from(ul.children); // 將 HTMLCollection 轉換為可排序的陣列
+
+        // 演算法核心：自訂比較函數
+        listItems.sort((a, b) => {
+            const typeA = a.dataset.type; // 讀取 data-* 屬性
+            const typeB = b.dataset.type;
+            
+            // 確保目錄永遠排在檔案前面
+            if (typeA === 'dir' && typeB === 'file') return -1;
+            if (typeA === 'file' && typeB === 'dir') return 1;
+
+            let valA, valB;
+            switch (criteria) {
+                case 'name':
+                    valA = a.dataset.name.toLowerCase();
+                    valB = b.dataset.name.toLowerCase();
+                    return direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                case 'size':
+                case 'mtime':
+                    valA = parseInt(a.dataset[criteria], 10); // [關鍵] 解析 data-* 中的原始數值
+                    valB = parseInt(b.dataset[criteria], 10);
+                    return direction === 'asc' ? valA - valB : valB - valA; // 直接進行數字比較
+            }
+        });
+
+        // [關鍵] 高效 DOM 操作：將排序後元素重新插入
+        listItems.forEach(item => ul.appendChild(item));
+    });
+}
+&lt;/script&gt;
+"""</span></code></pre>
+        </div>
+
+        <h4>分段程式碼解說</h4>
+        
+        <h5>Part 1: Python 端 - 嵌入原始數據</h5>
+        <p>此階段 Python 的職責變得更加重要：它不僅要提供「顯示用」的數據，更要提供「計算用」的原始數據。在生成每個 <code class="inline-code">&lt;li&gt;</code> 標籤時，我們嵌入了一系列 <code class="inline-code">data-*</code> 屬性：</p>
+        <ul>
+            <li><code class="inline-code">data-type</code>：標記此項目是 "dir" 還是 "file"。</li>
+            <li><code class="inline-code">data-name</code>：儲存原始檔案名。</li>
+            <li><code class="inline-code">data-mtime</code>：儲存未經格式化的 Unix 時間戳（一個純數字）。</li>
+            <li><code class="inline-code">data-size</code>：儲存未經格式化的位元組數（一個純數字）。</li>
+        </ul>
+        <p>這樣做的好處是巨大的。JavaScript 無需從 "2024-07-15 10:30" 或 "1.50 MB" 這樣的字串中反向解析出數值，可以直接讀取 <code class="inline-code">data-*</code> 屬性中乾淨、原始的數字進行精確比較，這正是「數據驅動介面」的核心思想。</p>
+        
+        <h5>Part 2: JavaScript 端 - 排序引擎 <code>sortTree</code></h5>
+        <p>這個函數是前端互動的靈魂。</p>
+        <ul>
+            <li><strong>選取與轉換：</strong> 首先，它選取頁面上所有的列表 (<code class="inline-code">ul</code>)。對於每個列表，它使用 <code class="inline-code">Array.from(ul.children)</code> 將其子元素 (<code class="inline-code">li</code>) 從一個即時的 HTMLCollection 轉換為一個真正的 JavaScript 陣列。這是排序的關鍵前提， çünkü原生的 HTMLCollection 沒有 <code class="inline-code">.sort()</code> 方法。</li>
+            <li><strong>自訂比較函數：</strong> <code class="inline-code">listItems.sort(...)</code> 的核心是傳入一個自訂的比較函數。這個函數接收兩個參數 <code class="inline-code">a</code> 和 <code class="inline-code">b</code>（代表陣列中正在被比較的兩個 <code class="inline-code">&lt;li&gt;</code> 元素）。
+                <ul>
+                    <li>它首先檢查 <code class="inline-code">data-type</code>，實現「目錄永遠優先於檔案」的排序規則。</li>
+                    <li>接著，一個 <code class="inline-code">switch</code> 語句根據使用者點擊的排序標準 (<code class="inline-code">criteria</code>)，從 <code class="inline-code">a.dataset</code> 和 <code class="inline-code">b.dataset</code> 中讀取對應的原始值。例如，若 <code class="inline-code">criteria</code> 是 'size'，它就讀取 <code class="inline-code">a.dataset.size</code>。</li>
+                    <li>對於名稱，使用 <code class="inline-code">localeCompare()</code> 進行對在地語言友善的字串比較。</li>
+                    <li>對於大小和時間，使用 <code class="inline-code">parseInt()</code> 將 <code class="inline-code">data-*</code> 屬性的字串值轉換為整數，然後直接用減法 (<code class="inline-code">valA - valB</code>) 進行高效的數字比較。</li>
+                </ul>
+            </li>
+            <li><strong>高效 DOM 操作：</strong> 排序完成後，最關鍵的一步是 <code class="inline-code">listItems.forEach(item => ul.appendChild(item))</code>。在 DOM 中，<code class="inline-code">appendChild</code> 一個已經存在的元素，會將其從原來的位置「移動」到新的位置，而不是「複製」或「重建」。這是一個效能極高的操作，避免了大規模的頁面重繪，即使有數千個條目，排序也能瞬間完成。</li>
+        </ul>
+    </section>
+
+    <section id="stage4">
+        <h2>第四階段：從腳本到應用 — 圖形化介面的蛻變</h2>
+        <p>至此，我們的命令列工具已經非常強大。但要讓非技術背景的使用者也能輕鬆使用，圖形化介面 (GUI) 是必然的演進方向。此階段我們將腳本徹底改造成一個獨立的桌面應用程式。</p>
+
+        <h3>4.1 技術選型與架構</h3>
+        <ul>
+            <li><strong>GUI 框架 (<code class="inline-code">tkinter</code>)：</strong> 選擇 Python 內建的 <code class="inline-code">tkinter</code> 函式庫。它無需安裝任何外部依賴，打包後的應用程式體積更小，相容性極佳。</li>
+            <li><strong>程式碼重構：</strong> 將核心的檔案生成邏輯 (<code class="inline-code">run_generation</code>) 與介面控制邏輯 (<code class="inline-code">Application</code> 類別) 分離，這是良好的軟體工程實踐，使程式碼更易於維護和擴展。</li>
+            <li><strong>主題化設計：</strong> 不僅是實現功能，我們還為應用程式設計了多種視覺風格（標準、黑暗、自然、科學等），並透過字典 (<code class="inline-code">STYLES</code>, <code class="inline-code">ICONS</code>) 的方式進行管理，提升了產品的完整度與創意性。</li>
+        </ul>
+
+        <h3>4.2 圖形化介面版架構解析 (tree_generator_gui.py)</h3>
+        <p>這份程式碼整合了前述所有功能，並以一個使用者友善的視窗介面呈現。由於程式碼較長，此處解析其核心架構。</p>
+        
+        <h4>Part 1: <code>Application</code> 類別 - 介面骨架</h4>
+        <p>這是一個繼承自 <code class="inline-code">tk.Tk</code> 的類別，是整個 GUI 應用程式的主視窗。</p>
+        <ul>
+            <li>在 <code class="inline-code">__init__</code> 方法中，設定視窗標題、大小，並初始化一系列 <code class="inline-code">tk.StringVar</code>, <code class="inline-code">tk.BooleanVar</code> 等變數。這些變數與介面上的輸入框、下拉選單、核取方塊等元件雙向綁定，能即時反映和控制使用者的選擇。</li>
+            <li><code class="inline-code">_create_widgets</code> 方法負責建立所有介面元件（標籤、按鈕、輸入框等）並使用 <code class="inline-code">grid</code> 或 <code class="inline-code">pack</code> 進行佈局。</li>
+        </ul>
+
+        <h4>Part 2: 核心邏輯與介面分離</h4>
+        <p><code class="inline-code">run_generation</code> 函數被獨立出來，專門負責執行檔案掃描與 HTML 生成的核心任務。它接收一個包含所有參數的字典，而不是直接讀取全域變數。</p>
+        <p><code class="inline-code">Application</code> 類別中的 <code class="inline-code">_start_generation</code> 方法則扮演「橋樑」的角色。它負責：</p>
+        <ol>
+            <li>從 GUI 元件綁定的變數中讀取使用者設定（如路徑、深度、風格等）。</li>
+            <li>對輸入進行驗證（如檢查路徑是否選擇）。</li>
+            <li>將這些設定打包成一個字典。</li>
+            <li>呼叫 <code class="inline-code">run_generation</code>，並將自己的一個方法 (<code class="inline-code">_update_status</code>) 作為回呼函數 (callback) 傳遞進去。</li>
+        </ol>
+        <p><code class="inline-code">run_generation</code> 在執行過程中，會在關鍵節點（如開始掃描、掃描完成、發生錯誤）呼叫這個回呼函數，從而將執行狀態即時更新到 GUI 的狀態列上。這種設計徹底分離了業務邏輯與介面呈現，是構建可維護 GUI 應用的標準模式。</p>
+
+        <h4>Part 3: 主題化與風格管理</h4>
+        <p>透過 <code class="inline-code">STYLES</code> 和 <code class="inline-code">ICONS</code> 兩個字典來管理不同的主題。當使用者從下拉選單中選擇一個風格時，程式只需以風格名稱為鍵，從字典中取出對應的 CSS 字串和圖示組即可。這使得新增或修改主題變得極為簡單，只需增刪字典中的條目，無需改動核心邏輯，展現了高度的擴充性。</p>
+
+    </section>
+    
+    <section id="stage5">
+        <h2>第五階段：部署與分發 — 打包為獨立執行檔</h2>
+        <p>最後一步，是將我們的應用程式打包成一個 <code class="inline-code">.exe</code> 檔案，使其能在任何 Windows 電腦上執行，無需使用者安裝 Python。</p>
+
+        <h3>5.1 工具選型 (PyInstaller)</h3>
+        <p>我們選用 <code class="inline-code">PyInstaller</code>，它是 Python 社群最成熟、最廣泛使用的打包工具。</p>
+
+        <h3>5.2 打包指令解析</h3>
+        <p>在安裝完 PyInstaller (<code class="inline-code">pip install pyinstaller</code>) 後，切換到 GUI 腳本所在的目錄，執行以下指令：</p>
+        <div class="code-container">
+            <div class="code-header">
+                <span>Bash Command</span>
+                <button class="copy-btn" onclick="copyCode(this)">複製</button>
+            </div>
+            <pre><code><span class="bash-command">pyinstaller</span> <span class="bash-flag">--onefile</span> <span class="bash-flag">--windowed</span> <span class="bash-flag">--name</span> <span class="bash-param">TreeGenerator</span> <span class="bash-flag">--icon=</span><span class="bash-param">"your_icon.ico"</span> <span class="bash-param">tree_generator_gui.py</span></code></pre>
+        </div>
+        
+        <h4>指令參數詳解：</h4>
+        <ul>
+            <li><code class="inline-code">--onefile</code>：將所有依賴（包括 Python 直譯器本身）打包成<strong>單一</strong>的執行檔，便於分發。</li>
+            <li><code class="inline-code">--windowed</code>：這對 GUI 應用程式至關重要。它使得程式執行時<strong>不顯示</strong>黑色的命令列視窗。</li>
+            <li><code class="inline-code">--name TreeGenerator</code>：自訂輸出的執行檔名稱為 <code class="inline-code">TreeGenerator.exe</code>。</li>
+            <li><code class="inline-code">--icon="your_icon.ico"</code>：(可選) 為應用程式指定一個自訂圖示。</li>
+        </ul>
+        <p>打包完成後，在專案目錄下的 <code class="inline-code">dist</code> 資料夾內即可找到最終的 <code class="inline-code">.exe</code> 檔案，這就是可以分享給他人的最終成品。</p>
+    </section>
+
+    <section id="summary">
+        <h2>總結與前瞻性展望</h2>
+        <p>我們從一個簡單的腳本出發，透過五個階段的迭代，最終構建出一個自給自足、零依賴、介面友善、風格多樣、功能完備的互動式桌面應用程式。這份學習筆記記錄的，不僅是程式碼的演進，更是設計思維的升級：</p>
+        <ul>
+            <li><strong>從程序化到物件導向：</strong> 擁抱 <code class="inline-code">pathlib</code> 帶來的現代化路徑操作。</li>
+            <li><strong>從寫死到靈活配置：</strong> 利用 <code class="inline-code">argparse</code> 和 <code class="inline-code">tkinter</code> 打造專業的命令列與圖形化介面。</li>
+            <li><strong>從靜態到動態：</strong> 引入 JavaScript 實現客戶端互動，完成前後端職責的分離。</li>
+            <li><strong>從呈現驅動到數據驅動：</strong> 利用 <code class="inline-code">data-*</code> 屬性讓前端行為由後端數據驅動，實現高效互動。</li>
+            <li><strong>從腳本到應用：</strong> 透過 GUI 開發與 <code class="inline-code">PyInstaller</code> 打包，完成從開發者工具到使用者產品的最後一哩路。</li>
+        </ul>
+    </section>
+
+
+    <script>
+        function copyCode(buttonElement) {
+            const pre = buttonElement.parentElement.nextElementSibling;
+            const code = pre.querySelector('code');
+            const textToCopy = code.innerText;
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                buttonElement.textContent = '已複製!';
+                setTimeout(() => {
+                    buttonElement.textContent = '複製';
+                }, 2000);
+            }).catch(err => {
+                console.error('無法複製程式碼: ', err);
+                buttonElement.textContent = '複製失敗';
+                 setTimeout(() => {
+                    buttonElement.textContent = '複製';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
