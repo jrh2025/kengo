@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宏觀經濟數據獲取與處理專案報告</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1, h2, h3 {
+            color: #1a2533;
+            line-height: 1.4;
+            margin-top: 1.5em;
+            margin-bottom: 0.8em;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        h1 {
+            font-size: 2.2em;
+            text-align: center;
+            border-bottom: 3px solid #dee2e6;
+        }
+        h2 {
+            font-size: 1.8em;
+        }
+        h3 {
+            font-size: 1.4em;
+            border-bottom: 1px solid #e9ecef;
+        }
+        p, li {
+            font-size: 1.1em;
+            margin-bottom: 1em;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            background-color: #e9ecef;
+            padding: .2em .4em;
+            font-size: 0.9em;
+            border-radius: 4px;
+        }
+        .meta-info {
+            text-align: center;
+            color: #6c757d;
+            margin-bottom: 2em;
+            font-size: 0.95em;
+        }
+        .data-card {
+            background-color: #fdfdfd;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .data-card ul {
+            padding-left: 20px;
+            list-style-type: decimal;
+        }
+        .data-card strong {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>真實宏觀經濟數據獲取與處理手冊</h1>
+        <p class="meta-info">文件版本：最終版 | 驗證日期：2025年7月</p>
+
+        <h2>第一部分：問題摘要</h2>
+        <p>
+            專案原有的自動化數據下載腳本 <code>real_data_downloader.py</code> 已確認失效。 主要原因是其目標政府資料來源網站，包括國家發展委員會、行政院主計總處及中央銀行，均已進行了網站結構、API端點及CSV資料格式的更新。 這些變更導致了舊腳本在執行時發生網路連線失敗與後續的資料格式解析錯誤。
+        </p>
+
+        <h2>第二部分：解決方案與新流程</h2>
+        <p>
+            為應對此問題，我們已建立一套全新的標準作業流程。此流程將取代舊的自動化腳本，改為「手動下載」與「本地處理」兩階段模式。首先，使用者需依循下方指南手動獲取四項核心原始數據。 完成下載後，再執行一個全新的本地處理腳本 <code>manual_data_processor.py</code> 進行資料格式化，此新腳本將取代已被棄用的 <code>real_data_downloader.py</code>。
+        </p>
+
+        <h2>第三部分：手動數據下載指南</h2>
+        <p>請依下列步驟，從各政府機構網站下載必要的原始數據檔案，並存入指定位置。</p>
+
+        <div class="data-card">
+            <h3>1. 景氣對策信號分數 (business_index)</h3>
+            <ul>
+                <li><strong>來源機構：</strong> 國家發展委員會（國發會）</li>
+                <li><strong>目標檔案：</strong> <code>data/source_business_index.csv</code></li>
+                <li><strong>下載步驟：</strong>
+                    <ol>
+                        <li>前往國發會<a href="https://index.ndc.gov.tw/m/zh_tw/data/eco" target="_blank" rel="noopener noreferrer">「景氣指標查詢系統」</a>。</li>
+                        <li>於查詢頁面中，定位並選取「景氣對策信號(分數)」。</li>
+                        <li>將查詢的時間區間設定為「起始」至「最新」，以獲取完整歷史資料。</li>
+                        <li>點擊「下載CSV」按鈕，並將檔案依上述規範重新命名及存放。</li>
+                    </ol>
+                </li>
+            </ul>
+        </div>
+
+        <div class="data-card">
+            <h3>2. 消費者物價指數年增率 (cpi_yoy)</h3>
+            <ul>
+                <li><strong>來源機構：</strong> 行政院主計總處</li>
+                <li><strong>目標檔案：</strong> <code>data/source_cpi.csv</code></li>
+                <li><strong>下載步驟：</strong>
+                    <ol>
+                        <li>前往主計總處統計資料庫<a href="https://ws.dgbas.gov.tw/001/Upload/463/relfile/10315/2534/cpispl.xls" target="_blank" rel="noopener noreferrer">「表102. 消費者物價指數」</a>的資料連結。</li>
+                        <li>在頁面上方，點擊「下載」按鈕，並選擇「CSV」格式。</li>
+                        <li>將下載後的檔案依規定重新命名，並移至 <code>data</code> 資料夾。</li>
+                    </ol>
+                </li>
+            </ul>
+        </div>
+
+        <div class="data-card">
+            <h3>3. 央行重貼現率 (interest_rate)</h3>
+            <ul>
+                <li><strong>來源機構：</strong> 中華民國中央銀行</li>
+                <li><strong>目標檔案：</strong> <code>data/source_interest_rate.csv</code></li>
+                <li><strong>下載步驟：</strong>
+                    <ol>
+                        <li>前往央行統計資料庫<a href="https://www.cbc.gov.tw/tw/lp-370-1.html" target="_blank" rel="noopener noreferrer">「A11 主要金融機構牌告利率」</a>頁面。(請注意：若連結失效，請於央行網站內搜尋「重要利率」關鍵字。)</li>
+                        <li>在資料表中，找到包含歷史「重貼現率」的數據。</li>
+                        <li>點擊下載圖示（通常為Excel或CSV格式）。</li>
+                        <li>將檔案重新命名為 <code>source_interest_rate.csv</code> 並存放在 <code>data</code> 資料夾。</li>
+                    </ol>
+                </li>
+            </ul>
+        </div>
+
+        <div class="data-card">
+            <h3>4. 國內生產毛額季增率 (gdp_growth)</h3>
+            <ul>
+                <li><strong>來源機構：</strong> 行政院主計總處</li>
+                <li><strong>目標檔案：</strong> <code>data/source_gdp.csv</code></li>
+                <li><strong>下載步驟：</strong>
+                    <ol>
+                        <li>前往主計總處統計資料庫<a href="https://nstatdb.dgbas.gov.tw/dgbasall/webMain.aspx?sys=100&funid=qryout&funid2=A018101010&outmode=8&deflst=1&outkind=1" target="_blank" rel="noopener noreferrer">「表1. 國內生產毛額、經濟成長率及平均每人GDP」</a>。</li>
+                        <li>確認資料頻率為「季」的數據。</li>
+                        <li>點擊頁面上方的「下載」功能，選擇「CSV」格式。</li>
+                        <li>將下載的檔案依規定命名與存放。</li>
+                    </ol>
+                </li>
+            </ul>
+        </div>
+        
+        <h2>第四部分：本地資料處理腳本</h2>
+        <p>
+            當前述四個原始數據檔案都已手動下載並放置於 <code>data</code> 資料夾後，請於專案的 <code>src</code> 目錄下，建立一個新的Python檔案，命名為 <code>manual_data_processor.py</code>。 這個新腳本包含了所有必要的資料清理與格式化邏輯，用以處理手動下載的檔案。
+        </p>
+    </div>
+
+</body>
+</html>

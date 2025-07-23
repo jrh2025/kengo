@@ -163,7 +163,7 @@
             <p>本專案最終形成了一套清晰、可重複的標準作業程序：</p>
             <ol>
                 <li><strong>環境設定</strong>：安裝 <code>pandas</code>, <code>numpy</code>, <code>yfinance</code>, <code>statsmodels</code>, <code>arch</code>, <code>matplotlib</code>, <code>joblib</code>, <code>tqdm</code> 等所有必要函式庫。</li>
-                <li><strong>數據獲取</strong>：依照 <code>manual_data_processing_guide_v5</code> 手冊，手動從政府網站下載4個 <code>source_*.csv</code> 原始數據檔至 <code>data</code> 目錄。</li>
+                <li><strong>數據獲取</strong>：依照 <code><a href='manual_data_processing_guide.html'>真實宏觀經濟數據獲取與處理手冊</a></code> ，手動從政府網站下載4個 <code>source_*.csv</code> 原始數據檔至 <code>data</code> 目錄。</li>
                 <li><strong>本地數據處理</strong>：執行 <code>python src/manual_data_processor.py</code>，將原始數據轉換為標準化的 <code>taiwan_*.csv</code> 檔案。</li>
                 <li><strong>數據載入與合併</strong>：執行 <code>python src/data_loader.py</code>，將所有數據源合併，生成最終的 <code>processed_quarterly_data.csv</code>。</li>
                 <li><strong>模型訓練與儲存</strong>：執行 <code>python src/modeling.py</code>，建立並儲存VAR與GARCH模型。</li>
