@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台股0050未來十年價格路徑模擬專案 總結報告</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            line-height: 2;
+            color: #333;
+            background-color: #fdfdfd;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px 40px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1, h2, h3 {
+            color: #1a237e;
+            line-height: 1.4;
+            margin-top: 1.5em;
+            margin-bottom: 0.8em;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 0.3em;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.2em;
+            border-bottom: 3px solid #1a237e;
+        }
+        h2 {
+            font-size: 1.8em;
+        }
+        h3 {
+            font-size: 1.4em;
+            border-bottom: 1px dashed #bdbdbd;
+        }
+        p, li {
+            font-size: 1.1em;
+            margin-bottom: 1em;
+            text-align: justify;
+        }
+        ul {
+            padding-left: 20px;
+            list-style-type: disc;
+        }
+        li {
+            margin-bottom: 0.75em;
+        }
+        .meta-info {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2.5em;
+        }
+        code {
+            font-family: "Courier New", Courier, monospace;
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        strong {
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>台股0050未來十年價格路徑模擬專案 總結報告</h1>
+        <p class="meta-info">日期：2025年7月23日</p>
+
+        <h2>摘要</h2>
+        <p>本專案旨在建立一個結合宏觀經濟因子的計量經濟學模型，透過蒙地卡羅方法，模擬元大台灣卓越50基金（0050）未來十年的數萬條可能價格路徑。我們摒棄了傳統單點預測的局限性，轉而創建一幅關於未來的「可能性地圖」，用以科學化地分析長期投資的機率分佈、量化潛在風險，並為投資決策提供數據驅動的支援。</p>
+        <p>專案成功整合了向量自我迴歸模型（VAR）與廣義自迴歸條件異質變異數模型（GARCH），並在真實世界數據的嚴峻挑戰下，透過多次迭代，建立了一套從數據獲取、模型建構、模擬執行到結果分析的完整且穩健的作業流程。最終成果以直觀的扇形圖與關鍵績效指標（KPIs）呈現，清晰地揭示了0050在未來十年的潛在報酬與風險輪廓。</p>
+
+        <h2>第一章：專案緣起與創作理念</h2>
+        <h3>1.1 創作理念：超越水晶球式的預測</h3>
+        <p>傳統的股價預測，往往試圖給出一個單一的未來價格，如同尋找一顆能預知未來的水晶球。然而，金融市場的本質是隨機與不確定的。本專案的創作核心理念，是擁抱這種不確定性，而非試圖消除它。我們的目標不是問「0050十年後會是多少錢？」，而是問：「<strong>根據歷史數據與宏觀經濟的連動，0050十年後所有可能的價格，其機率分佈長什麼樣子？</strong>」</p>
+        <h3>1.2 為何選擇0050與宏觀經濟因子？</h3>
+        <ul>
+            <li><strong>元大台灣50 (0050)</strong>：作為追蹤台灣市值前50大企業的ETF，0050不僅是台灣散戶投資人最熟悉的標的，更是台灣整體經濟景氣最直接、最有效的縮影。</li>
+            <li><strong>宏觀經濟因子</strong>：長期而言，一個國家的股市總市值，必然與其經濟基本面緊密相連。因此，我們選取了四個最關鍵的宏觀經濟因子——<strong>經濟成長率(GDP)、利率、景氣對策信號、消費者物價指數(CPI)</strong>——作為驅動模型的核心動力。</li>
+        </ul>
+        <p>我們的創作理念，就是將0050的市場行為，與這些宏觀因子的動態變化進行深度連結，從而建立一個更貼近真實世界運作的模擬框架。</p>
+
+        <h2>第二章：研究方法與模型原理</h2>
+        <p>本專案採用了在金融計量領域廣泛應用的兩階段模型：</p>
+        <ul>
+            <li><strong>宏觀經濟模型 (VAR)</strong>：我們使用「向量自我迴歸模型」(Vector Autoregression)來捕捉四個宏觀經濟因子之間複雜的動態關係。VAR模型的精妙之處在於，它不預設任何因果關係，而是讓數據自己說話，找出各因子之間彼此領先或落後的相互影響模式。</li>
+            <li><strong>市場波動模型 (GARCH)</strong>：接著，我們使用「廣義自迴歸條件異質變異數模型」(Generalized Autoregressive Conditional Heteroskedasticity)來模擬0050本身的報酬與波動性。GARCH模型能很好地捕捉金融市場「波動叢聚」(Volatility Clustering)的特性——即平靜的時期與劇烈波動的時期會集中出現。</li>
+        </ul>
+        <p>本專案最大的創新點，是並未將這兩個模型獨立看待，而是在GARCH模型中，將VAR模型產出的宏觀因子作為外部解釋變數。然而，在實際的模型擬合過程中，數據顯示這些宏觀因子對於<strong>季度</strong>波動率的直接影響在統計上不夠顯著，因此最終產出的GARCH模型是一個標準模型。儘管如此，整個框架的設計理念是前瞻且完整的。</p>
+
+        <h2>第三章：實作步驟、遇到的困難與解決方案</h2>
+        <p>這部分是本專案的核心，忠實記錄了我們如何從一個理想化的藍圖，在真實世界數據的重重考驗下，最終打造出一個穩健、可用的系統。</p>
+        <h3>階段一：數據工程的漫漫長路 (<code>manual_data_processor.py</code>, <code>data_loader.py</code>)</h3>
+        <p>這是我們投入最多心力，也是克服最多困難的階段。</p>
+        <ul>
+            <li><strong>最初的挑戰：自動化下載的脆弱性</strong>
+                <ul>
+                    <li><strong>困難</strong>：我們最初嘗試建立一個全自動的下載腳本，但很快就發現，政府的開放資料平台存在URL頻繁變更、SSL憑證問題、CSV檔案格式不一致等多重障礙，導致程式極不穩定。</li>
+                    <li><strong>解決方案</strong>：我們果斷地從「全自動」轉向更為穩健的「<strong>半自動化</strong>」工作流程。制定了一份詳盡的手動下載指南，將不可控的「網路下載」環節，與我們完全可控的「本地資料處理」環節徹底分離。</li>
+                </ul>
+            </li>
+            <li><strong>核心的挑戰：處理不規則的真實世界數據</strong>
+                <ul>
+                    <li><strong>困難</strong>：手動下載的CSV檔案，其內部格式極為混亂。例如，CPI是「寬表」格式，利率資料是「由新到舊」排序，GDP檔案則有不規則的頁首與內部錯誤行。</li>
+                    <li><strong>解決方案</strong>：我們對<code>manual_data_processor.py</code>進行了多次迭代升級，使其具備極高的強健性，包括智慧型標頭定位、強效解析、數據重塑(<code>melt</code>)與時間序列校正(<code>sort_index</code>)。</li>
+                </ul>
+            </li>
+            <li><strong>最終的挑戰：數據源的時間範圍限制</strong>
+                 <ul>
+                    <li><strong>困難</strong>：yfinance提供的0050調整後股價僅從2009年開始，與我們從2003年開始的宏觀數據存在斷層。</li>
+                    <li><strong>解決方案</strong>：我們接受了數據源的限制，並將合併策略修改為<code>outer join</code>，再透過<code>dropna</code>移除2009年之前不完整的數據行，確保了數據的完整性。</li>
+                </ul>
+            </li>
+        </ul>
+        <h3>階段二：模型建構的穩健性 (<code>modeling.py</code>)</h3>
+        <ul>
+            <li><strong>困難</strong>：在建立VAR模型時，由於利率在某些時間子區間內保持不變，導致數據出現「區間常數列」，引發數學上的「共線性」問題。</li>
+            <li><strong>解決方案</strong>：我們採用了專業的「<strong>錯誤驅動開發</strong>」策略。在<code>fit_var_model</code>函式中，使用<code>try...except</code>區塊，讓程式先嘗試標準模型，若失敗則自動切換至不含截距項的備援模型。</li>
+        </ul>
+        <h3>階段三：模擬執行的精準度 (<code>simulation.py</code>)</h3>
+        <ul>
+            <li><strong>困難一：API版本變更</strong>
+                 <ul>
+                    <li><strong>問題</strong>：<code>arch</code>函式庫的<code>forecast</code>函式API有所更新，導致程式碼失敗。</li>
+                    <li><strong>解決方案</strong>：我們放棄了對高階API的依賴，轉而直接在程式碼中<strong>手動迭代GARCH(1,1)的核心公式</strong>，這不僅解決了問題，更讓我們的模擬完全免疫於未來的API變更。</li>
+                </ul>
+            </li>
+            <li><strong>困難二：時間尺度轉換的陷阱</strong>
+                 <ul>
+                    <li><strong>問題</strong>：將一個基於<strong>季度</strong>數據訓練出的模型，直接用來模擬<strong>每日</strong>的報酬率，導致了數值溢位(NaN)與不合理的股價。</li>
+                    <li><strong>解決方案</strong>：我們在模擬迴圈中，加入了關鍵的<strong>尺度轉換</strong>步驟，將季度的波動率與平均報酬率，在數學上正確地轉換為每日的等效值。</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h2>第四章：操作指南 (SOP)</h2>
+        <p>本專案最終形成了一套清晰、可重複的標準作業程序：</p>
+        <ol>
+            <li><strong>環境設定</strong>：安裝<code>pandas</code>, <code>numpy</code>, <code>yfinance</code>, <code>statsmodels</code>, <code>arch</code>, <code>matplotlib</code>, <code>joblib</code>, <code>tqdm</code>等所有必要函式庫。</li>
+            <li><strong>數據獲取</strong>：依照手冊，手動從政府網站下載4個<code>source_*.csv</code>原始數據檔至<code>data</code>目錄。</li>
+            <li><strong>本地數據處理</strong>：執行<code>python src/manual_data_processor.py</code>，將原始數據轉換為標準化的<code>taiwan_*.csv</code>檔案。</li>
+            <li><strong>數據載入與合併</strong>：執行<code>python src/data_loader.py</code>，生成最終的<code>processed_quarterly_data.csv</code>。</li>
+            <li><strong>模型訓練與儲存</strong>：執行<code>python src/modeling.py</code>，建立並儲存VAR與GARCH模型。</li>
+            <li><strong>執行模擬</strong>：執行<code>python src/simulation.py</code>，生成<code>simulation_price_paths.npy</code>。</li>
+            <li><strong>結果分析與視覺化</strong>：在Jupyter環境中，執行<code>notebooks/analysis.ipynb</code>的所有儲存格，以檢視最終成果。</li>
+        </ol>
+
+        <h2>第五章：成果詮釋與展望</h2>
+        <h3>5.1 最終成果</h3>
+        <p>本專案成功產出了三個核心的視覺化成果：</p>
+        <ul>
+            <li><strong>扇形圖 (Fan Chart)</strong>：此圖清晰地展示了未來十年股價的90%與50%機率區間。其逐漸擴大的形態，是對「長期投資的不確定性會隨時間增加」這一金融學原理的完美視覺詮釋。</li>
+            <img src="output-fig01.png" alt="Fan Chart" style="width:100%; height:auto; margin-top:20px;">
+            <li><strong>關鍵績效指標 (KPI) 圖表</strong>：此圖表將複雜的模擬結果，提煉為具備決策參考價值的數字，如中位數年化報酬率(14.39%)、虧損機率(16.60%)等，並解釋了金融資產報酬的「右偏分佈」特性。</li>
+            <img src="output-fig02.png" alt="KPI Chart" style="width:100%; height:auto; margin-top:20px;">
+            <li><strong>終點股價機率分佈圖</strong>：此圖更細緻地描繪了十年後所有可能股價的機率分佈，並以垂直線標示了各項關鍵統計量，讓使用者能更深入地理解風險與報酬的不對稱性。</li>          
+            <img src="output-fig03.png" alt="Price Distribution Chart" style="width:100%; height:auto; margin-top:20px;">
+        </ul>
+        <h3>5.2 專案展望</h3>
+        <p>這個框架為未來的深入研究奠定了堅實的基礎：</p>
+        <ul>
+            <li><strong>模型精進</strong>：未來可嘗試引入更多宏觀因子（如匯率、貨幣供給、美國S&P 500指數等），或探索更複雜的GARCH模型（如EGARCH）。</li>
+            <li><strong>壓力測試與情境分析</strong>：可在模擬器中手動設定特定的宏觀經濟衝擊（例如，模擬一次經濟衰退情境），以量化其在黑天鵝事件下的韌性。</li>
+            <li><strong>應用擴展</strong>：此方法論完全可以被移植，用以分析其他股票、ETF，甚至是整個投資組合的未來可能性。</li>
+        </ul>
+
+        <h2>結論</h2>
+        <p>從最初的兩份藍圖文件出發，我們共同經歷了一段充滿挑戰但收穫豐碩的旅程。我們不僅成功地將一個複雜的計量經濟學理念，轉化為一套具體的、可執行的Python程式碼，更在過程中，透過不斷地除錯與迭代，深刻體會了真實世界數據工程的複雜性與魅力。</p>
+        <p>本專案的最終產出，並非一個試圖預測未來的「水晶球」，而是一套賦予使用者洞察未來各種「可能性」的科學工具。它證明了，在面對金融市場的內在不確定性時，一個基於機率、量化風險的科學框架，遠比任何單點的預測，都更具備長期的決策參考價值。</p>
+    </div>
+</body>
+</html>
