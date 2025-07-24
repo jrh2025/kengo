@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 程式碼檢視器 (analysis.py) - 專業版</title>
+    
+    <!-- 1. 引入 Prism.js 的 CSS 主題檔案 (Okaidia Theme) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+
+    <style>
+        /* --- General Body & Font Styles --- */
+        body {
+            background-color: #f8f9fa;
+            color: #212529;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            line-height: 1.8;
+            margin: 0;
+            padding: 2rem;
+            font-size: 16px;
+        }
+
+        h1 {
+            color: #343a40;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* --- Accordion Styles for Collapsible Sections --- */
+        .accordion {
+            background-color: #ffffff;
+            color: #444;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: 0.4s;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .accordion:after {
+            content: '+'; /* Plus sign */
+            font-size: 1.5rem;
+            color: #777;
+            font-weight: bold;
+        }
+
+        .accordion.active:after {
+            content: "−"; /* Minus sign */
+        }
+
+        .panel {
+            padding: 0;
+            background-color: #282c34; /* Match the code block background */
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* --- Code Block Wrapper --- */
+        .code-container {
+            position: relative;
+        }
+        
+        /* --- Code Block Styles (Prism will handle the rest) --- */
+        pre[class*="language-"] {
+            padding: 1.5rem;
+            margin: 0;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* --- Copy Button Styles --- */
+        .copy-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #555c69;
+            color: #e6e6e6;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.7;
+            transition: opacity 0.3s, background-color 0.3s;
+            z-index: 10;
+        }
+
+        .code-container:hover .copy-button {
+            opacity: 1;
+        }
+        
+        .copy-button:hover {
+            background-color: #6c757d;
+        }
+
+        .copy-button:active {
+            background-color: #495057;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Python 腳本分析: <code>analysis.py</code></h1>
+
+    <!-- Cell 1: Library Imports and Data Loading -->
+    <button class="accordion active">Cell 1: 匯入函式庫與載入數據</button>
+    <div class="panel" style="max-height: 800px;"> <!-- Initially open -->
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python"># =============================================================================
+# Cell 1: 匯入函式庫與載入數據
+# =============================================================================
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+import os
+
+# 設定中文字體以正確顯示圖表標題
+plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'Heiti TC', 'sans-serif']
+plt.rcParams['axes.unicode_minus'] = False # 修正負號顯示問題
+
+# --- 定義路徑與參數 ---
+DATA_DIR = "../data"
+SIMULATION_PATH = os.path.join(DATA_DIR, "simulation_price_paths.npy")
+HISTORICAL_DATA_PATH = os.path.join(DATA_DIR, "processed_quarterly_data.csv")
+
+# --- 載入數據 ---
+try:
+    price_paths = np.load(SIMULATION_PATH)
+    historical_data = pd.read_csv(HISTORICAL_DATA_PATH, index_col=0, parse_dates=True)
+    start_date = historical_data.index[-1]
+    start_price = price_paths[0, 0]
+except FileNotFoundError:
+    price_paths = None # 設定為 None 以便後續檢查
+</code></pre>
+        </div>
+    </div>
+    
+    <!-- Cell 2: Plot Fan Chart -->
+    <button class="accordion">Cell 2: 繪製扇形圖 (Fan Chart)</button>
+    <div class="panel">
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python"># =============================================================================
+# Cell 2: 繪製扇形圖 (Fan Chart)
+# =============================================================================
+def plot_fan_chart(price_paths):
+    """
+    繪製扇形圖以視覺化呈現未來股價路徑的機率分佈。
+    """
+    if price_paths is None or price_paths.size == 0:
+        return
+
+    n_steps = price_paths.shape[1]
+    time_axis = np.linspace(0, (n_steps - 1) / 252, n_steps) 
+
+    percentiles = [5, 25, 50, 75, 95]
+    p_values = np.nanpercentile(price_paths, percentiles, axis=0)
+
+    plt.figure(figsize=(14, 8))
+    
+    plt.fill_between(time_axis, p_values[0], p_values[4], color='skyblue', alpha=0.4, label='90% 機率區間 (P5-P95)')
+    plt.fill_between(time_axis, p_values[1], p_values[3], color='deepskyblue', alpha=0.6, label='50% 機率區間 (P25-P75)')
+    plt.plot(time_axis, p_values[2], color='navy', lw=2, label='中位數路徑 (P50)')
+    
+    plt.title('0050 未來十年【股價】路徑蒙地卡羅模擬', fontsize=20, pad=20)
+    plt.xlabel('時間 (年)', fontsize=14)
+    plt.ylabel('預測股價 (TWD)', fontsize=14)
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.legend(fontsize=12)
+    plt.gca().yaxis.set_major_locator(mticker.MultipleLocator(100))
+    plt.gca().yaxis.set_major_formatter(mticker.StrMethodFormatter('{x:,.0f}'))
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.tight_layout()
+    plt.show()
+
+if price_paths is not None:
+    plot_fan_chart(price_paths)
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Cell 3: Analyze and Plot KPIs -->
+    <button class="accordion">Cell 3: 計算關鍵績效指標 (KPIs) 並以圖表呈現</button>
+    <div class="panel">
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python"># =============================================================================
+# Cell 3: 計算關鍵績效指標 (KPIs) 並以圖表呈現
+# =============================================================================
+def analyze_and_plot_kpis(price_paths):
+    """
+    計算關鍵績效指標，並使用表格與文字說明的圖表來呈現。
+    """
+    if price_paths is None or price_paths.size == 0:
+        return
+
+    final_prices = price_paths[:, -1]
+    start_price = price_paths[0, 0]
+
+    # 計算KPIs
+    expected_price = np.nanmean(final_prices)
+    median_price = np.nanmedian(final_prices)
+    p5, p95 = np.nanpercentile(final_prices, [5, 95])
+    median_return = (median_price / start_price)**(1/10) - 1
+    expected_return = (expected_price / start_price)**(1/10) - 1
+    loss_prob = np.mean(final_prices < start_price)
+    cvar_5 = np.nanmean(final_prices[final_prices <= p5])
+
+    # 準備表格數據
+    kpi_data = [
+        ['起始股價', f'{start_price:,.2f} TWD'],
+        ['預期股價 (平均值)', f'{expected_price:,.2f} TWD'],
+        ['中位數股價 (P50)', f'{median_price:,.2f} TWD'],
+        ['預期年化報酬率', f'{expected_return:.2%}'],
+        ['中位數年化報酬率', f'{median_return:.2%}'],
+        ['90% 機率股價區間', f'{p5:,.2f} - {p95:,.2f} TWD'],
+        ['虧損機率', f'{loss_prob:.2%}'],
+        ['5% 條件風險價值 (CVaR)', f'{cvar_5:,.2f} TWD']
+    ]
+    
+    # 創建圖表
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax.set_axis_off() # 隱藏座標軸
+
+    # 繪製表格
+    table = ax.table(cellText=kpi_data, colLabels=['指標', '數值'], loc='center', cellLoc='left', colWidths=[0.4, 0.4] )
+    table.auto_set_font_size(False)
+    table.set_fontsize(14)
+    table.scale(1, 2.5)
+    
+    # 美化表格
+    for (i, j), cell in table.get_celld().items():
+        if i == 0:
+            cell.set_text_props(weight='bold', color='white')
+            cell.set_facecolor('navy')
+        if i > 0 and j == 0:
+             cell.set_text_props(weight='bold')
+        cell.set_edgecolor('lightgray')
+
+    # 在圖表下方加入文字說明
+    explanation = (
+        "說明:\n"
+        "1. **預期股價 (平均值) vs. 中位數股價**: 平均值 >> 中位數，是典型的金融資產「右偏分佈」特徵。\n"
+        "   這意味著，雖然多數結果可能接近中位數，但少數極端的高報酬情境，會將整體期望值(平均值)顯著拉高。\n"
+        "2. **年化報酬率**: 中位數報酬率代表了最可能發生的長期年化增長；而預期報酬率則納入了那些「超級牛市」的可能性。\n"
+        "3. **條件風險價值 (CVaR)**: 在最差的5%情境下，預期的平均股價為特定值，這是一個衡量極端下行風險的關鍵指標。"
+    )
+    fig.text(0.1, 0.05, explanation, ha='left', va='bottom', fontsize=10, wrap=True)
+
+    plt.title('0050 未來十年 (T+10Y) 關鍵績效指標 (KPI) 分析', fontsize=20, pad=20)
+    plt.tight_layout()
+    plt.show()
+
+if price_paths is not None:
+    analyze_and_plot_kpis(price_paths)
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Cell 4: Plot Enhanced Distribution -->
+    <button class="accordion">Cell 4: 繪製終點價格機率分佈圖 (強化版)</button>
+    <div class="panel">
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python"># =============================================================================
+# Cell 4: 繪製終點價格機率分佈圖 (強化版)
+# =============================================================================
+def plot_enhanced_distribution(price_paths):
+    """
+    繪製終點股價的機率密度直方圖，並加入更多統計標記。
+    """
+    if price_paths is None or price_paths.size == 0:
+        return
+        
+    final_prices = price_paths[:, -1]
+    final_prices = final_prices[~np.isnan(final_prices)]
+    
+    # 計算所有需要的統計量
+    p5, p25, median_price, p75, p95 = np.percentile(final_prices, [5, 25, 50, 75, 95])
+    mean_price = np.mean(final_prices)
+
+    # 建立圖表與座標軸物件
+    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    # 繪製直方圖
+    ax.hist(final_prices, bins=100, color='skyblue', alpha=0.8, label='模擬股價分佈', weights=np.ones_like(final_prices) / len(final_prices))
+    
+    # 標示統計量
+    ax.axvline(median_price, color='navy', linestyle='--', lw=2.5, label=f'中位數 (P50): {median_price:,.0f} TWD')
+    ax.axvline(mean_price, color='red', linestyle=':', lw=2.5, label=f'平均值 (期望值): {mean_price:,.0f} TWD')
+    ax.axvline(p25, color='purple', linestyle='--', lw=2, label=f'25% 百分位數 (P25): {p25:,.0f} TWD')
+    ax.axvline(p75, color='purple', linestyle='--', lw=2, label=f'75% 百分位數 (P75): {p75:,.0f} TWD')
+    
+    # 圖表美化
+    ax.set_title('未來十年終點【股價】機率分佈圖 (含統計指標)', fontsize=20, pad=20)
+    ax.set_xlabel('預測股價 (TWD)', fontsize=14)
+    ax.set_ylabel('機率 (%)', fontsize=14)
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0))
+    ax.grid(True, linestyle='--', alpha=0.6)
+    ax.legend(fontsize=12)
+    
+    # 調整X軸範圍與刻度
+    ax.set_xlim(0, p95 * 1.2)
+    ax.xaxis.set_major_locator(mticker.MultipleLocator(100))
+    ax.xaxis.set_major_formatter(mticker.StrMethodFormatter('{x:,.0f}'))
+    
+    plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
+    plt.setp(ax.get_yticklabels(), fontsize=12)
+
+    # 在圖表下方加入文字說明
+    explanation = (
+        "說明:\n"
+        "此圖顯示了十年後所有可能股價的機率分佈。\n"
+        f"- **50%的機率**，股價會落在 **{p25:,.0f} TWD** 到 **{p75:,.0f} TWD** 之間 (紫色虛線範圍)。\n"
+        f"- **最可能**的結果是中位數 **{median_price:,.0f} TWD** 附近。\n"
+        f"- 紅色虛線標示的**平均值**({mean_price:,.0f} TWD)被右側極端的高價結果拉高，顯示了潛在的高報酬可能性。"
+    )
+    fig.text(0.5, 0.05, explanation, ha='center', va='bottom', fontsize=12, wrap=True, transform=ax.transAxes)
+
+    fig.tight_layout(rect=[0, 0.15, 1, 1]) # 調整佈局以容納說明文字
+    plt.show()
+
+if price_paths is not None:
+    plot_enhanced_distribution(price_paths)
+</code></pre>
+        </div>
+    </div>
+
+    <!-- 2. 引入 Prism.js 的核心 JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <!-- 3. 引入 Prism.js 的 Python 語言元件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
+    <script>
+    // --- Accordion Logic ---
+    var acc = document.getElementsByClassName("accordion");
+    for (let i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var panel = this.nextElementSibling;
+            if (panel.style.maxHeight) {
+                panel.style.maxHeight = null;
+            } else {
+                // We add a little buffer for padding and potential scrollbars
+                panel.style.maxHeight = (panel.scrollHeight + 20) + "px";
+            }
+        });
+    }
+
+    // --- Copy to Clipboard Logic ---
+    function copyCode(button) {
+        const codeContainer = button.parentElement;
+        const code = codeContainer.querySelector('code');
+        const textToCopy = code.textContent || code.innerText;
+
+        // Use the modern clipboard API
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            button.innerText = '已複製!';
+            button.style.backgroundColor = '#28a745'; // Green for success
+            setTimeout(() => {
+                button.innerText = '複製';
+                button.style.backgroundColor = '#555c69'; // Reset color
+            }, 2000);
+        }).catch(err => {
+            console.error('無法複製文字: ', err);
+            button.innerText = '複製失敗';
+            button.style.backgroundColor = '#dc3545'; // Red for error
+             setTimeout(() => {
+                button.innerText = '複製';
+                button.style.backgroundColor = '#555c69'; // Reset color
+            }, 2000);
+        });
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 程式碼檢視器 (modeling.py)</title>
+    
+    <!-- 1. 引入 Prism.js 的 CSS 主題檔案 (Okaidia Theme) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+
+    <style>
+        /* --- General Body & Font Styles --- */
+        body {
+            background-color: #f8f9fa;
+            color: #212529;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            line-height: 1.8;
+            margin: 0;
+            padding: 2rem;
+            font-size: 16px;
+        }
+
+        h1 {
+            color: #343a40;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* --- Accordion Styles for Collapsible Sections --- */
+        .accordion {
+            background-color: #ffffff;
+            color: #444;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: 0.4s;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .accordion:after {
+            content: '+'; /* Plus sign */
+            font-size: 1.5rem;
+            color: #777;
+            font-weight: bold;
+        }
+
+        .accordion.active:after {
+            content: "−"; /* Minus sign */
+        }
+
+        .panel {
+            padding: 0;
+            background-color: #282c34; /* Match the code block background */
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* --- Code Block Wrapper --- */
+        .code-container {
+            position: relative;
+        }
+        
+        /* --- Code Block Styles (Prism will handle the rest) --- */
+        pre[class*="language-"] {
+            padding: 1.5rem;
+            margin: 0;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* --- Copy Button Styles --- */
+        .copy-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #555c69;
+            color: #e6e6e6;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.7;
+            transition: opacity 0.3s, background-color 0.3s;
+            z-index: 10;
+        }
+
+        .code-container:hover .copy-button {
+            opacity: 1;
+        }
+        
+        .copy-button:hover {
+            background-color: #6c757d;
+        }
+
+        .copy-button:active {
+            background-color: #495057;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Python 腳本分析: <code>modeling.py</code></h1>
+
+    <!-- Section 1: Constants and Settings -->
+    <button class="accordion active">1. 常數設定與函式庫匯入</button>
+    <div class="panel" style="max-height: 500px;"> <!-- Initially open -->
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python"># 引入pandas函式庫，用於資料處理與分析，尤其是其強大的DataFrame結構。
+import pandas as pd
+# 引入numpy函式庫，用於高效的數值計算。
+import numpy as np
+# 從statsmodels函式庫中引入VAR模型，用於建立向量自我迴歸模型，分析多個時間序列變數間的動態關係。
+from statsmodels.tsa.api import VAR
+# 從statsmodels函式庫中引入adfuller檢定，即擴增迪基-福勒檢定(Augmented Dickey-Fuller test)，用於檢驗時間序列的定態性(stationarity)。
+from statsmodels.tsa.stattools import adfuller
+# 引入arch函式庫，專門用於建立自迴歸條件異質變異數模型（如GARCH），主要用於分析與預測波動性。
+from arch import arch_model
+# 引入os模組，用於處理文件和目錄路徑，確保跨作業系統的相容性。
+import os
+# 引入warnings模組，用於控制警告訊息的顯示。
+import warnings
+# 匯入joblib函式庫，這是一個高效的Python物件序列化工具，常用於儲存與載入機器學習模型。
+import joblib 
+
+# 設置警告過濾器，忽略特定類別的警告，使程式輸出更為簡潔。
+# RuntimeWarning 和 FutureWarning 在statsmodels更新過程中可能出現，但不影響本次分析的核心結果。
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+# --- 1. 定義常數與設定 ---
+# 定義資料所在的目錄名稱。
+DATA_DIR = "data"
+# 定義已處理好的季度數據的完整讀取路徑。
+PROCESSED_DATA_PATH = os.path.join(DATA_DIR, "processed_quarterly_data.csv")
+# 新增：定義訓練好的VAR模型的儲存路徑與檔名。
+VAR_MODEL_PATH = os.path.join(DATA_DIR, "var_model.joblib")
+# 新增：定義訓練好的GARCH模型的儲存路徑與檔名。
+GARCH_MODEL_PATH = os.path.join(DATA_DIR, "garch_model.joblib")</code></pre>
+        </div>
+    </div>
+
+    <!-- Section 2: Data Loading and Stationarity Test -->
+    <button class="accordion">2. 數據載入與定態檢定</button>
+    <div class="panel">
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python">def load_processed_data(path: str) -> pd.DataFrame:
+    """載入由 data_loader.py 處理好的數據。"""
+    # 打印提示訊息，告知使用者正在載入的檔案路徑。
+    print(f"從 {path} 載入已處理的數據...")
+    # 檢查檔案是否存在，以避免後續程式出錯。
+    if not os.path.exists(path):
+        # 如果檔案不存在，打印錯誤訊息並引導使用者如何生成檔案。
+        print(f"[錯誤] 數據檔案未找到: {path}")
+        print("請先執行 src/data_loader.py 來生成此檔案。")
+        # 返回None表示載入失敗。
+        return None
+    
+    # 使用pandas讀取CSV檔案，並將第一欄設為索引(index_col=0)，同時將索引解析為日期格式(parse_dates=True)。
+    df = pd.read_csv(path, index_col=0, parse_dates=True)
+    # 使用asfreq('QE')確保時間序列索引的頻率被正確設定為「季度末」(Quarter End)。這對於時間序列模型至關重要。
+    df = df.asfreq('QE') 
+    # 打印成功訊息。
+    print("數據載入成功。")
+    # 返回載入的DataFrame。
+    return df
+
+def check_stationarity_and_difference(df: pd.DataFrame, significance_level=0.05):
+    """
+    對DataFrame中的所有欄位進行定態檢定 (ADF Test)。
+    若非定態，則進行差分直到變為定態為止。
+    定態性是許多時間序列模型（如VAR）的基本假設。
+    """
+    # 打印流程開始的訊息。
+    print("\n--- 開始進行定態檢定 (ADF Test) ---")
+    # 複製一份原始DataFrame以進行操作，避免修改到原始傳入的數據。
+    df_stationary = df.copy()
+    # 遍歷DataFrame中的每一個欄位（時間序列）。
+    for col in df.columns:
+        # 執行ADF檢定，adfuller函式返回一個元組，第2個元素(索引為1)是p-value。
+        # .dropna()是必要的，因為差分會產生NaN值。
+        p_value = adfuller(df_stationary[col].dropna())[1]
+        # 初始化差分次數計數器。
+        diff_count = 0
+        # 當p-value大於顯著性水準(例如0.05)時，表示我們無法拒絕虛無假設（該序列存在單位根，即非定態）。
+        while p_value > significance_level:
+            # 增加差分次數計數。
+            diff_count += 1
+            # 打印非定態的訊息，並告知正在進行差分。
+            print(f"欄位 '{col}' (p-value: {p_value:.4f}) 非定態，進行第 {diff_count} 次差分...")
+            # .diff() 進行一階差分 (y_t' = y_t - y_{t-1})。
+            df_stationary[col] = df_stationary[col].diff()
+            # 對差分後的序列重新進行ADF檢定。
+            p_value = adfuller(df_stationary[col].dropna())[1]
+        
+        # 檢查是否進行過差分。
+        if diff_count > 0:
+            # 如果有，打印最終變為定態的結果。
+            print(f"欄位 '{col}' 經過 {diff_count} 次差分後，已變為定態 (p-value: {p_value:.4f})。")
+        else:
+            # 如果沒有，表示原始序列就是定態的。
+            print(f"欄位 '{col}' 本身即為定態 (p-value: {p_value:.4f})。")
+            
+    # 返回處理後（可能經過差分）且移除了因差分產生的NaN值的DataFrame。
+    return df_stationary.dropna()</code></pre>
+        </div>
+    </div>
+
+    <!-- Section 3: Model Fitting and Saving -->
+    <button class="accordion">3. 模型擬合、儲存與主流程</button>
+    <div class="panel">
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python">def fit_var_model(macro_data: pd.DataFrame):
+    """建立、選擇最佳落後期數並擬合VAR模型。"""
+    # 打印流程開始的訊息。
+    print("\n--- 開始擬合向量自我迴歸 (VAR) 模型 ---")
+    # 使用定態的宏觀經濟數據初始化VAR模型。
+    model = VAR(macro_data)
+    try:
+        # 嘗試使用包含截距項('c')的標準模型來選擇最佳落後期數。
+        print("正在嘗試使用標準模型 (含截距項)...")
+        # .select_order()會根據多種資訊準則(AIC, BIC, FPE, HQIC)計算不同落後期數下的值。
+        selected_orders = model.select_order(maxlags=8, trend='c')
+        # 設定趨勢項參數為 'c' (constant/intercept)。
+        trend_param = 'c'
+    except ValueError as e:
+        # 捕捉可能發生的ValueError，特別是當數據中存在區間常數列時。
+        if 'contains one or more constant columns' in str(e):
+            # 這種情況會導致共線性問題，模型無法估計。
+            print("[警告] 偵測到區間常數列問題，模型自動調整。")
+            # 程式會自動切換到不含截距項('n' for none)的模型來解決這個問題。
+            print("         為避免共線性問題，將切換至不含截距項的模型 (trend='n')...")
+            selected_orders = model.select_order(maxlags=8, trend='n')
+            trend_param = 'n'
+        else:
+            # 如果是其他未預期的ValueError，則重新拋出異常。
+            raise e
+
+    # 根據赤池資訊準則(AIC)選擇最佳的落後期數。AIC是在模型複雜度與擬合優度之間取得平衡的常用指標。
+    optimal_lag = selected_orders.aic
+    print(f"VAR模型最佳落後期數 (AIC): {optimal_lag}")
+    # 使用選擇的最佳落後期數和趨勢項參數來擬合模型。
+    results = model.fit(optimal_lag, trend=trend_param)
+    # 打印模型擬合結果的詳細摘要。
+    print("\n--- VAR 模型擬合結果摘要 ---")
+    print(results.summary())
+    # 返回擬合好的模型結果物件。
+    return results
+
+def fit_garch_model(returns: pd.Series, exog_vars: pd.DataFrame):
+    """建立並擬合一個將宏觀因子作為外生變數的GARCH(1,1)模型。"""
+    # 打印流程開始的訊息。
+    print("\n--- 開始擬合擴展GARCH(1,1)模型 ---")
+    # GARCH模型對數據尺度敏感，將報酬率乘以100轉換為百分比形式，有助於模型優化過程的收斂。
+    scaled_returns = returns * 100
+    # 將外生變數(宏觀因子)的索引與報酬率的索引對齊，並移除無法對齊的行。這是確保數據同步的關鍵步驟。
+    aligned_exog = exog_vars.reindex(scaled_returns.index).dropna()
+    # 根據對齊後的外生變數，再次對齊報酬率數據，確保兩者有完全相同的索引。
+    aligned_returns = scaled_returns.reindex(aligned_exog.index)
+    # 初始化ARCH模型。
+    model = arch_model(aligned_returns,      # y: 因變數，此處為調整後的季度報酬率。
+                       x=aligned_exog,       # x: 外生變數，此處為定態的宏觀經濟指標。
+                       vol='Garch', p=1, o=0, q=1, # vol: 波動率模型設定，此處為標準的GARCH(1,1)模型。
+                       dist='t')             # dist: 殘差的分布假設，'t'表示學生t分布，能更好地捕捉金融時間序列的厚尾特性。
+    # 擬合GARCH模型。update_freq控制輸出訊息的頻率，disp='off'關閉擬合過程的詳細輸出。
+    results = model.fit(update_freq=5, disp='off')
+    # 打印模型擬合結果的詳細摘要。
+    print("\n--- GARCH 模型擬合結果摘要 ---")
+    print(results.summary())
+    # 返回擬合好的模型結果物件。
+    return results
+
+# 確保只有當這個腳本被直接執行時，以下的程式碼才會運行。
+if __name__ == '__main__':
+    # 載入預處理好的數據。
+    data = load_processed_data(PROCESSED_DATA_PATH)
+    # 檢查數據是否成功載入。
+    if data is not None:
+        # 定義哪些欄位屬於宏觀經濟變數。
+        macro_columns = ['gdp_growth', 'interest_rate', 'business_index', 'cpi_yoy']
+        # 從主DataFrame中選取宏觀經濟數據。
+        macro_data = data[macro_columns]
+        # 對宏觀數據進行定態檢定與必要的差分處理。
+        macro_data_stationary = check_stationarity_and_difference(macro_data)
+        
+        # 使用定態的宏觀數據擬合VAR模型。
+        var_results = fit_var_model(macro_data_stationary)
+        print("\n[成功] VAR模型已成功建立。")
+        
+        # 提取季報酬率作為GARCH模型的因變數。
+        returns = data['quarterly_return']
+        # 使用報酬率和定態的宏觀數據作為外生變數來擬合GARCH模型。
+        garch_results = fit_garch_model(returns, macro_data_stationary)
+        print("\n[成功] GARCH模型已成功建立。")
+
+        # --- 新增：儲存已訓練好的模型 ---
+        # 打印流程開始的訊息。
+        print("\n--- 正在儲存模型 ---")
+        try:
+            # 使用joblib.dump將訓練好的VAR模型結果物件寫入檔案。
+            joblib.dump(var_results, VAR_MODEL_PATH)
+            print(f"[成功] VAR模型已儲存至: {VAR_MODEL_PATH}")
+            # 使用joblib.dump將訓練好的GARCH模型結果物件寫入檔案。
+            joblib.dump(garch_results, GARCH_MODEL_PATH)
+            print(f"[成功] GARCH模型已儲存至: {GARCH_MODEL_PATH}")
+        except Exception as e:
+            # 捕捉並打印在儲存過程中可能發生的任何錯誤。
+            print(f"[錯誤] 儲存模型失敗: {e}")
+
+        # 告知使用者模型建構階段全部完成。
+        print("\n模型建構階段完成！")
+</code></pre>
+        </div>
+    </div>
+
+    <!-- 2. 引入 Prism.js 的核心 JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <!-- 3. 引入 Prism.js 的 Python 語言元件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
+    <script>
+    // --- Accordion Logic ---
+    var acc = document.getElementsByClassName("accordion");
+    for (let i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var panel = this.nextElementSibling;
+            if (panel.style.maxHeight) {
+                panel.style.maxHeight = null;
+            } else {
+                // We add a little buffer for padding and potential scrollbars
+                panel.style.maxHeight = (panel.scrollHeight + 20) + "px";
+            }
+        });
+    }
+
+    // --- Copy to Clipboard Logic ---
+    function copyCode(button) {
+        const codeContainer = button.parentElement;
+        const code = codeContainer.querySelector('code');
+        const textToCopy = code.textContent || code.innerText;
+
+        // Use the modern clipboard API
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            button.innerText = '已複製!';
+            button.style.backgroundColor = '#28a745'; // Green for success
+            setTimeout(() => {
+                button.innerText = '複製';
+                button.style.backgroundColor = '#555c69'; // Reset color
+            }, 2000);
+        }).catch(err => {
+            console.error('無法複製文字: ', err);
+            button.innerText = '複製失敗';
+            button.style.backgroundColor = '#dc3545'; // Red for error
+             setTimeout(() => {
+                button.innerText = '複製';
+                button.style.backgroundColor = '#555c69'; // Reset color
+            }, 2000);
+        });
+    }
+    </script>
+</body>
+</html>

@@ -150,11 +150,11 @@
         <section id="implementation">
             <h2>第三章：實作步驟、遇到的困難與解決方案</h2>
             <p>這部分忠實記錄了我們如何從一個理想化的藍圖，在真實世界數據的重重考驗下，最終打造出一個穩健、可用的系統。</p>
-            <h3>階段一：數據工程的漫漫長路 (<code>manual_data_processor.py</code>, <code>data_loader.py</code>)</h3>
+            <h3>階段一：數據工程的漫漫長路 (<code><a href="manual_data_processor_py.html">manual_data_processor.py</a></code>, <code><a href="data_loader_py.html">data_loader.py</a></code>)</h3>
             <p>此階段投入最多心力。我們從最初嘗試「全自動」下載，因政府開放資料平台的不穩定性，果斷轉向更穩健的<span class="highlight">「半自動化」</span>工作流程。核心挑戰在於處理格式混亂的真實世界數據，透過多次迭代<code>manual_data_processor.py</code>，開發了智慧型標頭定位、強效解析、數據重塑與時間序列校正等功能，最終並透過<code>outer join</code>策略解決了各數據源時間範圍不一致的問題。</p>
-            <h3>階段二：模型建構的穩健性 (<code>modeling.py</code>)</h3>
+            <h3>階段二：模型建構的穩健性 (<code><a href="modeling_py.html">modeling.py</a></code>)</h3>
             <p>為解決利率數據在特定區間不變所引發的「共線性」問題，我們採用了專業的<span class="highlight">「錯誤驅動開發」</span>策略。在<code>fit_var_model</code>函式中，使用<code>try...except</code>區塊，讓程式能先嘗試標準模型，若捕捉到特定錯誤，則自動切換至不含截距項的備援模型，使模型能智慧地適應數據特性。</p>
-            <h3>階段三：模擬執行的精準度 (<code>simulation.py</code>)</h3>
+            <h3>階段三：模擬執行的精準度 (<code><a href="simulation_py.html">simulation.py</a></code>)</h3>
             <p>我們遇到了API版本變更與時間尺度轉換的陷阱。前者透過<span class="highlight">手動迭代GARCH(1,1)核心公式</span>來解決，徹底擺脫對高階API的依賴。後者則是在模擬迴圈中加入了關鍵的<span class="highlight">尺度轉換</span>步驟，將基於季度數據訓練出的模型參數，在數學上正確地轉換為每日的等效值，從根本上解決了數值溢位(NaN)與股價不合理的問題。</p>
         </section>
         
@@ -168,7 +168,7 @@
                 <li><strong>數據載入與合併</strong>：執行 <code>python src/data_loader.py</code>，將所有數據源合併，生成最終的 <code>processed_quarterly_data.csv</code>。</li>
                 <li><strong>模型訓練與儲存</strong>：執行 <code>python src/modeling.py</code>，建立並儲存VAR與GARCH模型。</li>
                 <li><strong>執行模擬</strong>：執行 <code>python src/simulation.py</code>，生成 <code>simulation_price_paths.npy</code>。</li>
-                <li><strong>結果分析與視覺化</strong>：在Jupyter環境中，執行 <code>notebooks/analysis.ipynb</code> 的所有儲存格，以檢視最終成果。</li>
+                <li><strong>結果分析與視覺化</strong>：在Jupyter環境中，執行 <code><a href="analysis_py.html">notebooks/analysis.ipynb</a></code> 的所有儲存格，以檢視最終成果。</li>
             </ol>
         </section>
 

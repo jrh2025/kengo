@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 程式碼檢視器 (simulation.py)</title>
+    
+    <!-- 1. 引入 Prism.js 的 CSS 主題檔案 (Okaidia Theme) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+
+    <style>
+        /* --- General Body & Font Styles --- */
+        body {
+            background-color: #f8f9fa;
+            color: #212529;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            line-height: 1.8;
+            margin: 0;
+            padding: 2rem;
+            font-size: 16px;
+        }
+
+        h1 {
+            color: #343a40;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* --- Accordion Styles for Collapsible Sections --- */
+        .accordion {
+            background-color: #ffffff;
+            color: #444;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: 0.4s;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .accordion:after {
+            content: '+'; /* Plus sign */
+            font-size: 1.5rem;
+            color: #777;
+            font-weight: bold;
+        }
+
+        .accordion.active:after {
+            content: "−"; /* Minus sign */
+        }
+
+        .panel {
+            padding: 0;
+            background-color: #282c34; /* Match the code block background */
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* --- Code Block Wrapper --- */
+        .code-container {
+            position: relative;
+        }
+        
+        /* --- Code Block Styles (Prism will handle the rest) --- */
+        pre[class*="language-"] {
+            padding: 1.5rem;
+            margin: 0;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* --- Copy Button Styles --- */
+        .copy-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #555c69;
+            color: #e6e6e6;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.7;
+            transition: opacity 0.3s, background-color 0.3s;
+            z-index: 10;
+        }
+
+        .code-container:hover .copy-button {
+            opacity: 1;
+        }
+        
+        .copy-button:hover {
+            background-color: #6c757d;
+        }
+
+        .copy-button:active {
+            background-color: #495057;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Python 腳本分析: <code>simulation.py</code></h1>
+
+    <!-- Section 1: Constants and Settings -->
+    <button class="accordion active">1. 常數設定與函式庫匯入</button>
+    <div class="panel" style="max-height: 500px;"> <!-- Initially open -->
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python"># 引入pandas函式庫，用於資料處理，特別是讀取CSV與處理時間序列。
+import pandas as pd
+# 引入numpy函式庫，用於高效的數值計算與陣列操作，是模擬的核心工具。
+import numpy as np
+# 引入joblib函式庫，用於載入先前訓練並儲存的模型物件。
+import joblib
+# 引入os模組，用於處理文件和目錄路徑。
+import os
+# 引入tqdm函式庫，用於在執行迴圈時顯示一個視覺化的進度條，提升使用者體驗。
+from tqdm import tqdm
+# 從statsmodels函式庫中引入adfuller檢定，用於資料的定態性檢查。
+from statsmodels.tsa.stattools import adfuller
+
+# --- 1. 定義常數與設定 ---
+# 資料與模型所在的目錄。
+DATA_DIR = "data"
+# 訓練好的VAR模型的檔案路徑。
+VAR_MODEL_PATH = os.path.join(DATA_DIR, "var_model.joblib")
+# 訓練好的GARCH模型的檔案路徑。
+GARCH_MODEL_PATH = os.path.join(DATA_DIR, "garch_model.joblib")
+# 處理完成的歷史數據檔案路徑，將作為模擬的起點。
+PROCESSED_DATA_PATH = os.path.join(DATA_DIR, "processed_quarterly_data.csv")
+# 最終模擬結果（價格路徑）的儲存路徑。
+SIMULATION_OUTPUT_PATH = os.path.join(DATA_DIR, "simulation_price_paths.npy")
+
+# --- 模擬參數設定 ---
+# N_PATHS: 蒙地卡羅模擬要生成的總路徑數量。
+N_PATHS = 5000
+# HORIZON_YEARS: 模擬的未來時間長度（以年為單位）。
+HORIZON_YEARS = 10
+# TRADING_DAYS_PER_QUARTER: 假設每季度的平均交易日數，用於將季度波動率轉換為日波動率。
+TRADING_DAYS_PER_QUARTER = 66</code></pre>
+        </div>
+    </div>
+
+    <!-- Section 2: Helper Functions -->
+    <button class="accordion">2. 輔助函式 (模型載入與定態檢定)</button>
+    <div class="panel">
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python"># --- 2. 輔助函式 ---
+
+def load_models_and_data():
+    """載入已儲存的模型（VAR, GARCH）與最新的歷史數據。"""
+    # 打印流程提示。
+    print("--- 載入模型與數據 ---")
+    # 使用joblib.load反序列化（載入）儲存的VAR模型結果物件。
+    var_results = joblib.load(VAR_MODEL_PATH)
+    # 載入儲存的GARCH模型結果物件。
+    garch_results = joblib.load(GARCH_MODEL_PATH)
+    # 載入歷史數據，並將第一欄設為日期索引。
+    data = pd.read_csv(PROCESSED_DATA_PATH, index_col=0, parse_dates=True)
+    # 打印成功訊息。
+    print("模型與數據載入成功。")
+    # 返回載入的模型和數據。
+    return var_results, garch_results, data
+
+def check_stationarity_and_difference(df: pd.DataFrame, significance_level=0.05):
+    """
+    對DataFrame中的所有欄位進行定態檢定與差分轉換。
+    此函式與modeling.py中的功能相同，確保用於模擬起點的數據與模型訓練時的數據結構一致。
+    """
+    # 打印流程提示。
+    print("\n--- 準備模擬起點：進行定態轉換 ---")
+    # 複製DataFrame以避免修改原始數據。
+    df_stationary = df.copy()
+    # 遍歷所有欄位。
+    for col in df.columns:
+        # 執行ADF檢定。
+        p_value = adfuller(df_stationary[col].dropna())[1]
+        diff_count = 0
+        # 如果非定態，則重複進行差分直到定態為止。
+        while p_value > significance_level:
+            diff_count += 1
+            df_stationary[col] = df_stationary[col].diff()
+            p_value = adfuller(df_stationary[col].dropna())[1]
+    # 返回轉換為定態且移除了NaN值的數據。
+    return df_stationary.dropna()</code></pre>
+        </div>
+    </div>
+
+    <!-- Section 3: Simulation Logic -->
+    <button class="accordion">3. 模擬邏輯 (VAR 與 GARCH)</button>
+    <div class="panel">
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python">def simulate_var_paths(var_results, n_paths, horizon_quarters, initial_values):
+    """
+    使用已擬合的VAR模型，生成未來宏觀經濟因子的多條可能路徑。
+    這是蒙地卡羅模擬的第一步。
+    """
+    # 打印流程提示。
+    print(f"--- 開始模擬 {n_paths} 條宏觀經濟路徑 ---")
+    # n_vars: 變數數量。
+    n_vars = var_results.neqs
+    # lags: 模型的落後期數。
+    lags = var_results.k_ar
+    # 初始化一個三維陣列來儲存模擬結果: (路徑數, 時間步長, 變數數)。
+    sim_paths = np.zeros((n_paths, horizon_quarters, n_vars))
+    
+    # 從模型結果中提取所需參數。
+    coefs = var_results.coefs  # VAR模型的係數矩陣。
+    # 提取截距項，並處理可能不存在截距項的情況。
+    intercept = var_results.intercept if hasattr(var_results, 'intercept') and var_results.intercept is not None else np.zeros(n_vars)
+    sigma_u = var_results.sigma_u # 殘差的共變異數矩陣。
+
+    # 外層迴圈：遍歷每一條要模擬的路徑。
+    for i in tqdm(range(n_paths), desc="模擬宏觀路徑"):
+        # history: 用於儲存每一步模擬的歷史值，以預測下一步。起始值為已知的歷史數據。
+        history = initial_values.copy()
+        # 內層迴圈：在時間維度上進行預測。
+        for t in range(horizon_quarters):
+            # VAR模型預測公式: y_t = c + A_1*y_{t-1} + ... + A_p*y_{t-p} + u_t
+            # 計算確定性部分 (c + A_1*y_{t-1} + ...)。
+            y_forecast = intercept.copy()
+            for p in range(lags):
+                y_forecast += np.dot(coefs[p], history[-(p+1)])
+            
+            # 產生隨機衝擊項 u_t。從一個均值為0，共變異數矩陣為sigma_u的多變量常態分佈中抽樣。
+            error = np.random.multivariate_normal(np.zeros(n_vars), sigma_u)
+            # 模擬值 = 確定性預測 + 隨機衝擊。
+            y_simulated = y_forecast + error
+            
+            # 將該時間點的模擬值存入結果陣列。
+            sim_paths[i, t, :] = y_simulated
+            # 將模擬出的新值加入歷史記錄中，用於下一步的預測。
+            history = np.vstack([history, y_simulated])
+            
+    # 返回所有模擬的宏觀經濟路徑。
+    return sim_paths
+
+def simulate_0050_paths(garch_results, var_sim_paths, initial_price, n_paths, horizon_quarters):
+    """
+    根據GARCH模型參數，生成0050的價格路徑。
+    此處採用手動迭代GARCH公式的方式進行模擬，因為GARCH模型本身不包含外生宏觀變數。
+    """
+    # 打印流程提示。
+    print(f"--- 開始模擬 {n_paths} 條0050價格路徑 ---")
+    # 計算總共需要模擬的「日」數。
+    n_steps_daily = horizon_quarters * TRADING_DAYS_PER_QUARTER
+    # 初始化價格路徑陣列，第一欄(t=0)設定為初始價格。
+    price_paths = np.zeros((n_paths, n_steps_daily + 1))
+    price_paths[:, 0] = initial_price
+
+    # 從擬合好的GARCH模型中提取參數。
+    garch_params = garch_results.params
+    # 提取季度的平均報酬率(mu)，並從百分比轉換回原始尺度。如果模型沒有mu，則設為0。
+    quarterly_mu = garch_params['mu'] / 100 if 'mu' in garch_params else 0
+    # 將季度平均報酬率轉換為每日平均報酬率。
+    daily_mu = quarterly_mu / TRADING_DAYS_PER_QUARTER
+    # 提取學生t分布的自由度參數(nu)，若不存在則設為預設值3。
+    nu = garch_params['nu'] if 'nu' in garch_params else 3
+    
+    # 提取GARCH(1,1)模型的波動性方程式參數，並進行尺度轉換（因模型訓練時報酬率放大了100倍）。
+    omega = garch_params['omega'] / (100**2)
+    alpha = garch_params['alpha[1]'] if 'alpha[1]' in garch_params else 0
+    beta = garch_params['beta[1]'] if 'beta[1]' in garch_params else 0
+
+    # 提示使用者，此處的GARCH模擬邏輯是獨立的，並未使用VAR模擬出的宏觀路徑。
+    print("   (偵測到GARCH模型不含外生變數，將使用手動迭代GARCH進行預測)")
+
+    # 遍歷每一條要模擬的路徑。
+    for i in tqdm(range(n_paths), desc="模擬價格路徑"):
+        current_price = initial_price
+        
+        # 獲取GARCH模型在歷史數據上的最後一期條件波動率與殘差，作為模擬的起點。
+        last_cond_vol = garch_results.conditional_volatility.iloc[-1] / 100
+        last_resid = garch_results.resid.iloc[-1] / 100
+        
+        # 計算起點的條件變異數與殘差平方。
+        last_vol_sq = last_cond_vol**2
+        last_resid_sq = last_resid**2
+
+        # 外層迴圈：遍歷每個季度。
+        for q in range(horizon_quarters):
+            # 內層迴圈：在每個季度中，遍歷每一天。
+            for d in range(TRADING_DAYS_PER_QUARTER):
+                # 手動迭代GARCH(1,1)變異數預測公式: σ_t^2 = ω + α * ε_{t-1}^2 + β * σ_{t-1}^2
+                # 此處計算的是「季度」尺度的條件變異數。
+                quarterly_vol_sq = omega + alpha * last_resid_sq + beta * last_vol_sq
+                
+                # 確保變異數為正。
+                if quarterly_vol_sq <= 0:
+                    quarterly_vol_sq = 1e-8
+                
+                # 關鍵轉換：將「季度」變異數轉換為「每日」標準差（波動率）。
+                # 假設變異數與時間成正比，所以除以每季交易日數。
+                daily_vol = np.sqrt(quarterly_vol_sq / TRADING_DAYS_PER_QUARTER)
+                
+                # 從標準t分布中抽樣一個隨機數，再乘以每日波動率，得到當日的隨機衝擊。
+                shock = np.random.standard_t(nu) * daily_vol
+                # 計算當日的對數報酬率 = 平均報酬率 + 隨機衝擊。
+                daily_return = daily_mu + shock
+                
+                # 限制每日報酬率的極端值，避免價格出現不切實際的跳躍。
+                daily_return = np.clip(daily_return, -0.5, 0.5)
+                
+                # 根據對數報酬率更新價格: P_t = P_{t-1} * exp(r_t)。
+                current_price *= np.exp(daily_return)
+                # 計算當前在整個模擬時間軸上的位置。
+                current_step = q * TRADING_DAYS_PER_QUARTER + d + 1
+                # 儲存模擬出的新價格。
+                price_paths[i, current_step] = current_price
+            
+                # 更新下一個時間點所需的變數，為下一次迭代做準備。
+                # 注意：GARCH公式基於季度尺度，因此需將日報酬率還原為等效的季度殘差平方。
+                last_resid_sq = (daily_return * np.sqrt(TRADING_DAYS_PER_QUARTER))**2
+                # 更新上一期的條件變異數。
+                last_vol_sq = quarterly_vol_sq
+                
+    # 返回所有模擬的價格路徑。
+    return price_paths</code></pre>
+        </div>
+    </div>
+
+    <!-- Section 4: Main Execution Flow -->
+    <button class="accordion">4. 主執行流程</button>
+    <div class="panel">
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python"># --- 3. 主執行流程 ---
+
+# 當此腳本被直接執行時，運行以下程式碼。
+if __name__ == '__main__':
+    # 載入模型和歷史數據。
+    var_results, garch_results, data = load_models_and_data()
+    
+    # 準備VAR和GARCH模擬所需的初始值。
+    macro_columns = ['gdp_growth', 'interest_rate', 'business_index', 'cpi_yoy']
+    # 將最新的宏觀數據轉換為定態，以符合VAR模型輸入要求。
+    macro_data_stationary = check_stationarity_and_difference(data[macro_columns])
+    # 提取VAR模型所需的最後幾期歷史數據作為模擬起點 (數量等於模型落後期數)。
+    initial_values_var = macro_data_stationary.values[-var_results.k_ar:]
+    # 提取最新的收盤價作為價格模擬的起點。
+    initial_price_0050 = data['close_price'].iloc[-1]
+    
+    # 計算總共需要模擬的季度數。
+    horizon_quarters = HORIZON_YEARS * 4
+    # 執行宏觀經濟路徑的模擬。
+    var_sims = simulate_var_paths(var_results, N_PATHS, horizon_quarters, initial_values_var)
+    
+    # 執行0050價格路徑的模擬。
+    price_sims = simulate_0050_paths(garch_results, var_sims, initial_price_0050, N_PATHS, horizon_quarters)
+    
+    # 打印流程提示。
+    print("\n--- 正在儲存模擬結果 ---")
+    try:
+        # 使用numpy.save將模擬結果（一個大型數值陣列）高效地儲存為.npy檔案。
+        np.save(SIMULATION_OUTPUT_PATH, price_sims)
+        print(f"[成功] {N_PATHS} 條價格路徑已儲存至: {SIMULATION_OUTPUT_PATH}")
+        print(f"儲存的陣列維度為: {price_sims.shape}")
+    except Exception as e:
+        # 捕捉並打印儲存過程中可能發生的錯誤。
+        print(f"[錯誤] 儲存模擬結果失敗: {e}")
+
+    # 打印最終完成訊息。
+    print("\n蒙地卡羅模擬階段完成！")</code></pre>
+        </div>
+    </div>
+
+    <!-- 2. 引入 Prism.js 的核心 JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <!-- 3. 引入 Prism.js 的 Python 語言元件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
+    <script>
+    // --- Accordion Logic ---
+    var acc = document.getElementsByClassName("accordion");
+    for (let i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var panel = this.nextElementSibling;
+            if (panel.style.maxHeight) {
+                panel.style.maxHeight = null;
+            } else {
+                // We add a little buffer for padding and potential scrollbars
+                panel.style.maxHeight = (panel.scrollHeight + 20) + "px";
+            }
+        });
+    }
+
+    // --- Copy to Clipboard Logic ---
+    function copyCode(button) {
+        const codeContainer = button.parentElement;
+        const code = codeContainer.querySelector('code');
+        const textToCopy = code.textContent || code.innerText;
+
+        // Use the modern clipboard API
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            button.innerText = '已複製!';
+            button.style.backgroundColor = '#28a745'; // Green for success
+            setTimeout(() => {
+                button.innerText = '複製';
+                button.style.backgroundColor = '#555c69'; // Reset color
+            }, 2000);
+        }).catch(err => {
+            console.error('無法複製文字: ', err);
+            button.innerText = '複製失敗';
+            button.style.backgroundColor = '#dc3545'; // Red for error
+             setTimeout(() => {
+                button.innerText = '複製';
+                button.style.backgroundColor = '#555c69'; // Reset color
+            }, 2000);
+        });
+    }
+    </script>
+</body>
+</html>

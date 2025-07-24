@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 程式碼檢視器 (data_loader.py) </title>
+    
+    <!-- 1. 引入 Prism.js 的 CSS 主題檔案 (Okaidia Theme) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+
+    <style>
+        /* --- General Body & Font Styles --- */
+        body {
+            background-color: #f8f9fa;
+            color: #212529;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            line-height: 1.8;
+            margin: 0;
+            padding: 2rem;
+            font-size: 16px;
+        }
+
+        h1 {
+            color: #343a40;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* --- Accordion Styles for Collapsible Sections --- */
+        .accordion {
+            background-color: #ffffff;
+            color: #444;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: 0.4s;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .accordion:after {
+            content: '+'; /* Plus sign */
+            font-size: 1.5rem;
+            color: #777;
+            font-weight: bold;
+        }
+
+        .accordion.active:after {
+            content: "−"; /* Minus sign */
+        }
+
+        .panel {
+            padding: 0;
+            background-color: #282c34; /* Match the code block background */
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* --- Code Block Wrapper --- */
+        .code-container {
+            position: relative;
+        }
+        
+        /* --- Code Block Styles (Prism will handle the rest) --- */
+        pre[class*="language-"] {
+            padding: 1.5rem;
+            margin: 0;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* --- Copy Button Styles --- */
+        .copy-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #555c69;
+            color: #e6e6e6;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.7;
+            transition: opacity 0.3s, background-color 0.3s;
+            z-index: 10;
+        }
+
+        .code-container:hover .copy-button {
+            opacity: 1;
+        }
+        
+        .copy-button:hover {
+            background-color: #6c757d;
+        }
+
+        .copy-button:active {
+            background-color: #495057;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Python 腳本分析: <code>data_loader.py</code></h1>
+
+    <!-- Section 1: Constants and Settings -->
+    <button class="accordion active">1. 常數與設定</button>
+    <div class="panel" style="max-height: 500px;"> <!-- Initially open -->
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python"># 引入pandas函式庫，用於資料處理與分析，特別是其強大的DataFrame結構。
+import pandas as pd
+# 引入numpy函式庫，用於進行高效的數值計算，如此處的對數運算。
+import numpy as np
+# 引入yfinance函式庫，這是一個專門用來從Yahoo Finance下載金融市場數據的工具。
+import yfinance as yf
+# 從datetime模組中引入date類，用於獲取當前日期。
+from datetime import date
+# 引入os模組，用於處理文件和目錄路徑，確保跨作業系統的相容性。
+import os
+
+# --- 1. 定義常數與設定 ---
+
+# 設定資料下載的起始日期，格式為 'YYYY-MM-DD'。
+START_DATE = "2003-07-01"
+# 設定資料下載的結束日期，此處使用程式執行的當前日期。
+END_DATE = date.today().strftime('%Y-%m-%d')
+# 設定目標金融商品的代碼，此處為台灣50 ETF (0050.TW)。
+TICKER_0050 = "0050.TW"
+# 設定儲存原始數據與處理後數據的目錄名稱。
+OUTPUT_DIR = "data"
+# 定義最終處理完成的季度數據檔案的完整路徑。
+PROCESSED_DATA_PATH = os.path.join(OUTPUT_DIR, "processed_quarterly_data.csv")
+
+# 定義一個字典，存放宏觀經濟「季度」數據的名稱與其對應的CSV檔案路徑。
+MACRO_QUARTERLY_FILES = {
+    'gdp_growth': os.path.join(OUTPUT_DIR, 'taiwan_gdp_quarterly.csv'),
+}
+# 定義一個字典，存放宏觀經濟「月度」數據的名稱與其對應的CSV檔案路徑。
+MACRO_MONTHLY_FILES = {
+    'interest_rate': os.path.join(OUTPUT_DIR, 'taiwan_interest_rate_monthly.csv'),
+    'business_index': os.path.join(OUTPUT_DIR, 'taiwan_business_index_monthly.csv'),
+    'cpi_yoy': os.path.join(OUTPUT_DIR, 'taiwan_cpi_yoy_monthly.csv')
+}</code></pre>
+        </div>
+    </div>
+
+    <!-- Section 2: Data Acquisition and Loading -->
+    <button class="accordion">2. 數據獲取與載入函式</button>
+    <div class="panel">
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python">def get_0050_data(ticker: str, start: str, end: str) -> pd.DataFrame:
+    """
+    使用 yfinance 函式庫下載0050的歷史股價資料。
+    
+    Args:
+        ticker (str): 股票代碼 (例如 "0050.TW")。
+        start (str): 開始日期 (格式 'YYYY-MM-DD')。
+        end (str): 結束日期 (格式 'YYYY-MM-DD')。
+        
+    Returns:
+        pd.DataFrame: 包含 'Close' (收盤價) 和 'log_return' (對數報酬率) 的DataFrame。
+                       如果下載失敗，則返回一個空的DataFrame。
+    """
+    # 打印資訊，告知使用者正在執行的操作。
+    print(f"從yfinance獲取 {ticker} 數據，日期範圍: {start} 至 {end}...")
+    # 使用yfinance的download函式下載指定時間範圍的股價資料。
+    # auto_adjust=True 會自動調整股價，處理股票分割和股利發放等情況。
+    df = yf.download(ticker, start=start, end=end, auto_adjust=True)
+    
+    # 打印除錯資訊區塊的標題。
+    print("\n--- 除錯資訊：檢查 yfinance 原始下載資料 ---")
+    # 檢查下載的DataFrame是否為空。
+    if df.empty:
+        # 如果為空，打印警告訊息。
+        print("[警告] yfinance 未下載到任何資料。")
+        # 返回一個空的DataFrame，以利後續流程進行錯誤處理。
+        return pd.DataFrame()
+    else:
+        # 如果成功下載，打印其維度(行數, 列數)和時間範圍。
+        print(f"  - 原始維度: {df.shape}")
+        print(f"  - 原始時間範圍: {df.index.min().strftime('%Y-%m-%d')} 至 {df.index.max().strftime('%Y-%m-%d')}")
+    # 打印除錯資訊區塊的結束線。
+    print("-------------------------------------------\n")
+
+    # 計算對數報酬率。這是金融分析中常用的指標，因其具有良好的數學特性（如時間可加性）。
+    # 計算方式為 ln(今日收盤價 / 昨日收盤價)。 .shift(1) 用於取得前一日的資料。
+    df['log_return'] = np.log(df['Close'] / df['Close'].shift(1))
+    # 告知使用者對數報酬率已計算完成。
+    print("數據獲取完成，已計算對數報酬率。")
+
+    # 關鍵修正：採用更穩健的順序，先建立新的DataFrame，再移除空值
+    # 這可以避免在某些pandas版本中，因鏈式操作(chaining)或inplace操作引發的KeyError
+    # 選擇我們需要的 'Close' 和 'log_return' 欄位，並使用 .copy() 創建一個新的獨立DataFrame。
+    df_processed = df[['Close', 'log_return']].copy()
+    # 移除包含任何NaN（非數值）的行。第一天的對數報酬率會是NaN，因為沒有前一天的資料。
+    df_processed.dropna(inplace=True)
+    
+    # 返回處理完成的DataFrame。
+    return df_processed
+
+def load_macro_data(files_dict: dict) -> dict:
+    """
+    從本地CSV檔案載入宏觀經濟數據。
+    
+    Args:
+        files_dict (dict): 一個鍵為數據名稱，值為CSV檔案路徑的字典。
+        
+    Returns:
+        dict: 一個鍵為數據名稱，值為對應DataFrame的字典。
+              如果任何檔案不存在，則返回 None。
+    """
+    # 初始化一個空字典，用來存放載入的DataFrame。
+    dfs = {}
+    # 打印資訊，告知使用者正在載入宏觀數據。
+    print("載入宏觀經濟數據...")
+    # 遍歷傳入的檔案字典。
+    for name, path in files_dict.items():
+        try:
+            # 檢查檔案路徑是否存在。
+            if not os.path.exists(path):
+                # 如果檔案不存在，則拋出 FileNotFoundError 異常。
+                raise FileNotFoundError
+            # 使用pandas的read_csv函式讀取CSV檔案。
+            # index_col=0 指定第一欄為索引。
+            # parse_dates=True 嘗試將索引解析為日期時間格式。
+            df = pd.read_csv(path, index_col=0, parse_dates=True)
+            # 打印成功載入的訊息。
+            print(f"    '{name}' 數據已從 {path} 載入。")
+            # 將載入的DataFrame存入字典中。
+            dfs[name] = df
+        except FileNotFoundError:
+            # 捕捉檔案未找到的錯誤。
+            print(f"[錯誤] 檔案未找到: {path}。")
+            # 提示使用者需要先運行另一個腳本來生成必要的數據檔案。
+            print("  -> 請先執行 src/manual_data_processor.py 來生成此檔案。")
+            # 返回None，表示數據載入失敗。
+            return None
+    # 如果所有檔案都成功載入，返回包含所有DataFrame的字典。
+    return dfs
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Section 3: Data Merging and Main Logic -->
+    <button class="accordion">3. 數據合併與主流程</button>
+    <div class="panel">
+        <div class="code-container">
+            <button class="copy-button" onclick="copyCode(this)">複製</button>
+            <pre><code class="language-python">def align_and_merge_data(df_0050: pd.DataFrame, monthly_dfs: dict, quarterly_dfs: dict) -> pd.DataFrame:
+    """
+    將不同頻率的數據統一為季度數據並使用強健的策略合併。
+    這個函式是整個資料準備流程的核心，它處理了時間序列的降頻(resampling)和合併。
+    
+    Args:
+        df_0050 (pd.DataFrame): 包含0050日資料的DataFrame。
+        monthly_dfs (dict): 包含月度宏觀數據DataFrame的字典。
+        quarterly_dfs (dict): 包含季度宏觀數據DataFrame的字典。
+        
+    Returns:
+        pd.DataFrame: 一個合併且對齊所有來源的季度數據DataFrame。
+    """
+    # 打印流程開始的訊息。
+    print("開始進行數據對齊與合併...")
+    
+    # 將0050的日對數報酬率，以季度末('QE')為單位進行重採樣(resample)，並加總(sum)得到季度總報酬率。
+    quarterly_return = df_0050['log_return'].resample('QE').sum()
+    # 同樣以季度末為單位，計算季度內日對數報酬率的標準差(std)，作為波動率的代理變數。
+    volatility = df_0050['log_return'].resample('QE').std()
+    # 以季度末為單位，取該季度的最後一個('last')收盤價。
+    close_price = df_0050['Close'].resample('QE').last()
+
+    # 將計算出的季度報酬率、波動率和收盤價合併成一個新的DataFrame。
+    df_0050_quarterly = pd.concat([quarterly_return, volatility, close_price], axis=1)
+    # 重新命名欄位以增加可讀性。
+    df_0050_quarterly.columns = ['quarterly_return', 'volatility', 'close_price']
+    
+    # 告知使用者0050數據已聚合至季度。
+    print("  - 0050日數據已聚合至季度。")
+
+    # 初始化一個空字典，用來存放降頻後的月度數據。
+    aligned_monthly_dfs = {}
+    # 遍歷所有月度宏觀數據。
+    for name, df in monthly_dfs.items():
+        # 將月度數據以季度末('QE')為單位進行重採樣，並取該季度的最後一個('last')值。
+        aligned_monthly_dfs[name] = df.resample('QE').last()
+    # 告知使用者月度數據已降頻完成。
+    print("  - 月度宏觀數據已降頻至季度。")
+
+    # 建立一個包含所有待合併DataFrame的列表。
+    # 包含：處理好的0050季度數據、原始的季度宏觀數據、降頻後的月度宏觀數據。
+    all_dfs_to_merge = [df_0050_quarterly] + list(quarterly_dfs.values()) + list(aligned_monthly_dfs.values())
+    
+    # 使用 'outer' join 來保留所有數據，再進行清理。
+    # pd.concat 沿著欄位(axis=1)進行合併。
+    # join='outer' 表示合併時保留所有DataFrame中出現過的所有索引(日期)，缺失處填NaN。
+    final_df = pd.concat(all_dfs_to_merge, axis=1, join='outer')
+    # 告知使用者初步合併已完成。
+    print("  - 所有數據已使用 'outer' join 策略初步合併。")
+    
+    # 清理合併後的數據
+    # 只保留我們關心的時間範圍 (從START_DATE所在的年份開始)。
+    final_df = final_df[final_df.index.year >= int(START_DATE[:4])]
+    
+    # 移除任何在關鍵欄位（如報酬率或GDP）上為空的行。
+    # 這確保了模型訓練時，目標變數(報酬率)和一個關鍵特徵(GDP)是存在的。
+    critical_columns = ['quarterly_return', 'gdp_growth']
+    final_df = final_df.dropna(subset=critical_columns)
+    
+    # 告知使用者數據清理完成。
+    print("數據對齊與合併完成，已移除無效數據行。")
+    # 返回最終處理好的DataFrame。
+    return final_df
+
+# 這是一個Python的標準寫法，確保只有當這個腳本被直接執行時，以下的程式碼才會運行。
+# 如果這個腳本被其他檔案import，則不會執行。
+if __name__ == '__main__':
+    # --- 主執行流程 ---
+    # 首先，載入所有季度的宏觀經濟數據。
+    quarterly_data = load_macro_data(MACRO_QUARTERLY_FILES)
+    # 接著，載入所有月度的宏觀經濟數據。
+    monthly_data = load_macro_data(MACRO_MONTHLY_FILES)
+    
+    # 檢查宏觀數據是否成功載入。
+    if quarterly_data is None or monthly_data is None:
+        # 如果任一數據載入失敗，打印錯誤訊息並中止程式。
+        print("\n由於宏觀數據檔案不完整，處理中止。")
+    else:
+        # 如果宏觀數據成功載入，則開始獲取0050股價資料。
+        df_0050 = get_0050_data(TICKER_0050, START_DATE, END_DATE)
+        
+        # 檢查0050股價資料是否成功獲取。
+        if df_0050.empty:
+            # 如果獲取失敗，打印錯誤訊息並中止程式。
+            print("\n由於無法獲取0050股價資料，處理中止。")
+        else:
+            # 如果所有原始數據都準備好了，就進行對齊與合併。
+            final_quarterly_data = align_and_merge_data(df_0050, monthly_data, quarterly_data)
+            
+            # 檢查最終合併的DataFrame是否為空。
+            if final_quarterly_data.empty:
+                # 如果為空，可能是因為數據的時間範圍沒有重疊，打印警告訊息。
+                print("\n[警告] 最終合併的資料集為空，請再次檢查各原始數據的時間範圍是否有重疊。")
+            else:
+                # 如果成功生成最終數據，打印預覽。
+                print("\n--- 最終合併的季度數據預覽 ---")
+                # .head() 預設顯示前五行數據。
+                print(final_quarterly_data.head())
+                # 打印最終數據集的維度。
+                print(f"\n最終數據集維度: {final_quarterly_data.shape}")
+                try:
+                    # 嘗試將最終的DataFrame儲存為CSV檔案。
+                    final_quarterly_data.to_csv(PROCESSED_DATA_PATH)
+                    # 打印成功儲存的訊息。
+                    print(f"\n[成功] 處理完成的數據已儲存至: {PROCESSED_DATA_PATH}")
+                except Exception as e:
+                    # 如果在儲存過程中發生任何錯誤，捕捉異常並打印錯誤訊息。
+                    print(f"\n[錯誤] 儲存檔案失敗: {e}")
+</code></pre>
+        </div>
+    </div>
+
+    <!-- 2. 引入 Prism.js 的核心 JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <!-- 3. 引入 Prism.js 的 Python 語言元件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
+    <script>
+    // --- Accordion Logic ---
+    var acc = document.getElementsByClassName("accordion");
+    for (let i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var panel = this.nextElementSibling;
+            if (panel.style.maxHeight) {
+                panel.style.maxHeight = null;
+            } else {
+                // We add a little buffer for padding and potential scrollbars
+                panel.style.maxHeight = (panel.scrollHeight + 20) + "px";
+            }
+        });
+    }
+
+    // --- Copy to Clipboard Logic ---
+    function copyCode(button) {
+        const codeContainer = button.parentElement;
+        const code = codeContainer.querySelector('code');
+        const textToCopy = code.textContent || code.innerText;
+
+        // Use the modern clipboard API
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            button.innerText = '已複製!';
+            button.style.backgroundColor = '#28a745'; // Green for success
+            setTimeout(() => {
+                button.innerText = '複製';
+                button.style.backgroundColor = '#555c69'; // Reset color
+            }, 2000);
+        }).catch(err => {
+            console.error('無法複製文字: ', err);
+            button.innerText = '複製失敗';
+            button.style.backgroundColor = '#dc3545'; // Red for error
+             setTimeout(() => {
+                button.innerText = '複製';
+                button.style.backgroundColor = '#555c69'; // Reset color
+            }, 2000);
+        });
+    }
+    </script>
+</body>
+</html>
