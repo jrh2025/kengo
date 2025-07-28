@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>互動式網頁報告編輯器 (v7.8 - 核心功能修正)</title>
+    <title>互動式報告編輯器 (v7.9 - 新增還原功能)</title>
     <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -70,6 +70,9 @@
         <button id="insert-code-btn" class="edit-controls w-full px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">插入程式碼</button>
         
         <a id="helpBtn" href="#" class="w-full text-center px-4 py-2 text-sm font-semibold bg-green-600 text-white rounded-md hover:bg-green-700 transition">使用教學</a>
+        
+        <!-- NEW: Reset Button -->
+        <button id="resetBtn" class="w-full px-4 py-2 text-sm font-semibold bg-red-600 text-white rounded-md hover:bg-red-700 transition">還原預設內容</button>
     </div>
 
     <!-- Chart Edit Modal -->
@@ -131,7 +134,7 @@
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         // --- CONSTANTS AND DEFINITIONS ---
-        const STORAGE_KEY = 'interactiveReportState_v7_7';
+        const STORAGE_KEY = 'interactiveReportState_v7.9';
 
         const LAYOUTS = {
             'timeline': {
@@ -238,6 +241,7 @@
             cancelChartEditBtn: document.getElementById('cancelChartEdit'),
             insertCodeBtn: document.getElementById('insert-code-btn'),
             helpBtn: document.getElementById('helpBtn'),
+            resetBtn: document.getElementById('resetBtn'),
             layoutStylesTag: document.getElementById('layout-styles'),
             editChartBtn: document.getElementById('editChartBtn'),
         };
@@ -795,7 +799,6 @@
                 Prism.highlightAll();
             });
 
-            // FIX: Added event listeners for chart editing
             ui.editChartBtn.addEventListener('click', openChartModal);
             ui.saveChartEditBtn.addEventListener('click', saveChartChanges);
             ui.cancelChartEditBtn.addEventListener('click', () => ui.chartModal.classList.add('hidden'));
@@ -818,7 +821,7 @@
                         </style>
                     </head>
                     <body class="prose max-w-4xl mx-auto">
-                        <h1>互動式網頁報告編輯器使用手冊 (v7.5)</h1>
+                        <h1>互動式網頁報告編輯器使用手冊 (v7.9)</h1>
                         <p>歡迎使用互動式報告編輯器！這是一套功能強大且靈活的工具，旨在協助您輕鬆創建具備專業視覺與互動功能的專案報告。本手冊將引導您熟悉所有核心功能。</p>
                         <hr class="my-8">
                         <h2>第一章：基礎操作</h2>
@@ -833,21 +836,49 @@
                             <li>確認您已處於<strong>編輯模式</strong>。</li>
                             <li>直接點擊任何有藍色虛線外框的區域（如主標題、段落內文等）。</li>
                             <li>當文字游標出現後，即可像在一般文書處理軟體中一樣，自由地輸入、刪除或修改文字。</li>
-                            <li>編輯器支援基礎的富文本格式，您可以使用快捷鍵（如 <kbd>Ctrl</kbd> + <kbd>B</kbd> 粗體）或直接貼上帶有格式的文字。系統會自動過濾掉不安全的 HTML 標籤。</li>
                         </ol>
+                        <h4>1.2.1 支援的富文本格式</h4>
+                        <p>本編輯器支援多種標準的富文本格式，讓您的內容更具層次感。您可以透過以下兩種方式來應用格式：</p>
+                        <ul>
+                            <li><strong>方法一：使用鍵盤快捷鍵</strong>（最推薦）。</li>
+                            <li><strong>方法二：從其他編輯器（如 Word、Google Docs）複製已設定好格式的文字</strong>，然後直接貼上。編輯器會自動保留支援的格式，並過濾掉不安全的程式碼。</li>
+                        </ul>
+                        <p><strong>支援格式列表：</strong></p>
+                        <ul>
+                            <li><strong>粗體</strong>: <code>&lt;b&gt;</code>, <code>&lt;strong&gt;</code> (快捷鍵: <kbd>Ctrl</kbd> + <kbd>B</kbd>)</li>
+                            <li><strong>斜體</strong>: <code>&lt;i&gt;</code>, <code>&lt;em&gt;</code> (快捷鍵: <kbd>Ctrl</kbd> + <kbd>I</kbd>)</li>
+                            <li><strong>底線</strong>: <code>&lt;u&gt;</code> (快捷鍵: <kbd>Ctrl</kbd> + <kbd>U</kbd>)</li>
+                            <li><strong>清單</strong>:
+                                <ul>
+                                    <li>無序清單 (項目符號): <code>&lt;ul&gt;</code> 搭配 <code>&lt;li&gt;</code></li>
+                                    <li>有序清單 (編號): <code>&lt;ol&gt;</code> 搭配 <code>&lt;li&gt;</code></li>
+                                </ul>
+                            </li>
+                            <li><strong>連結</strong>: <code>&lt;a&gt;</code> (建議直接貼上帶有連結的文字)</li>
+                            <li><strong>標題</strong>: <code>&lt;h1&gt;</code> 至 <code>&lt;h6&gt;</code></li>
+                            <li><strong>段落與換行</strong>: <code>&lt;p&gt;</code>, <code>&lt;br&gt;</code></li>
+                            <li><strong>程式碼區塊</strong>: <code>&lt;pre&gt;</code>, <code>&lt;code&gt;</code> (請使用右上角的「插入程式碼」功能)</li>
+                        </ul>
                         <h3>1.3 儲存進度</h3>
                         <p>您的所有變更（包含文字、圖表數據、所選樣板等）都會<strong>自動儲存</strong>在您瀏覽器的本機儲存空間 (<code>localStorage</code>) 中。即使您關閉或重新整理分頁，下次開啟時仍會載入上次的進度。</p>
                         
                         <hr class="my-8">
                         <h2>第二章：核心功能</h2>
-                        <h3>2.1 切換排版樣板</h3>
+                        <h3>2.1 還原預設內容</h3>
+                        <p>如果您希望清除所有自訂內容，回到最初的範本狀態，可以使用此功能。</p>
+                        <ol>
+                            <li>點擊右上角工具列最下方的紅色 <strong>「還原預設內容」</strong> 按鈕。</li>
+                            <li>在跳出的確認視窗中點擊「確定」。</li>
+                            <li>頁面將會重新整理，並載入最原始的報告內容。<strong>請注意：此操作無法復原。</strong></li>
+                        </ol>
+                        <h3>2.2 切換排版樣板</h3>
                         <p>本編輯器最大的特色之一就是能一鍵切換多種專業排版。</p>
                         <ol>
                             <li>點擊右上角工具列中的<strong>下拉式選單</strong>（預設顯示「經典時間軸」）。</li>
                             <li>從選單中選擇您偏好的樣板，例如「現代網格卡片」或「雜誌風格」。</li>
                             <li>報告的「開發之旅」區塊將會立即重新渲染，呈現全新的視覺佈局。</li>
                         </ol>
-                        <h3>2.2 新增與移除階段</h3>
+                        <h3>2.3 新增與移除階段</h3>
                         <ol>
                             <li><strong>新增階段</strong>：
                                 <ul>
@@ -864,14 +895,14 @@
                                 </ul>
                             </li>
                         </ol>
-                        <h3>2.3 插入程式碼區塊</h3>
+                        <h3>2.4 插入程式碼區塊</h3>
                         <ol>
                             <li>進入<strong>編輯模式</strong>。</li>
                             <li><strong>先用滑鼠點擊</strong>您希望插入程式碼的段落，確保文字游標在該處閃爍。</li>
                             <li>點擊右上角工具列的紫色 <strong>「插入程式碼」</strong> 按鈕。</li>
                             <li>一個預設格式的 JavaScript 程式碼區塊將會被插入到您的游標位置。您可以直接修改或貼上您自己的程式碼。語法高亮將會自動處理。</li>
                         </ol>
-                        <h3>2.4 匯出 HTML 報告</h3>
+                        <h3>2.5 匯出 HTML 報告</h3>
                         <p>當您完成報告編輯後，可以將其匯出為一個獨立、完整的 HTML 檔案。</p>
                         <ol>
                             <li>點擊右上角工具列的灰色 <strong>「匯出 HTML 報告」</strong> 按鈕。</li>
@@ -901,6 +932,14 @@
                 const newTab = window.open();
                 newTab.document.write(manualContent);
                 newTab.document.close();
+            });
+
+            // NEW: Event listener for the reset button
+            ui.resetBtn.addEventListener('click', () => {
+                if (confirm('您確定要還原所有內容至預設狀態嗎？此操作將會清除所有您輸入的資料且無法復原。')) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    location.reload();
+                }
             });
         }
 
