@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>語音轉錄機 (字幕生成) - 程式功能簡介</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts 的 Inter 字體 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* 自訂樣式 */
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* 增加段落和列表的行距，使其更易於閱讀 */
+        p, li {
+            line-height: 1.8;
+        }
+        h2 {
+            border-bottom: 2px solid #e5e7eb; /* light gray border */
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem; /* 12px */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .tag {
+            display: inline-block;
+            background-color: #eef2ff; /* indigo-50 */
+            color: #4338ca; /* indigo-800 */
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem; /* 14px */
+            font-weight: 500;
+        }
+        .download-btn {
+            display: inline-block;
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 0.5rem; /* 8px */
+            font-weight: 700;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+        .download-btn:hover {
+            background-color: #4338ca; /* indigo-800 */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto max-w-4xl px-4 py-8 md:py-12">
+
+        <!-- 頁首標題 -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">語音轉錄機 (字幕生成)</h1>
+            <p class="text-lg text-gray-600">一款高效、易用的桌面端語音轉文字工具</p>
+        </header>
+
+        <main>
+            <!-- 程式下載區塊 -->
+            <div class="card text-center">
+                 <h2 class="text-2xl font-bold text-gray-900 mt-0">程式下載</h2>
+                 <p class="text-gray-700 mb-6">點擊下方按鈕前往下載頁面。</p>
+                 <a href="https://drive.google.com/file/d/1IMwWXk4WJGufATIKAP4ZBDJtpWuEGOJZ/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="download-btn">
+                    前往 Google Drive 下載
+                 </a>
+            </div>
+
+            <!-- 介紹卡片 -->
+            <div class="card">
+                <p class="text-lg leading-relaxed">
+                    本程式為一款桌面應用程式，主要功能是將音訊或影片檔案轉錄為文字。使用者可選擇生成帶有時間軸的 SRT 字幕檔，或是純文字的 TXT 文字檔。
+                </p>
+            </div>
+
+            <!-- 主要功能列表 -->
+            <div class="card">
+                <h2 class="text-2xl font-bold text-gray-900">主要功能</h2>
+                <ul class="list-none space-y-4 text-gray-700">
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-indigo-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M12 6V3m0 18v-3M5.636 5.636l-.707-.707M18.364 18.364l-.707-.707M5.636 18.364l-.707.707M18.364 5.636l-.707.707"></path></svg>
+                        <div>
+                            <strong class="font-semibold text-gray-800">核心轉錄引擎：</strong>採用 faster-whisper 模型（OpenAI Whisper 的優化版本）執行語音辨識，兼顧速度與準確性。
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-indigo-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <div>
+                            <strong class="font-semibold text-gray-800">支援的輸入檔案：</strong>支援 <code class="tag">.mp4</code> 影音檔案與 <code class="tag">.m4a</code> 音訊檔案。程式能從 .mp4 中自動提取音訊進行處理。
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-indigo-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        <div>
+                            <strong class="font-semibold text-gray-800">輸出格式選擇：</strong>可自由選擇生成 <code class="tag">.srt</code> (含時間軸) 或 <code class="tag">.txt</code> (純文字) 格式的檔案。
+                        </div>
+                    </li>
+                     <li class="flex items-start">
+                        <svg class="w-6 h-6 text-indigo-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100 4m0-4a2 2 0 110 4m0-4v2m0 4v2m8-12a2 2 0 100 4m0-4a2 2 0 110 4m0-4v2m0 4v2M8 8a2 2 0 100 4m0-4a2 2 0 110 4m8-4a2 2 0 100 4m0-4a2 2 0 110 4"></path></svg>
+                        <div>
+                            <strong class="font-semibold text-gray-800">參數調整功能：</strong>可選擇不同的模型大小（如 base, medium, large-v3）與音訊語言，以平衡處理速度與結果準確度。
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                         <svg class="w-6 h-6 text-indigo-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                        <div>
+                            <strong class="font-semibold text-gray-800">輸出路徑設定：</strong>可指定輸出檔案的儲存目錄。若不指定，預設儲存於來源檔案的相同目錄。
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-6 h-6 text-indigo-500 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div>
+                            <strong class="font-semibold text-gray-800">即時進度與控制：</strong>轉錄過程中，介面會逐句顯示辨識結果並更新進度條。提供「開始」、「暫停/繼續」及「終止」按鈕以完整控制任務流程。
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 操作使用說明 -->
+            <div class="card">
+                <h2 class="text-2xl font-bold text-gray-900">操作使用說明</h2>
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">步驟一：設定輸入與輸出</h3>
+                        <p class="text-gray-700">點擊「 選擇來源檔案 」按鈕，從您的電腦中選取一個 .mp4 或 .m4a 檔案。</p>
+                        <p class="text-gray-700 mt-2">(選填) 程式會自動將輸出位置設定為來源檔案的所在目錄。若要更改，請點擊「 選擇輸出位置 」按鈕並選擇新的資料夾。</p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">步驟二：設定轉錄參數</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li><strong>模型大小：</strong>從下拉選單中選擇一個模型。較小的模型速度快但準確度較低；較大的模型準確度高但速度慢。可點擊「?」按鈕查看詳細說明。</li>
+                            <li><strong>語言：</strong>從下拉選單中選擇音訊內容對應的語言。</li>
+                            <li><strong>輸出選項：</strong>勾選「包含時間軸」將輸出 .srt 格式（預設）；取消勾選則輸出 .txt 純文字格式。</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">步驟三：執行與監控</h3>
+                        <p class="text-gray-700">點擊「 開始轉錄 」按鈕以啟動程序。在下方的「 狀態顯示區 」可看到執行日誌以及即時辨識出的文句。在執行期間，可使用「 暫停/繼續 」或「 終止 」按鈕來控制任務。</p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">步驟四：取得檔案</h3>
+                        <p class="text-gray-700">任務完成後，前往您設定的輸出位置，即可找到與來源檔案同名的 .srt 或 .txt 檔案。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 注意事項 -->
+            <div class="card border-l-4 border-yellow-400 bg-yellow-50">
+                <h2 class="text-2xl font-bold text-yellow-900 mt-0">注意事項</h2>
+                <div class="space-y-4 text-yellow-800">
+                    <p><strong>關於首次模型下載：</strong>首次選擇一個之前未使用過的模型大小時，程式會從網路下載該模型檔案，因此需要較長的等待時間。此為一次性下載，請耐心等候。</p>
+                    <p><strong>關於暫停功能：</strong>暫停功能作用於轉錄任務的主要階段之間（如模型載入後）。在「核心轉錄」步驟開始後，該單一步驟內部無法被暫停。</p>
+                    <p><strong>關於繁體中文輸出：</strong>當語言選擇「繁體中文」時，程式會自動加入引導提示以確保輸出為繁體字。</p>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- 頁腳 -->
+        <footer class="text-center mt-12 py-6 border-t border-gray-200">
+            <p class="text-sm text-gray-500">文件產生時間：2025年</p>
+        </footer>
+
+    </div>
+
+</body>
+</html>
