@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音訊字幕視覺化生成器 - 使用手冊</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* 自訂樣式 */
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* 加大行距，提升閱讀舒適度 */
+        p, li {
+            line-height: 1.9;
+        }
+        h2 {
+            border-bottom: 2px solid #e5e7eb; /* 淺灰色底線 */
+            padding-bottom: 0.75rem;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.75rem; /* 28px */
+        }
+        h3 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.25rem; /* 20px */
+            font-weight: 700;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem; /* 12px */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 2rem 2.5rem;
+            margin-bottom: 2rem;
+        }
+        .download-btn {
+            display: inline-block;
+            background-color: #059669; /* emerald-600 */
+            color: white;
+            padding: 0.75rem 2.5rem;
+            border-radius: 0.5rem; /* 8px */
+            font-weight: 700;
+            font-size: 1.125rem; /* 18px */
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+        .download-btn:hover {
+            background-color: #047857; /* emerald-700 */
+        }
+        .icon-list li {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        .icon-list svg {
+            flex-shrink: 0;
+            width: 1.5rem;
+            height: 1.5rem;
+            margin-right: 0.75rem;
+            margin-top: 0.35rem;
+            color: #10b981; /* emerald-500 */
+        }
+        code {
+            background-color: #f3f4f6;
+            color: #4b5563;
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 0.9em;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto max-w-4xl px-4 py-8 md:py-12">
+
+        <!-- 頁首標題 -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">音訊字幕視覺化生成器</h1>
+            <p class="text-lg text-gray-600">歡迎使用本工具！輕鬆將您的音訊作品轉換為引人入勝的動態視覺化影片。</p>
+        </header>
+
+        <main>
+            <!-- 程式下載區塊 -->
+            <div class="card text-center border-2 border-emerald-500 shadow-lg">
+                 <h2 class="text-2xl font-bold text-gray-900 mt-0">程式下載</h2>
+                 <p class="text-gray-700 mb-6">本程式為免安裝版，點擊下方按鈕立即下載！</p>
+                 <a href="https://drive.google.com/file/d/1elPqAYOIrs1M2TS3QevQXnGWerqfzCgp/view?usp=sharing" target="_blank" rel="noopener noreferrer" class="download-btn">
+                    前往 Google Drive 下載
+                 </a>
+            </div>
+
+            <!-- 一、設計理念 -->
+            <div class="card">
+                <h2 class="font-bold text-gray-900">一、設計理念 💡</h2>
+                <p class="text-gray-700">
+                    在以視覺為主的社群媒體時代，單純的音訊檔案難以在 YouTube、Instagram 等平台上獲得足夠的關注。本程式的核心設計理念是<strong>「化聲為影，簡而不凡」</strong>。我們希望提供一個直觀、高效的解決方案，讓使用者無需學習複雜的影片剪輯軟體，只需透過簡單的點選和設定，就能：
+                </p>
+                <ul class="list-disc list-inside space-y-2 mt-4 text-gray-700">
+                    <li><strong>賦予聲音生命：</strong>將單調的音訊轉換為與節奏同步跳動的視覺化圖形。</li>
+                    <li><strong>強化資訊傳達：</strong>無縫整合 .srt 字幕檔，讓您的播客或有聲書內容更易於理解與傳播。</li>
+                    <li><strong>彰顯個人風格：</strong>提供高度客製化的選項，從背景、顏色到視覺樣式，讓每一個作品都獨一無二。</li>
+                </ul>
+                 <p class="mt-4 text-gray-700">這是一個為效率與創意而生的工具，致力於降低內容創作的技術門檻。</p>
+            </div>
+
+            <!-- 二、程式特點 -->
+            <div class="card">
+                <h2 class="font-bold text-gray-900">二、程式特點 ✨</h2>
+                <ul class="icon-list">
+                    <li>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        <div><strong class="font-semibold text-gray-800">豐富的視覺樣式：</strong>提供十種內建的音訊視覺化效果，一鍵切換，風格多變。</div>
+                    </li>
+                    <li>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                        <div><strong class="font-semibold text-gray-800">完整的字幕支援：</strong>完美整合標準的 .srt 字幕檔案，自動處理時間軸、文字換行與顯示位置，並能正確顯示繁體中文。</div>
+                    </li>
+                     <li>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l-1-1a2 2 0 010-2.828l1-1a2 2 0 012.828 0l2 2a2 2 0 010 2.828l-2 2a2 2 0 01-2.828 0l-1-1z"></path></svg>
+                        <div><strong class="font-semibold text-gray-800">高度客製化介面：</strong>可自訂背景、顏色、透明度、影片解析度與幀率。</div>
+                    </li>
+                    <li>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div><strong class="font-semibold text-gray-800">友善的操作體驗：</strong>直觀介面、即時進度條，並支援暫停、繼續、中斷功能，完成後還有提示音。</div>
+                    </li>
+                    <li>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <div><strong class="font-semibold text-gray-800">獨立執行檔：</strong>無需安裝 Python，下載解壓縮後即可在本機執行。</div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 三、完整使用說明 -->
+            <div class="card">
+                <h2 class="font-bold text-gray-900">三、完整使用說明 📖</h2>
+                
+                <h3>1. 快速上手 (免安裝)</h3>
+                <ol class="list-decimal list-outside ml-5 space-y-2 text-gray-700">
+                    <li>下載 <code>音訊字幕視覺化生成器.zip</code> 壓縮檔。</li>
+                    <li>在檔案上按右鍵，選擇「解壓縮全部...」。</li>
+                    <li>進入解壓縮後產生的新資料夾。</li>
+                    <li>直接點兩下 <code>音訊字幕視覺化生成器.exe</code> 即可啟動程式。</li>
+                </ol>
+
+                <h3>2. 檔案設定 (介面左側)</h3>
+                 <ul class="list-disc list-outside ml-5 space-y-2 text-gray-700">
+                    <li><strong>音訊檔案：</strong>點擊「瀏覽...」按鈕，選擇您要視覺化的 <code>.mp3</code>, <code>.wav</code> 或 <code>.m4a</code> 音訊檔。</li>
+                    <li><strong>字幕檔案 (SRT)：</strong>(選用) 如果您有字幕，點擊「瀏覽...」按鈕選擇對應的 <code>.srt</code> 檔案。若要取消使用，點擊「清除」按鈕即可。</li>
+                    <li><strong>輸出位置：</strong>點擊「瀏覽...」選擇您希望儲存最終影片的資料夾。預設為程式所在的目錄。</li>
+                </ul>
+
+                <h3>3. 樣式與顏色設定</h3>
+                 <p class="text-gray-700"><strong>視覺化主樣式：</strong>在下拉選單中，選擇您喜歡的視覺化效果。各種樣式特點如下：</p>
+                 <ul class="list-disc list-outside ml-5 space-y-3 mt-4 text-gray-700">
+                    <li><code>bars</code>：經典的頻譜條形圖，從中心向外增長，專業感十足。</li>
+                    <li><code>bars_inverted</code>：反轉的條形圖，從上下邊緣向中心收縮。</li>
+                    <li><code>bars_gapped</code>：帶有間隙的條形圖，呈現更清晰的頻率分離感。</li>
+                    <li><code>waves</code>：連續的音訊波浪線，如同示波器，富有動感。</li>
+                    <li><code>area</code>：面積填充的波浪圖，將波浪線下方的區域填滿，視覺衝擊力更強。</li>
+                    <li><code>scatter</code>：能量散射點，音量越大，散射的粒子越多、越亮。</li>
+                    <li><code>dots</code>：跟隨頻率跳動的點陣圖，簡潔而有科技感。</li>
+                    <li><code>bubbles</code>：夢幻的氣泡效果，音量觸發大小與透明度各異的氣泡上升。</li>
+                    <li><code>radial</code>：圓形放射圖，如同雷達掃描，適合圓形 Logo 或專輯封面。</li>
+                    <li><code>僅背景(無視覺效果)</code>：不顯示任何視覺化效果，僅保留背景和字幕，適用於製作純字幕影片。</li>
+                 </ul>
+                 <p class="text-gray-700 mt-4"><strong>顏色與背景：</strong></p>
+                 <ul class="list-disc list-outside ml-5 space-y-2 mt-2 text-gray-700">
+                    <li><strong>前景顏色/透明度：</strong>設定視覺化圖形的顏色與透明度。</li>
+                    <li><strong>背景顏色：</strong>如果不想使用圖片，可以在此處設定純色背景。</li>
+                    <li><strong>使用背景圖片：</strong>點擊「選擇圖片...」可上傳圖片作為背景。程式會自動將建議的影片尺寸設定為該圖片的尺寸。</li>
+                 </ul>
+
+                <h3>4. 影片規格與進階設定 (介面右側)</h3>
+                <ul class="list-disc list-outside ml-5 space-y-2 text-gray-700">
+                    <li>在<strong>「尺寸與幀率」</strong>分頁中，手動輸入您想要的影片<strong>寬度</strong>與<strong>高度</strong>，並選擇<strong>幀率 (FPS)</strong>。</li>
+                    <li>在<strong>「進階設定」</strong>分頁中，可調整視覺效果的精細度 (FFT Bins) 及是否在完成後播放提示音。</li>
+                </ul>
+                 
+                <h3>5. 開始生成 🚀</h3>
+                <p class="text-gray-700">完成所有設定後，點擊主按鈕「🚀 開始生成影片」。下方的進度條和狀態列會顯示目前的處理進度與預估剩餘時間。任務成功後，會彈出提示視窗，告知您影片的儲存位置。</p>
+            </div>
+
+            <!-- 四、注意事項 -->
+            <div class="card border-l-4 border-yellow-400 bg-yellow-50">
+                <h2 class="font-bold text-yellow-900 mt-0">四、注意事項 ⚠️</h2>
+                <div class="space-y-4 text-yellow-800">
+                    <p><strong>處理時間提醒：</strong>影片的生成，特別是視覺效果與字幕的渲染，是相當耗費電腦運算資源的過程。音訊的長度、影片的解析度與幀率都會顯著影響處理時間。在硬體等級較低的電腦上，處理一個幾分鐘的音訊可能會花費數十分鐘甚至更久，這是正常現象，請您耐心等候。</p>
+                    <p><strong>檔案路徑：</strong>請盡量確保您選擇的音訊檔、字幕檔及輸出路徑中，<strong>不包含特殊符號或罕見字元</strong>，以避免潛在的讀取錯誤。</p>
+                    <p><strong>效能建議：</strong>在生成高畫質或長影片時，建議關閉其他非必要的、耗費效能的程式（如遊戲、其他影片編輯軟體等）。</p>
+                    <p><strong>暫存檔案：</strong>程式在運作時會產生名為 <code>temp_silent_video.mp4</code> 的暫存檔。在正常情況下，程式完成後會自動將其刪除。如果程式因故中斷，此檔案可能殘留，屆時您可手動將其刪除。</p>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- 頁腳 -->
+        <footer class="text-center mt-12 py-6 border-t border-gray-200">
+            <p class="text-sm text-gray-500">文件產生時間：2025年</p>
+        </footer>
+
+    </div>
+
+</body>
+</html>
