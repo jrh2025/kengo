@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>「就在這兒 - 通用分組平台」設計理念與使用手冊</title>
+    <!-- 引入 PDF 匯出函式庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" xintegrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoVBL5gI9kLmbG0C+wFjr8bCqwY2SA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        /* --- 全局樣式與字體設定 --- */
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #1971c2;
+            --background-color: #f8f9fa;
+            --content-bg-color: #ffffff;
+            --text-color: #343a40;
+            --border-color: #dee2e6;
+            --subtle-border-color: #e9ecef;
+            --code-bg-color: #e9ecef;
+            --code-text-color: #c92a2a;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
+            line-height: 1.9;
+            font-size: 17px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- 主要佈局 --- */
+        .page-wrapper {
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px 20px;
+            background-color: var(--content-bg-color);
+            padding: 40px 50px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+            z-index: 1;
+        }
+
+        /* --- 標題樣式 --- */
+        h1, h2, h3, h4 {
+            line-height: 1.4;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        h1 { font-size: 2.5em; text-align: center; margin-bottom: 15px; padding-bottom: 20px; border-bottom: 2px solid var(--subtle-border-color); }
+        h2 { font-size: 2em; margin-top: 60px; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        h3 { font-size: 1.6em; margin-top: 40px; margin-bottom: 20px; }
+        h4 { font-size: 1.25em; margin-top: 30px; margin-bottom: 15px; color: var(--secondary-color); }
+
+        /* --- 內容元素樣式 --- */
+        p { margin-bottom: 1.2em; }
+        ul { padding-left: 25px; margin-bottom: 1.2em; }
+        li { margin-bottom: 0.8em; }
+        strong { color: #212529; font-weight: 600; }
+        code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace; background-color: var(--code-bg-color); color: var(--code-text-color); padding: 3px 6px; border-radius: 4px; font-size: 0.9em; }
+
+        /* --- 互動功能：浮動導覽列 (階層式) --- */
+        .table-of-contents {
+            position: sticky;
+            top: 40px;
+            left: 20px;
+            width: 300px;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+            padding: 20px;
+            margin: 40px 20px;
+        }
+        .table-of-contents h3 { margin-top: 0; font-size: 1.4em; color: var(--primary-color); }
+        .table-of-contents ul { list-style: none; padding: 0; }
+        .table-of-contents li { margin-bottom: 0; }
+        .table-of-contents a {
+            display: block;
+            text-decoration: none;
+            color: var(--text-color);
+            padding: 8px 15px;
+            border-radius: 6px;
+            transition: background-color 0.2s, color 0.2s, transform 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .table-of-contents a:hover { background-color: var(--subtle-border-color); color: var(--primary-color); }
+        .table-of-contents a.active { background-color: #e7f5ff; color: var(--primary-color); font-weight: 600; border-left: 3px solid var(--primary-color); transform: translateX(5px); }
+        
+        .toc-group > .toc-link-wrapper { display: flex; align-items: center; cursor: pointer; }
+        .toc-expander { font-size: 0.8em; width: 20px; text-align: center; transition: transform 0.3s; }
+        .toc-group.collapsed > .toc-link-wrapper .toc-expander { transform: rotate(-90deg); }
+        .toc-submenu { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-in-out; }
+        .toc-group:not(.collapsed) > .toc-submenu { max-height: 1000px; }
+        
+        .toc-level-1 { font-weight: bold; }
+        .toc-level-2 { padding-left: 20px; font-size: 0.95em; }
+        .toc-level-3 { padding-left: 40px; font-size: 0.9em; }
+
+        /* --- 互動功能：可折疊區塊 --- */
+        .collapsible > h3 { cursor: pointer; position: relative; padding-right: 30px; }
+        .collapsible > h3::after { content: '▼'; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 0.7em; transition: transform 0.3s ease; }
+        .collapsible.collapsed > h3::after { transform: translateY(-50%) rotate(-90deg); }
+        .collapsible-content { max-height: 10000px; overflow: hidden; transition: max-height 0.5s ease-in-out; }
+        .collapsible.collapsed .collapsible-content { max-height: 0; }
+        
+        /* --- 互動功能：返回頂部按鈕 --- */
+        #back-to-top { position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; background-color: var(--primary-color); color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: none; opacity: 0; transition: opacity 0.3s, transform 0.3s; z-index: 100; }
+        #back-to-top:hover { background-color: var(--secondary-color); transform: scale(1.1); }
+        #back-to-top.show { display: block; opacity: 1; }
+
+        /* --- 互動功能：匯出 PDF 按鈕 --- */
+        .export-button-container { text-align: center; margin-bottom: 40px; }
+        .export-button { display: inline-block; padding: 12px 25px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 1.1em; font-weight: 500; cursor: pointer; text-align: center; transition: background-color 0.2s; }
+        .export-button:hover { background-color: #218838; }
+        .export-button:disabled { background-color: #aaa; cursor: not-allowed; }
+
+        /* --- 響應式設計 --- */
+        @media (max-width: 1200px) { .table-of-contents { display: none; } .container { max-width: 90%; } }
+        @media (max-width: 768px) { body { padding: 5px; font-size: 16px; } .container { padding: 25px; margin: 10px auto; } h1 { font-size: 2em; } h2 { font-size: 1.7em; } h3 { font-size: 1.4em; } }
+    </style>
+</head>
+<body>
+
+    <div class="page-wrapper">
+        <nav class="table-of-contents" id="toc-nav">
+            <h3>導覽目錄</h3>
+            <ul id="toc-list"></ul>
+        </nav>
+
+        <main class="container" id="main-content">
+            <h1>「就在這兒 - 通用分組平台」<br>設計理念與使用手冊</h1>
+            <div class="export-button-container">
+                <button class="export-button" id="export-pdf-button">匯出為 PDF</button>
+            </div>
+
+            <section id="s1">
+                <h2>第一部分：設計理念</h2>
+                <div class="collapsible-content">
+                    <p>本專案的核心設計理念是打造一個 <strong>彈性、即時、模組化且易於管理</strong> 的通用線上抽籤分組平台。它旨在解決從小型非正式聚會到中型正式活動中，各種需要將參與者隨機或依條件分配到不同組別（如桌次、隊伍、房間）的需求。</p>
+                    <p>其設計哲學體現在以下幾個關鍵面向：</p>
+                    <h4 id="s1-1">事件驅動的架構 (Event-Driven Architecture)</h4>
+                    <p>整個平台以「事件 (Event)」為核心單位。每個事件都是一個獨立的沙盒，擁有自己的標題、參與者、分組活動和認證方式。這種設計確保了不同活動之間的資料完全隔離，便於管理與追溯。</p>
+                    <h4 id="s1-2">階層式分組模型 (Hierarchical Grouping Model)</h4>
+                    <p>採用了「事件 (Event) -> 分組活動 (Allocation) -> 容器 (Bin)」的三層式結構。</p>
+                    <ul><li><strong>事件</strong>: 代表整個活動，如「2025年度開發者大會」。</li><li><strong>分組活動</strong>: 代表事件下的不同抽籤環節，如「上午場工作坊分組」或「晚宴桌次安排」。一個事件可擁有多個分組活動。</li><li><strong>容器</strong>: 代表最終的分配目標，如「A桌」、「第一隊」、「201房」。每個分組活動可擁有多個容器。</li></ul>
+                    <p>這種階層式設計提供了極大的彈性，能應對複雜的活動流程。</p>
+                    <h4 id="s1-3">靈活的雙認證系統 (Flexible Dual-Authentication System)</h4>
+                    <ul><li><strong>密碼模式</strong>: 提供「單人」與「群組」兩種共享密碼。此模式適用於信任度較高、流程簡單或快速的場合，管理者可預先匯入參與者名單。</li><li><strong>Google邀請碼模式</strong>: 結合 OAuth 2.0 與邀請碼機制。此模式適用於需要驗證參與者身分、限制名額、且希望參與者自行註冊的較正式場合。它不僅更安全，也簡化了管理者收集名單的負擔。</li></ul>
+                    <h4 id="s1-4">非同步與即時互動體驗 (Asynchronous & Real-time Experience)</h4>
+                    <p>前端大量採用 JavaScript 的 Fetch API 與後端 API (<code>/api/...</code>) 進行非同步通訊。無論是管理者在後台新增容器，或是使用者在前台抽籤，大部分操作都無需重新載入整個頁面。</p>
+                    <p>抽籤結果頁面會自動定時刷新，讓所有參與者能看到即時的分配情況，增加了互動性與透明度。</p>
+                    <h4 id="s1-5">清晰的角色權限劃分 (Role-Based Access Control - RBAC)</h4>
+                    <p>系統內建三種角色，權責分明：</p>
+                    <ul><li><strong>超級管理員 (Super Admin)</strong>: 擁有最高權限，可管理所有事件及其他「事件管理者」帳號。</li><li><strong>事件管理者 (Event Admin)</strong>: 只能建立和管理自己名下的事件，權限受限於其所屬活動。</li><li><strong>一般使用者 (User)</strong>: 僅能參與活動、進行抽籤及查看結果。</li></ul>
+                    <h4 id="s1-6">資料完整性與併發控制 (Data Integrity & Concurrency Control)</h4>
+                    <p>後端使用 SQLAlchemy ORM 操作資料庫，確保了資料之間關聯的穩定性。</p>
+                    <p>在核心的抽籤邏輯 <code>perform_draw</code> 中，使用了執行緒鎖 (<code>threading.Lock</code>)，這是一個關鍵設計，用以防止在高併發場景下（多人同時抽籤）發生超賣（一個容器被分配了超過其容量的人數）的競爭條件 (Race Condition) 問題。</p>
+                </div>
+            </section>
+
+            <section id="s2">
+                <h2>第二部分：完整使用手冊</h2>
+                <div class="collapsible-content">
+                    <p>本手冊將依據不同使用者角色，詳細說明平台的各項功能。</p>
+                    <div id="s2-1" class="collapsible">
+                        <h3>I. 一般使用者篇</h3>
+                        <div class="collapsible-content">
+                            <p>作為活動的參與者，您將會使用平台來登入活動、進行抽籤並查看結果。</p>
+                            <h4 id="s2-1-1">1. 進入活動</h4>
+                            <ul><li>開啟平台首頁 (<code>home.html</code>)，您會看到目前所有開放中的活動列表。</li><li>點擊您要參加的活動標題，進入該活動的登入頁面。</li></ul>
+                            <h4 id="s2-1-2">2. 登入活動</h4>
+                            <p>本平台支援兩種登入方式，取決於活動的設定：</p>
+                            <ul><li><strong>A. 密碼登入模式 (<code>login_password.html</code>)</strong><ol><li>進入頁面後，會提示您輸入活動密碼。</li><li>向活動主辦方索取「單人密碼」或「群組/家庭密碼」。</li><li>在密碼框中輸入對應的密碼，點擊「登入」。</li><li>成功登入後，您將被導向該活動的「活動主頁」。</li></ol></li><li><strong>B. Google 邀請碼登入模式 (<code>join_event_form.html</code>)</strong><ol><li>進入頁面後，會提示您輸入「邀請碼」。</li><li>向活動主辦方索取邀請碼，輸入後點擊「提交並使用 Google 登入」。</li><li>頁面將跳轉至 Google 帳號登入授權畫面，請選擇您的 Google 帳號並同意授權。</li><li><strong>首次加入</strong>: 如果這是您第一次用此 Google 帳號參加活動，系統會引導您至「設定個人資料」頁面 (<code>setup_profile.html</code>)。請確認您的「顯示名稱」並選擇「性別」，然後點擊「完成設定並加入活動」。</li><li><strong>非首次加入</strong>: 如果您已設定過資料，系統會直接將您導向「活動主頁」。</li></ol></li></ul>
+                            <h4 id="s2-1-3">3. 活動主頁 (<code>event_dashboard.html</code>)</h4>
+                            <ul><li>登入成功後，您會看到活動的歡迎頁面。</li><li>頁面上會列出此事件下所有可參加的「分組活動」（例如：「晚宴分組」、「破冰遊戲分組」）。</li><li>每個分組活動旁都有兩個按鈕：<ul><li><strong>進入抽籤</strong>: 點擊此按鈕開始進行抽籤。</li><li><strong>查看公開結果</strong>: 點擊此按鈕會在新分頁開啟即時結果頁面，方便您隨時查看。</li></ul></li></ul>
+                            <h4 id="s2-1-4">4. 進行抽籤 (<code>draw_page.html</code>)</h4>
+                            <ul><li>點擊「進入抽籤」後，您會來到抽籤頁面。</li><li><strong>密碼模式下</strong>: 頁面上方會有一個下拉式選單，請從中選擇代表您自己或您團隊的名稱，然後點擊「開始抽籤」。</li><li><strong>Google模式下</strong>: 系統會自動識別您的身分，頁面會顯示您的名稱，您只需直接點擊「為我抽籤！」即可。</li><li>抽籤完成後，頁面中央會顯示您的抽籤結果，例如「🎉 恭喜 王大明，您被分配到 【<strong>A桌</strong>】！ 🎉」。</li><li>抽籤成功後，您的抽籤按鈕將會失效，無法重複抽籤。</li><li>頁面下方會即時顯示所有容器目前的分配狀態和成員列表。</li></ul>
+                            <h4 id="s2-1-5">5. 查看即時結果 (<code>results_page.html</code>)</h4>
+                            <ul><li>您可以隨時透過「活動主頁」的「查看公開結果」按鈕，或直接訪問抽籤結果頁面。</li><li>此頁面會以卡片形式展示每個容器的已分配人數/總容量，以及已進入該容器的成員名單。</li><li>頁面每 5 秒會自動刷新，確保您看到的是最新資訊。</li></ul>
+                            <h4 id="s2-1-6">6. 登出</h4>
+                            <p>在「活動主頁」下方，點擊「登出活動」連結即可安全登出。</p>
+                        </div>
+                    </div>
+                    <div id="s2-2" class="collapsible">
+                        <h3>II. 事件管理者篇</h3>
+                        <div class="collapsible-content">
+                            <p>作為事件管理者，您負責建立和維護您所主辦的活動。</p>
+                            <h4 id="s2-2-1">1. 登入</h4>
+                            <ul><li>從首頁點擊「管理員登入」連結，進入管理員登入頁面 (<code>login_admin.html</code>)。</li><li>使用由「超級管理員」提供給您的 Email 和密碼進行登入。</li></ul>
+                            <h4 id="s2-2-2">2. 管理員儀表板 (<code>admin.html</code>)</h4>
+                            <p>登入後，您會看到您的專屬儀表板，主要分為兩大區塊：</p>
+                            <ul><li><strong>A. 事件管理</strong><ul><li><strong>建立新事件</strong>:<ul><li>在「建立新事件」表單中，填寫「事件標題」。</li><li>選擇「認證模式」：<ul><li><strong>共享密碼模式</strong>: 需設定「單人密碼」和「家庭/群組密碼」（可只設其中一種）。</li><li><strong>Google 邀請碼模式</strong>: 需設定「邀請碼」，並可選擇性地設定「名額限制」。</li></ul></li><li>點擊「建立事件」，事件會即時出現在下方的「事件列表」中。</li></ul></li><li><strong>事件列表</strong>:<ul><li>這裡會列出所有由您建立的事件。</li><li>點擊事件旁的「<strong>管理</strong>」按鈕，可進入該事件的詳細管理頁面。</li><li>點擊「<strong>刪除</strong>」按鈕，可刪除整個事件及其所有相關資料（此操作無法復原）。</li></ul></li></ul></li><li><strong>B. 帳號設定</strong><ul><li>您可以點擊左側導覽列的「帳號與管理者設定」。</li><li>在這裡，您可以修改自己的登入密碼。若不變更請將密碼欄位留白即可。</li></ul></li></ul>
+                            <h4 id="s2-2-3">3. 單一事件管理頁面 (<code>event_manage.html</code>)</h4>
+                            <p>這是最核心的管理介面，分為三個主要區塊，可透過左側導覽列切換：</p>
+                            <ul><li><strong>A. 主要設定</strong>: 您可以在此修改事件的標題、密碼或邀請碼/名額限制。修改後點擊「儲存主要設定」，設定會非同步儲存，無需刷新頁面。</li><li><strong>B. 分組與容器</strong>:<ul><li><strong>匯出結果</strong>: 點擊「匯出此事件所有結果 (CSV)」按鈕，可以下載包含所有分組活動、容器及成員分配的完整 CSV 報告。</li><li><strong>分組活動管理 (左欄)</strong>: 新增、編輯、刪除分組活動。</li><li><strong>容器與結果管理 (右欄)</strong>: 查看抽籤結果、撤銷紀錄、新增/編輯/刪除容器。</li></ul></li><li><strong>C. 參與者管理</strong>:<ul><li>此區塊會顯示所有已加入此事件的參與者，並顯示總組數。</li><li><strong>Google模式</strong>: 參與者在自行登入後會自動出現在列表中，管理者無法手動新增。</li><li><strong>密碼模式</strong>: 支援手動新增群組及批次匯入單人參與者。</li><li><strong>參與者列表</strong>: 顯示所有參與者的詳細資料，表頭可點擊進行排序，並可對參與者進行編輯或刪除。</li></ul></li></ul>
+                        </div>
+                    </div>
+                    <div id="s2-3" class="collapsible">
+                        <h3>III. 超級管理員篇</h3>
+                        <div class="collapsible-content">
+                            <p>超級管理員擁有系統的最高權限。</p>
+                            <h4 id="s2-3-1">1. 權限概述</h4>
+                            <ul><li>您擁有「事件管理者」的所有權限。</li><li>與事件管理者最大的不同是，在「管理員儀表板」上，您可以看到和管理 <strong>所有使用者建立的所有事件</strong>，而不僅僅是您自己的。</li></ul>
+                            <h4 id="s2-3-2">2. 特有功能：管理者管理 (<code>admin.html</code>)</h4>
+                            <p>在您的儀表板「帳號與管理者設定」區塊，除了自己的帳號設定外，還多了一個「事件管理者管理」區塊。</p>
+                            <ul><li><strong>A. 管理者列表</strong>:<ul><li>這裡列出了系統中所有「事件管理者」層級的帳號。</li><li>您可以點擊「編輯」來修改其顯示名稱或重設其密碼。</li><li>您可以點擊「刪除」來移除該管理者帳號。<strong>請注意：刪除管理者會一併刪除他所建立的所有事件</strong>。</li></ul></li><li><strong>B. 新增事件管理者</strong>:<ul><li>在下方表單中，您可以透過填寫 Email、顯示名稱和初始密碼來建立新的「事件管理者」帳號。</li></ul></li></ul>
+                        </div>
+                    </div>
+                    <div id="s2-4" class="collapsible">
+                        <h3>IV. 附錄：初次安裝</h3>
+                        <div class="collapsible-content">
+                            <p>當本系統的程式碼 (<code>app.py</code>) 首次在一個沒有資料庫的環境下執行時，系統會自動建立所需的資料庫檔案 (<code>lottery.db</code>)。</p>
+                            <p>同時，系統會自動建立一個預設的「超級管理員」帳號：</p>
+                            <ul><li><strong>Email</strong>: <code>admin@system.local</code></li><li><strong>密碼</strong>: <code>admin123</code></li></ul>
+                            <p>請在首次部署後，立即使用此帳號登入，並到後台修改預設密碼，以確保系統安全。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <button id="back-to-top" title="返回頂部">▲</button>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tocList = document.getElementById('toc-list');
+        const mainContent = document.getElementById('main-content');
+        const backToTopButton = document.getElementById('back-to-top');
+        const exportPdfButton = document.getElementById('export-pdf-button');
+        const tocNav = document.getElementById('toc-nav');
+
+        // --- 1. 階層式導覽目錄生成與互動 ---
+        const topLevelHeadings = mainContent.querySelectorAll('h2, h3');
+        let currentH2Group = null;
+        let currentH3Group = null;
+
+        topLevelHeadings.forEach(heading => {
+            const level = parseInt(heading.tagName.substring(1), 10);
+            const li = document.createElement('li');
+            const id = heading.parentElement.id;
+            
+            if (level === 2) { // 大章節 (H2)
+                li.innerHTML = `<a href="#${id}" class="toc-level-1">${heading.textContent}</a>`;
+                tocList.appendChild(li);
+                currentH2Group = li;
+                currentH3Group = null; // Reset H3 group
+            } else if (level === 3 && currentH2Group) { // 子章節 (H3)
+                if (!currentH2Group.querySelector('.toc-submenu')) {
+                    const expander = document.createElement('span');
+                    expander.className = 'toc-expander';
+                    expander.textContent = '▸';
+                    const linkWrapper = document.createElement('div');
+                    linkWrapper.className = 'toc-link-wrapper';
+                    linkWrapper.appendChild(expander);
+                    linkWrapper.appendChild(currentH2Group.querySelector('a'));
+                    currentH2Group.insertBefore(linkWrapper, currentH2Group.firstChild);
+                    currentH2Group.classList.add('toc-group', 'collapsed');
+                    
+                    const submenu = document.createElement('ul');
+                    submenu.className = 'toc-submenu';
+                    currentH2Group.appendChild(submenu);
+                }
+                const submenu = currentH2Group.querySelector('.toc-submenu');
+                li.innerHTML = `<a href="#${id}" class="toc-level-2">${heading.textContent}</a>`;
+                submenu.appendChild(li);
+                currentH3Group = li;
+            }
+        });
+
+        // --- 2. 目錄與內容連動 ---
+        function syncCollapsibleState(element, shouldBeCollapsed) {
+            if (shouldBeCollapsed) {
+                element.classList.add('collapsed');
+            } else {
+                element.classList.remove('collapsed');
+            }
+        }
+
+        // 點擊目錄展開器
+        document.querySelectorAll('.toc-group .toc-link-wrapper').forEach(wrapper => {
+            wrapper.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const group = wrapper.parentElement;
+                const contentId = group.querySelector('a').getAttribute('href').substring(1);
+                const contentElement = document.getElementById(contentId);
+                
+                const isCollapsing = !group.classList.contains('collapsed');
+                syncCollapsibleState(group, isCollapsing);
+                if (contentElement && contentElement.classList.contains('collapsible')) {
+                    syncCollapsibleState(contentElement, isCollapsing);
+                }
+            });
+        });
+
+        // 點擊內容展開器
+        document.querySelectorAll('.collapsible > h2, .collapsible > h3').forEach(header => {
+            header.addEventListener('click', (e) => {
+                const contentElement = header.parentElement;
+                const tocLink = document.querySelector(`.table-of-contents a[href="#${contentElement.id}"]`);
+                if (tocLink) {
+                    const group = tocLink.closest('.toc-group');
+                    if (group) {
+                         // 延遲一點，等待內容的 class 更新
+                        setTimeout(() => {
+                            syncCollapsibleState(group, contentElement.classList.contains('collapsed'));
+                        }, 50);
+                    }
+                }
+            });
+        });
+
+        // --- 3. 滾動監聽 (Scrollspy) ---
+        const allHeadings = mainContent.querySelectorAll('h2, h3, h4');
+        const tocLinks = tocNav.querySelectorAll('a');
+        const headingOffsets = Array.from(allHeadings).map(h => ({ id: h.id || h.parentElement.id, offset: h.offsetTop }));
+
+        function updateActiveLink() {
+            if (window.innerWidth <= 1200) return;
+            const scrollPosition = window.scrollY + 150;
+            let currentId = '';
+            for (let i = headingOffsets.length - 1; i >= 0; i--) {
+                if (scrollPosition >= headingOffsets[i].offset) {
+                    currentId = headingOffsets[i].id;
+                    break;
+                }
+            }
+            tocLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${currentId}`) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        // --- 4. 可折疊區塊初始設定 ---
+        document.querySelectorAll('.collapsible').forEach(collapsible => {
+            const header = collapsible.querySelector('h2, h3');
+            if(header) {
+                header.addEventListener('click', () => {
+                    collapsible.classList.toggle('collapsed');
+                });
+            }
+            collapsible.classList.add('collapsed');
+        });
+        // 預設展開第一章
+        const firstSection = document.getElementById('s1');
+        if(firstSection) firstSection.classList.remove('collapsed');
+
+
+        // --- 5. 返回頂部按鈕 ---
+        function toggleBackToTopButton() {
+            if (window.scrollY > 300) backToTopButton.classList.add('show');
+            else backToTopButton.classList.remove('show');
+        }
+        backToTopButton.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+        // --- 6. A4 分頁 PDF 匯出 ---
+        const { jsPDF } = window.jspdf;
+        exportPdfButton.addEventListener('click', async () => {
+            exportPdfButton.disabled = true;
+            exportPdfButton.textContent = '正在生成 PDF...';
+
+            const originalTocDisplay = tocNav.style.display;
+            tocNav.style.display = 'none';
+            backToTopButton.style.display = 'none';
+            
+            const collapsedStates = Array.from(document.querySelectorAll('.collapsible')).map(el => el.classList.contains('collapsed'));
+            document.querySelectorAll('.collapsible.collapsed').forEach(el => el.classList.remove('collapsed'));
+
+            try {
+                const canvas = await html2canvas(mainContent, {
+                    scale: 2,
+                    useCORS: true,
+                    windowWidth: mainContent.scrollWidth,
+                    windowHeight: mainContent.scrollHeight
+                });
+                
+                const imgData = canvas.toDataURL('image/jpeg', 0.9); // 使用jpeg以減少檔案大小
+                const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                
+                const A4_WIDTH_MM = 210;
+                const A4_HEIGHT_MM = 297;
+                const MARGIN_MM = 15;
+                
+                const contentWidthMM = A4_WIDTH_MM - (MARGIN_MM * 2);
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+                const ratio = imgWidth / contentWidthMM;
+                const contentHeightMM = imgHeight / ratio;
+                const pageContentHeightMM = A4_HEIGHT_MM - (MARGIN_MM * 2);
+                
+                let heightLeft = contentHeightMM;
+                let position = 0;
+
+                pdf.addImage(imgData, 'JPEG', MARGIN_MM, MARGIN_MM, contentWidthMM, contentHeightMM);
+                heightLeft -= pageContentHeightMM;
+
+                while (heightLeft > 0) {
+                    position = heightLeft - contentHeightMM;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', MARGIN_MM, position - MARGIN_MM, contentWidthMM, contentHeightMM);
+                    heightLeft -= pageContentHeightMM;
+                }
+                
+                pdf.save('通用分組平台使用手冊-A4.pdf');
+
+            } catch (err) {
+                console.error("PDF generation failed:", err);
+                alert("抱歉，PDF生成失敗，請稍後再試。");
+            } finally {
+                tocNav.style.display = originalTocDisplay;
+                exportPdfButton.disabled = false;
+                exportPdfButton.textContent = '匯出為 PDF';
+                document.querySelectorAll('.collapsible').forEach((el, index) => {
+                    if (collapsedStates[index]) el.classList.add('collapsed');
+                });
+            }
+        });
+
+        window.addEventListener('scroll', () => {
+            updateActiveLink();
+            toggleBackToTopButton();
+        });
+        updateActiveLink();
+    });
+    </script>
+</body>
+</html>
