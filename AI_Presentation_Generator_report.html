@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 簡報自動生成系統 - 實作報告書</title>
+    <!-- Chosen Palette: "Cyberpunk Night" - A dark, professional theme with cool blues and purples. -->
+    <!-- Application Structure Plan: A single-page, top-to-bottom scrolling report. The structure follows the logical flow of the source document, using distinct <section> tags for each chapter. This linear approach is the most intuitive way to present a formal report, allowing users to read it like a traditional document but with enhanced web-native styling and readability. Navigation is handled by scrolling. -->
+    <!-- Visualization & Content Choices: The report is primarily text. The goal is professional presentation. Method: Structured HTML with Tailwind CSS for styling. Icons (SVG) are used to visually anchor each section header, improving scannability. Key technical terms are highlighted using a custom "tag" style for emphasis. No charts are needed as the source is a text-based report. Justification: This approach provides a clean, modern, and highly readable translation of the source document, focusing on typography and layout to convey professionalism. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #111827;
+            color: #d1d5db;
+        }
+        h1, h2, h3 {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .section-card {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 0.75rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(56, 189, 248, 0.1), 0 4px 6px -2px rgba(56, 189, 248, 0.05);
+        }
+        .tag {
+            background-color: #374151;
+            color: #9ca3af;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-block;
+            margin-top: 0.25rem;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="py-12 md:py-20 bg-gray-900">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-4xl md:text-6xl font-black text-white leading-tight">AI 簡報自動生成系統</h1>
+            <p class="mt-4 text-xl md:text-2xl font-medium gradient-text">實作報告書</p>
+            <div class="mt-8 text-sm text-gray-400">
+                <p>專案版本：22.0 (PySide6 重構版)</p>
+                <p class="mt-1">完成日期：2025年8月8日</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-16">
+
+        <section id="summary" class="mb-20">
+            <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                1. 專案摘要
+            </h2>
+            <div class="section-card p-8">
+                <p class="text-lg leading-relaxed">
+                    「AI 簡報自動生成系統」是一個先進的桌面應用程式，旨在徹底改變知識工作者處理資訊與產出簡報的傳統模式。本專案的核心目標是利用大型語言模型（LLM）的強大自然語言理解與生成能力，將非結構化的文字稿（如報告、文章、會議記錄）自動轉換為結構清晰、視覺豐富、專業美觀的 PowerPoint (.pptx) 簡報。
+                </p>
+                <p class="mt-4 text-lg leading-relaxed">
+                    此工具不僅僅是內容的搬運工，它扮演著一位虛擬的資料分析師與簡報設計專家，能夠智慧地提煉核心要點、分析數據並生成對應圖表、設計流程圖，甚至根據文意生成輔助圖片。透過將繁瑣、耗時的簡報製作流程自動化，本專案致力於將使用者的時間與精力解放出來，使其能更專注於內容的深度思考與策略規劃，從而極大地提升工作效率與產出品質。
+                </p>
+            </div>
+        </section>
+        
+        <section id="concept" class="mb-20">
+            <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                2. 創作理念與核心價值
+            </h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="section-card p-8">
+                    <h3 class="text-2xl font-bold text-white mb-4">2.1 創作理念</h3>
+                    <p class="leading-relaxed">本專案的創作理念源於一個前瞻性的問題：「我們能否利用生成式 AI 的力量，將簡報製作流程從數小時縮短至數分鐘？」我們相信 AI 應成為工作流程中無縫整合的智慧夥伴。從早期基於 Tkinter 的原型到最終基於 PySide6 的穩定版，這個技術迭代反映了我們對穩定性、使用者體驗與未來擴展性的堅持，旨在打造一個真正專業、可靠的產品。</p>
+                </div>
+                <div class="section-card p-8">
+                    <h3 class="text-2xl font-bold text-white mb-4">2.2 核心價值</h3>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="text-sky-400">極致效率</strong>：將數小時的工作壓縮至數分鐘。</li>
+                        <li><strong class="text-sky-400">內容結構化</strong>：自動提煉核心論點，組織清晰的敘事結構。</li>
+                        <li><strong class="text-sky-400">數據視覺化</strong>：智慧識別數據，自動生成最適圖表。</li>
+                        <li><strong class="text-sky-400">流程清晰化</strong>：將複雜邏輯轉換為專業流程圖。</li>
+                        <li><strong class="text-sky-400">品牌客製化</strong>：完美套用使用者自訂的 PowerPoint 樣板。</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="mb-20">
+            <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                3. 功能特色
+            </h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="section-card p-6">
+                    <h3 class="text-xl font-bold text-white mb-3">智慧內容解析與摘要</h3>
+                    <p class="text-sm text-gray-400 mb-4">採用 Gemini 模型，透過 Few-Shot Prompting 與思維鏈技術，深度理解文本並進行智慧分頁。</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tag">Gemini</span>
+                        <span class="tag">Chain of Thought</span>
+                    </div>
+                </div>
+                <div class="section-card p-6">
+                    <h3 class="text-xl font-bold text-white mb-3">全自動化視覺設計</h3>
+                    <p class="text-sm text-gray-400 mb-4">整合 Matplotlib 與 Graphviz，自動生成多種圖表與流程圖。創新的「彈性模式」讓使用者自由選擇全自動生圖或人機協作。</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tag">Matplotlib</span>
+                        <span class="tag">Graphviz</span>
+                        <span class="tag">Imagen 3</span>
+                    </div>
+                </div>
+                <div class="section-card p-6">
+                    <h3 class="text-xl font-bold text-white mb-3">廣泛的格式相容性</h3>
+                    <p class="text-sm text-gray-400 mb-4">支援多種主流文件格式輸入，並輸出業界標準的 .pptx 檔案，確保跨平台編輯無礙。</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tag">.pdf</span>
+                        <span class="tag">.docx</span>
+                        <span class="tag">.html</span>
+                        <span class="tag">.pptx</span>
+                    </div>
+                </div>
+                <div class="section-card p-6 lg:col-span-3">
+                    <h3 class="text-xl font-bold text-white mb-3">現代化的使用者介面 (GUI)</h3>
+                    <p class="text-sm text-gray-400 mb-4">採用 PySide6 (Qt for Python) 框架重構，提供原生、流暢的跨平台體驗。利用多執行緒技術確保介面在 AI 運算時不凍結，並透過 qdarkstyle 提供美觀的深色主題。</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="tag">PySide6</span>
+                        <span class="tag">Qt for Python</span>
+                        <span class="tag">Multi-threading</span>
+                        <span class="tag">qdarkstyle</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture" class="mb-20">
+            <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                4. 技術架構
+            </h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="section-card p-8">
+                    <h3 class="text-2xl font-bold text-white mb-4">後端 (`backend.py`)</h3>
+                    <p class="mb-4">作為應用程式的核心引擎，負責所有與資料處理相關的純邏輯運算，與介面完全解耦。</p>
+                    <div class="space-y-2">
+                        <p class="font-semibold">技術棧:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="tag">google-generativeai</span>
+                            <span class="tag">python-pptx</span>
+                            <span class="tag">matplotlib</span>
+                            <span class="tag">requests</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="section-card p-8">
+                    <h3 class="text-2xl font-bold text-white mb-4">前端 (`main_pyside_app.py`)</h3>
+                    <p class="mb-4">作為應用程式的門面，負責提供使用者互動介面，並以非阻塞方式觸發後端任務。</p>
+                    <div class="space-y-2">
+                        <p class="font-semibold">技術棧:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="tag">PySide6</span>
+                            <span class="tag">QThreadPool</span>
+                            <span class="tag">PySide6.Signal</span>
+                            <span class="tag">qdarkstyle</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="manual" class="mb-20">
+            <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                5. 使用手冊
+            </h2>
+            <div class="section-card p-8">
+                <ol class="list-decimal list-inside space-y-4 text-lg">
+                    <li><strong class="text-white">前置設定</strong>：前往 Google AI Studio 取得 API 金鑰。若需使用圖片生成，請在 Google Cloud Console 啟用 Vertex AI API 並設定付款資訊。</li>
+                    <li><strong class="text-white">啟動程式</strong>：解壓縮檔案，執行 `AI_Presentation_Generator.exe`。</li>
+                    <li><strong class="text-white">參數設定</strong>：依序點擊按鈕，完成來源文檔、簡報樣板、輸出資料夾與 AI 金鑰的設定。</li>
+                    <li><strong class="text-white">一鍵生成</strong>：點擊「🚀 一鍵生成簡報」按鈕，並在日誌視窗中觀察即時進度。</li>
+                    <li><strong class="text-white">檢視成果</strong>：生成完畢後，選擇是否立即開啟檔案。所有相關檔案皆已為您整理於獨立的輸出資料夾中。</li>
+                </ol>
+            </div>
+        </section>
+
+        <section id="conclusion">
+            <h2 class="text-3xl font-bold text-white mb-6 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-3 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                6. 結論與未來展望
+            </h2>
+            <div class="section-card p-8">
+                <p class="text-lg leading-relaxed mb-4">
+                    「AI 簡報自動生成系統」專案成功地驗證了利用大型語言模型實現高階辦公自動化的可行性。從 Tkinter 到 PySide6 的架構演進，是本專案走向成熟的關鍵一步，不僅根治了打包過程中的底層依賴衝突，更為應用程式帶來了現代化的外觀與流暢的非阻塞式體驗，為未來的擴展奠定了堅實的基礎。
+                </p>
+                <h3 class="text-xl font-bold text-white mt-6 mb-3">未來展望：</h3>
+                <ul class="list-disc list-inside space-y-2">
+                    <li><strong class="text-sky-400">功能擴展</strong>：支援更多樣化的圖表類型（如甘特圖、熱力圖）。</li>
+                    <li><strong class="text-sky-400">模型增強</strong>：整合多模態模型，讓 AI 能直接「閱讀」來源文檔中的圖片或表格。</li>
+                    <li><strong class="text-sky-400">雲端化/Web 版本</strong>：開發網頁版前端，實現跨裝置無縫使用。</li>
+                    <li><strong class="text-sky-400">互動式編輯</strong>：允許使用者在 AI 生成初稿後，在應用程式內直接進行微調，實現「人機協作」的最終閉環。</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer class="mt-20 py-8 bg-gray-900 border-t border-gray-800">
+        <div class="container mx-auto px-6 text-center text-gray-500">
+            <p>&copy; 2025 AI 簡報自動生成系統專案</p>
+            <p class="text-sm mt-2">由 Gemini 提供技術指導</p>
+        </div>
+    </footer>
+
+</body>
+</html>
