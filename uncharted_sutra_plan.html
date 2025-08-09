@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>未書之經：一場穿越業與空的互動冥想</title>
+    <title>《未書之經》計畫緣起與說明</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,34 +15,40 @@
             color: #E0E0E0;
         }
         .text-teal-glow {
-            text-shadow: 0 0 8px rgba(102, 252, 241, 0.4);
+            text-shadow: 0 0 12px rgba(102, 252, 241, 0.5);
         }
         .card {
-            background-color: rgba(22, 34, 57, 0.5);
+            background-color: rgba(22, 34, 57, 0.6);
             border: 1px solid rgba(69, 162, 158, 0.2);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
         .prose-custom {
             color: #C5C6C7;
+            line-height: 1.8;
         }
         .prose-custom h2 {
             color: #66FCF1;
             font-weight: 500;
             border-bottom: 1px solid rgba(69, 162, 158, 0.3);
-            padding-bottom: 0.5rem;
+            padding-bottom: 0.75rem;
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
         }
         .prose-custom h3 {
             color: #45A29E;
-            font-weight: 500;
+            font-weight: 700;
+            margin-top: 1.5rem;
         }
         .prose-custom a {
             color: #66FCF1;
-            text-decoration: underline;
-            transition: color 0.3s;
+            text-decoration: none;
+            border-bottom: 1px dotted rgba(102, 252, 241, 0.5);
+            transition: all 0.3s;
         }
         .prose-custom a:hover {
             color: #FFFFFF;
+            border-bottom-color: #FFFFFF;
         }
         .prose-custom strong {
             color: #FFFFFF;
@@ -50,94 +56,112 @@
         .prose-custom ul > li::before {
             background-color: #45A29E;
         }
+        .prose-custom blockquote {
+            color: #45A29E;
+            border-left-color: #45A29E;
+        }
     </style>
 </head>
 <body class="antialiased">
     <div class="relative min-h-screen overflow-hidden">
-        <!-- Background Gradient -->
-        <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-gray-900 via-gray-900 to-[#0B111E]"></div>
-        <div class="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-teal-500/10 rounded-full filter blur-3xl animate-pulse"></div>
-        <div class="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-cyan-500/10 rounded-full filter blur-3xl animate-pulse animation-delay-4000"></div>
+        <!-- Background Decoratives -->
+        <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#0B111E] via-gray-900 to-black"></div>
+        <div class="absolute -top-1/3 -left-1/4 w-2/3 h-2/3 bg-teal-500/5 rounded-full filter blur-3xl opacity-50 animate-pulse"></div>
+        <div class="absolute -bottom-1/3 -right-1/4 w-2/3 h-2/3 bg-cyan-500/5 rounded-full filter blur-3xl opacity-50 animate-pulse animation-delay-4000"></div>
 
-        <main class="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+        <main class="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 max-w-4xl">
             
-            <!-- Header -->
             <header class="text-center mb-16">
                 <h1 class="text-4xl sm:text-5xl lg:text-6xl font-light text-teal-300 text-teal-glow tracking-wider">未書之經</h1>
                 <p class="mt-4 text-lg sm:text-xl text-cyan-200/80">一場穿越業與空的互動冥想</p>
             </header>
 
-            <!-- Main Content Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                <!-- Left Column -->
-                <div class="lg:col-span-2 space-y-8">
-                    
-                    <!-- 設計初衷 -->
-                    <section class="card p-8 rounded-2xl prose prose-custom max-w-none">
-                        <h2>緣起：設計的初衷</h2>
-                        <p>
-                            這個計畫始於一個單純的問題：深邃的東方哲學，特別是《心經》中所闡述的「空性」與「緣起」觀，能否轉化為一種可觸摸、可互動的當代體驗？我們期望的，並非僅是將佛學符號作為遊戲的裝飾，而是將其內化為系統的底層物理。
-                        </p>
-                        <p>
-                            《未書之經》因此誕生。它不是一款追求勝負的遊戲，而是一個互動的哲學道場、一面映照心靈的鏡子。我們相信，透過親身在一個由因果法則構成的世界中進行選擇，我們能以一種全新的維度，去理解那些古老經典試圖傳達的智慧。
-                        </p>
-                    </section>
+            <article class="card p-8 sm:p-12 rounded-2xl prose prose-custom max-w-none">
+                <h2>緣起：一部由您親自書寫的經文</h2>
+                <p>
+                    這個計畫，始於一個單純而深遠的叩問：佛法中的智慧，特別是《心經》所闡述的「緣起性空」之理，能否在數位時代，被轉化為一種可親身實踐、可反覆觀照的互動體驗？我們所追求的，並非將佛教符號作為遊戲的表層裝飾，而是將「業力」、「五蘊」、「無常」等核心概念，內化為這個數位世界的底層物理與運作法則。
+                </p>
+                <blockquote>
+                    《未書之經》因此誕生。它不是一款追求勝負的遊戲，而是一座互動的數位道場，一面映照您當下心識的明鏡。
+                </blockquote>
+                <p>
+                    我們深信，語言文字所能傳達的智慧終有其侷限。唯有透過親身在一個由因果法則構成的世界中進行抉擇，我們才能以一個全新的維度，去體悟那些古老經典試圖觸及的真實。這部經文之所以「未書」，是因為它的內容，將由您的每一個起心動念、每一次行為抉擇來親自填寫。
+                </p>
 
-                    <!-- 遊戲特色 -->
-                    <section class="card p-8 rounded-2xl prose prose-custom max-w-none">
-                        <h2>原型特色：心識的顯化</h2>
-                        <p>目前的互動原型旨在探索幾個核心機制的可能性：</p>
-                        <ul>
-                            <li><strong>AI 因果劇場</strong>：由生成式 AI 即時創造無窮盡的道德兩難情境。每個問題都可能結合時事，從個人瑣事到世界大事，讓您的每個選擇都成為種下的「因」。</li>
-                            <li><strong>動態心靈曼陀羅</strong>：您的角色介面是一幅活的曼陀羅，它會根據您內心的「貪、瞋、癡」三毒與「色、受、想、行、識」五蘊狀態，即時變化其樣貌、光彩與和諧度。</li>
-                            <li><strong>思想櫥櫃</strong>：您的行為與抉擇，將會催生出獨特的「思想」。您可以裝備這些思想，觀察它們如何影響您的世界觀，甚至在內心產生衝突，並尋求中道將其昇華為更圓融的智慧。</li>
-                            <li><strong>輪迴轉生</strong>：當您選擇「重啟人生」，此生的業力將會影響下一世的出身與初始條件。AI 會根據您的業果，為您生成一段獨一無二的「轉生開示」，讓每一段生命旅程都成為前一次的延續。</li>
-                        </ul>
-                    </section>
-                </div>
+                <h2>遊戲本質：一場心靈的模擬</h2>
+                <p>
+                    本質上，這是一個以您個人為核心的「心靈模擬器」。它透過幾個相互關聯的系統，將您抽象的內在世界，顯化為可被觀察的數據與圖像：
+                </p>
+                <h3>AI 因果劇場：萬千世界的縮影</h3>
+                <p>
+                    這是您與世界互動的主要介面。由生成式 AI 即時創造無窮無盡、充滿人性掙扎的道德兩難情境。這些情境源於我們建構的「廣闊因緣資料庫」，涵蓋了從個人身心、人際關係，到社會乃至全球層面的種種煩惱與考驗。AI 會根據您設定的名字與當前的修行狀態，為您呈現獨一無二的提問。
+                </p>
+                <p>
+                    <strong>核心要旨：</strong> 在此，最重要的提醒是——**請全然地遵從您的本心**。這裡沒有「正確答案」，更沒有為了迎合系統而存在的「最優解」。唯一的目的，是提供一個讓您觀照自己真實起心動念的機會。您的每一個選擇，都將如實地種下一顆「業因」，並在您的內在世界中開花結果。
+                </p>
 
-                <!-- Right Column -->
-                <div class="space-y-8">
-                    <!-- 如何體驗 -->
-                    <aside class="card p-8 rounded-2xl prose prose-custom max-w-none">
-                        <h2>如何體驗</h2>
-                        <h3>1. 前往原型網站</h3>
-                        <p>您可以透過以下連結，直接在瀏覽器中體驗：</p>
-                        <a href="https://uncharted-sutra-app.vercel.app/" target="_blank" rel="noopener noreferrer" class="block text-center bg-teal-600/50 hover:bg-teal-500/70 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 no-underline">
-                            開始體驗《未書之經》
-                        </a>
+                <h3>心靈曼陀羅與業力儀表板：內在世界的顯化</h3>
+                <p>
+                    您的角色介面，是一幅活的曼陀羅。它並非靜態的圖像，而是您內心狀態的即時投影。您的「五蘊」（色、受、想、行、識）的強弱，以及「三毒」（貪、瞋、癡）的淨化程度，將直接決定這幅曼陀羅的和諧、光彩與完整性。一旁的「業力儀表板」，則更直觀地呈現了您行為背後的動機，並預示了您心靈能量的可能去向。
+                </p>
 
-                        <h3 class="mt-6">2. 設定您的 API 金鑰</h3>
-                        <p>
-                            本原型的心臟——AI 因果劇場，需要 Google Gemini API 來驅動。為了讓此計畫能被公開分享且永續運作，我們採用了讓使用者自行提供金鑰的模式。
-                        </p>
-                        <p>
-                            您的金鑰將**僅儲存在您自己的瀏覽器中**，絕對安全，不會被上傳或分享。
-                        </p>
-                        <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">點此免費取得您的 Google Gemini API 金鑰</a>
+                <h3>思想櫥櫃：智慧的辯證與昇華</h3>
+                <p>
+                    您的行為與抉擇，將會催生出獨特的「思想」。這些思想既是世界觀，也可能是偏見。您可以「裝備」它們，觀察其如何影響您的抉擇；也可以嘗試「內化」它們，將其轉化為永久的智慧。當兩個相互矛盾的思想在您心中交戰時，您將有機會透過抉擇去尋求中道，將其**昇華**為更圓融的全新智慧。這是在遊戲中獲得最稀有、最強大思想的主要途徑。
+                </p>
 
-                        <h3 class="mt-6">3. 開始互動</h3>
-                        <p>
-                            進入網站後，請依提示輸入您的金鑰。接著，您可以開始與「因果劇場」互動，並觀察您的每個選擇，如何即時地反映在「心靈曼陀羅」與「業力儀表板」上。
-                        </p>
-                    </aside>
+                <h3>菩薩道：一條完整的修行之路</h3>
+                <p>
+                    您的所有行為，最終都會反映在這條漫長的修行之路上。本原型完整實作了佛教大乘思想中的「五十二位階」，從最初的「十信位」，歷經「十住」、「十行」、「十迴向」、「十地」，直至最終的「等覺」與「妙覺」。
+                </p>
+                <ul>
+                    <li><strong>晉升與降級：</strong> 階位的提升，取決於您在不同階段的修行重點。例如，在「十信位」時，破除愚癡的智慧抉擇是關鍵；而在「十行位」時，無私利他的慈悲善行則是前進的資糧。反之，若您的行為與當前位階的修行要旨嚴重相悖，道心亦有可能退轉。</li>
+                    <li><strong>終局的抉擇：</strong> 當您圓滿所有位階，證得「妙覺」時，將面臨最終的抉擇：是選擇進入不生不滅的「究竟涅槃」，還是發大悲心，「菩薩歸來」，以圓滿的智慧重入世間，繼續利益眾生。</li>
+                </ul>
 
-                     <!-- 邀請與展望 -->
-                    <aside class="card p-8 rounded-2xl prose prose-custom max-w-none">
-                        <h2>邀請與展望</h2>
-                        <p>
-                            眼前的原型，僅僅是一顆種子，一個龐大願景的初步探索。我們誠摯地邀請所有對這個理念感興趣的朋友——無論您是開發者、設計師、佛學研究者、冥想踐行者，或是單純的好奇者——來體驗這個原型。
-                        </p>
-                        <p>
-                            我們深信，這個框架擁有巨大的潛力。您的任何想法、建議、批評，都將是灌溉這顆種子成長的珍貴養分。若您有興趣參與後續的共同研究與開發，歡迎隨時與我們聯繫。
-                        </p>
-                        <a href="mailto:jrh2025@gmail.com" class="text-center block mt-4 no-underline text-gray-300 hover:text-white">jrh2025@gmail.com</a>
-                    </aside>
-                </div>
-            </div>
+                <h2>當前原型與未來展望</h2>
+                <h3>現況：以文字為核心的哲學原型</h3>
+                <p>
+                    您目前所體驗的版本，是一個以**文字介面為核心**的互動原型。我們刻意將所有視覺元素簡化，是為了將開發重心完全專注於驗證與打磨其內在的哲學機制——AI 如何提出深刻的問題？業力系統如何如實反映抉擇？菩薩道的進程是否合理？我們相信，在華麗的視覺呈現之前，一個堅實、深刻、且充滿智慧的內核，是這個計畫能否成功的基石。
+                </p>
+                <h3>未來：一個可被步入的 3D 心靈宇宙</h3>
+                <p>
+                    我們夢想的終極形態，是一個完全沉浸式的 3D 互動體驗。在這個願景中：
+                </p>
+                <ul>
+                    <li><strong>可探索的識海：</strong> 遊戲世界將不再是選單，而是一片廣闊、由您心識狀態所共同構成的「識海」。當您內心充滿慈悲與智慧時，這片海將風平浪靜、天朗氣清；當您被三毒所困時，則可能波濤洶湧、烏雲密布。</li>
+                    <li><strong>具象化的曼陀羅：</strong> 您的「心靈曼陀羅」將化為一座可以讓您親身步入的宏偉神殿。殿堂的結構、光影與聖像，都將是您內在修為的直接顯化。</li>
+                    <li><strong>星辰般的思想：</strong> 您在「思想櫥櫃」中所獲得的每一個「思想」，都可能成為點亮您內心宇宙的一顆星辰。您可以神遊於這些由您智慧所構成的星系之間，直觀地感受它們的連結與衝突。</li>
+                    <li><strong>真實的因緣際會：</strong> 「因果劇場」的抉擇，將不再是文字選項，而是您在一個栩栩如生的 3D 世界中，與其他角色的真實互動。您的每一個眼神、每一句對白、每一個動作，都將被系統捕捉，成為塑造您未來業力的因。</li>
+                </ul>
+                <p>
+                    這個願景雖然宏大，但我們相信，透過社群的力量，一步一腳印，終有將其化為現實的一天。
+                </p>
 
-            <!-- Footer -->
+                <h2>如何體驗與參與</h2>
+                <h3>使用方式</h3>
+                <p>
+                    本原型的心臟——AI 因果劇場，需要 Google Gemini API 來驅動。為了讓此計畫能被公開分享且永續運作，我們採用了讓使用者自行提供金鑰的模式。
+                </p>
+                <p>
+                    您的金鑰將**僅儲存在您自己的瀏覽器中**，絕對安全，不會被上傳或分享。當您清除瀏覽紀錄時，包含金鑰與進度的存檔將會一併被移除，這也象徵著一次徹底的「遺忘」與重啟。
+                </p>
+                <a href="https://uncharted-sutra-app-tan.vercel.app/" target="_blank" rel="noopener noreferrer" class="block text-center bg-teal-600/50 hover:bg-teal-500/70 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 no-underline">
+                    開始體驗《未書之經》
+                </a>
+                <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" class="block text-center mt-4">點此免費取得您的 Google Gemini API 金鑰</a>
+
+                <h3>邀請與展望</h3>
+                <p>
+                    眼前的原型，僅僅是一顆種子，一個龐大願景的初步探索。我們誠摯地邀請所有對這個理念感興趣的朋友——無論您是開發者、設計師、佛學研究者、冥想踐行者，或是單純的好奇者——來體驗這個原型。
+                </p>
+                <p>
+                    我們深信，這個框架擁有巨大的潛力。您的任何想法、建議、批評，都將是灌溉這顆種子成長的珍貴養分。若您有興趣參與後續的共同研究與開發，歡迎隨時與我們聯繫。
+                </p>
+                <a href="mailto:jrh2025@gmail.com" class="text-center block mt-4 no-underline text-gray-300 hover:text-white">jrh2025@gmail.com</a>
+
+            </article>
+
             <footer class="text-center mt-16 text-gray-500">
                 <p>&copy; 2025 未書之經計畫。一個關於內在探索的開源實驗。</p>
             </footer>
