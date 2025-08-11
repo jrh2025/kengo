@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>《未書之經》- 一場互動式的內心探索之旅</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background-color: #0A101F; /* 深藍灰色底 */
+            color: #E0E0E0; /* 柔和的白色文字 */
+        }
+        .text-shadow {
+            text-shadow: 0px 2px 6px rgba(0,0,0,0.5);
+        }
+        .card-hover {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            background-color: #1E293B; /* 卡片背景色 */
+            border: 1px solid #334155;
+        }
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+        }
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .btn-primary {
+            background-color: #45A29E; /* 遊戲中的青色 */
+            color: #FFFFFF;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #66FCF1;
+            color: #0A101F;
+        }
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 50px;
+            height: 2px;
+            background-color: #45A29E;
+            margin: 16px auto 0;
+        }
+        .text-theme-accent {
+            color: #66FCF1; /* 遊戲中的亮青色 */
+        }
+        /* 新增：首圖背景與光暈效果 */
+        @keyframes rotate-glow {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+            50% { transform: translate(-50%, -50%) rotate(180deg) scale(1.1); }
+            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
+        }
+        .header-bg {
+            background: linear-gradient(180deg, #0A101F 0%, #111827 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .header-bg::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 70vmin;
+            height: 70vmin;
+            background: radial-gradient(circle, rgba(102, 252, 241, 0.08) 0%, rgba(102, 252, 241, 0) 60%);
+            animation: rotate-glow 25s linear infinite;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Chosen Palette: Sutra Deep Teal -->
+    <!-- Application Structure Plan: A single-page, long-scroll narrative structure. The goal is to create a meditative, storytelling experience that mirrors the game's introspective nature. The user scrolls down to unfold the story of the game, from the high-level concept to specific features, and finally to the call to action. This linear flow is intentional, guiding the user through a journey of discovery. Interactive elements are subtle, mainly scroll-triggered animations, to maintain a calm and focused atmosphere. This structure was chosen over a dashboard because the goal is to introduce a concept, not to present fragmented data. -->
+    <!-- Visualization & Content Choices: The report is purely textual, so the focus is on typography, layout, and subtle interaction. Goal: Inform & Intrigue. Method: Thematic sections with distinct layouts (e.g., centered hero, multi-column features). Interaction: Scroll-triggered fade-in animations to pace the reveal of information and create a more engaging reading experience. Justification: This approach turns a static text document into a dynamic, flowing webpage that feels premium and aligns with the Zen/meditative theme of the game. No charts are needed. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Header Section -->
+    <header class="w-full h-screen flex flex-col items-center justify-center text-center p-8 header-bg">
+        <div class="fade-in visible z-10">
+            <h1 class="text-4xl md:text-6xl font-light text-shadow tracking-wider text-gray-100">您的內心，是一部未完成的經文</h1>
+            <p class="mt-4 text-lg md:text-2xl font-light text-shadow text-gray-300">歡迎來到《未書之經》</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="w-full">
+        <!-- Introduction Section -->
+        <section class="max-w-4xl mx-auto py-20 px-8 text-center">
+            <div class="fade-in">
+                <p class="text-xl md:text-2xl leading-relaxed text-gray-300">
+                    在資訊爆炸、價值多元的現代生活中您是否曾感到迷惘，渴望一個能與自己內心深度對話的空間？
+                </p>
+                <p class="mt-8 text-lg md:text-xl leading-relaxed">
+                    我們想向您介紹的，不是一款追求勝負、刺激感官的遊戲，而是一場互動式的冥想，一趟名為<strong class="font-semibold text-theme-accent">《未書之經》</strong>的自我探索之旅。
+                </p>
+                <p class="mt-6 text-lg md:text-xl font-bold tracking-widest text-teal-300">這裡沒有攻略，沒有標準答案，更沒有對錯。唯一的準則，是全然地遵從您的本心。</p>
+            </div>
+        </section>
+
+        <!-- Core Concept Section -->
+        <section class="bg-[#111827] py-24 px-8">
+            <div class="max-w-5xl mx-auto text-center">
+                <div class="fade-in">
+                    <h2 class="text-3xl md:text-4xl font-light section-title text-gray-100">遊戲，亦是觀照內心的道場</h2>
+                    <p class="mt-12 max-w-3xl mx-auto text-lg leading-relaxed text-gray-400">
+                        《未書之經》的核心理念，是將古老的東方智慧與現代生成式 AI 技術結合，為玩家創造一個獨一無二的「心靈沙盒」。在這裡，您的每一個選擇，都將如漣漪般擴散，塑造您獨一無二的內心世界。
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Features Section -->
+        <section class="py-24 px-8">
+            <div class="max-w-6xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <!-- Feature 1 -->
+                    <div class="fade-in p-8 rounded-lg card-hover">
+                        <h3 class="text-2xl font-semibold mb-4 text-theme-accent">為您而生的「因果劇場」</h3>
+                        <p class="text-base leading-relaxed text-gray-400">由 AI 驅動無限劇本，並根據您的年齡、性別與生活狀態生成深度個人化的生命課題。這不是隨機出題，而是因緣的顯現。</p>
+                    </div>
+                    <!-- Feature 2 -->
+                    <div class="fade-in p-8 rounded-lg card-hover" style="transition-delay: 100ms;">
+                        <h3 class="text-2xl font-semibold mb-4 text-theme-accent">可視化的內心宇宙</h3>
+                        <p class="text-base leading-relaxed text-gray-400">透過「心靈曼陀羅」與「業力儀表板」，您的內心狀態與行為傾向不再抽象，而是一目了然的視覺圖騰，幫助您覺察自身。</p>
+                    </div>
+                    <!-- Feature 3 -->
+                    <div class="fade-in p-8 rounded-lg card-hover" style="transition-delay: 200ms;">
+                        <h3 class="text-2xl font-semibold mb-4 text-theme-accent">您的世界觀養成</h3>
+                        <p class="text-base leading-relaxed text-gray-400">在「思想櫥櫃」中，您的抉擇將化為可裝備的思想。當思想相互矛盾時，您必須尋求中道，將其昇華為更高層次的智慧。</p>
+                    </div>
+                    <!-- Feature 4 -->
+                    <div class="fade-in p-8 rounded-lg card-hover" style="transition-delay: 300ms;">
+                        <h3 class="text-2xl font-semibold mb-4 text-theme-accent">跨越語言的界線</h3>
+                        <p class="text-base leading-relaxed text-gray-400">完整支援繁中、簡中、英、日、韓等多國語言，且 AI 會用您選擇的語言與您互動，提供最深刻的母語沉浸感。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vision Section -->
+        <section class="bg-[#111827] py-24 px-8">
+            <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div class="fade-in">
+                    <h2 class="text-3xl md:text-4xl font-light section-title text-center md:text-left text-gray-100">關於原型與未來展望</h2>
+                </div>
+                <div class="fade-in">
+                    <p class="text-lg leading-relaxed mb-6 text-gray-400">
+                        我們希望坦誠地與您分享，《未書之經》目前仍處於一個核心玩法的**設計原型**階段。當前的版本以純粹的文字介面呈現，是為了讓我們能專注於打磨最核心的哲學思辨與個人化 AI 互動體驗。
+                    </p>
+                    <p class="text-lg leading-relaxed text-gray-400">
+                        然而，我們的夢想不止於此。我們由衷地期盼，這個以文字為骨架的靈魂，在未來能有機會與更多志同道合的開發者、3D 美術師、音效設計師們相遇，共同將其發展成一款真正意義上的 **3D 沉浸式體驗遊戲**。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Target Audience Section -->
+        <section class="py-24 px-8">
+            <div class="max-w-5xl mx-auto text-center">
+                <div class="fade-in">
+                    <h2 class="text-3xl md:text-4xl font-light section-title text-gray-100">這是一趟什麼樣的旅程？</h2>
+                    <p class="mt-12 max-w-3xl mx-auto text-lg leading-relaxed text-gray-400">
+                        《未書之經》的目標不是給予您答案，而是提供一個高品質的鏡面，映照出您自己尋找答案的過程。它是一場沿著「菩薩道」前行的漫長修行，您的每一步都算數。
+                    </p>
+                    <div class="mt-12 text-left grid grid-cols-1 sm:grid-cols-2 gap-8">
+                        <div class="bg-[#1E293B] border border-[#334155] p-6 rounded-lg">
+                            <h4 class="font-semibold text-lg text-gray-100">這款遊戲適合：</h4>
+                            <ul class="mt-4 space-y-2 list-disc list-inside text-gray-400">
+                                <li>厭倦了快節奏、高強度競技遊戲的玩家。</li>
+                                <li>對哲學、心理學、自我探索感興趣的沉思者。</li>
+                                <li>在生活中感到些許迷惘，希望尋求不同視角的朋友。</li>
+                                <li>渴望體驗一種全新、寧靜且發人深省的數位互動的任何人。</li>
+                            </ul>
+                        </div>
+                        <div class="bg-[#1E293B] border border-[#334155] p-6 rounded-lg">
+                            <h4 class="font-semibold text-lg text-gray-100">開始之前：</h4>
+                            <p class="mt-4 text-gray-400">您不需要具備任何佛學知識，因為遊戲所探討的，是關於貪、瞋、癡、慈悲、智慧與抉擇的普世人類課題。</p>
+                            <p class="mt-4 text-gray-400">本遊戲原型由生成式 AI 驅動，需要您提供自己的 Google Gemini API 金鑰。我們向您鄭重承諾，您的金鑰將**只會儲存在您本機的瀏覽器中**，絕不會被上傳或紀錄。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action Section -->
+        <section class="bg-[#111827] py-24 px-8">
+            <div class="max-w-4xl mx-auto text-center">
+                <div class="fade-in">
+                    <h2 class="text-3xl md:text-4xl font-light text-gray-100">您準備好翻開那部由您親筆書寫、未完成的經文了嗎？</h2>
+                    <a href="https://sutra-game.vercel.app/"  target="_blank" class="mt-12 inline-block px-12 py-4 rounded-lg text-lg font-semibold btn-primary shadow-lg hover:shadow-xl transition-shadow">
+                        點此開始您的旅程
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-8 text-gray-500 text-sm">
+        <p>&copy; 2025 《未書之經》開發團隊. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fadeInElements = document.querySelectorAll('.fade-in');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, {
+                threshold: 0.1
+            });
+
+            fadeInElements.forEach(el => {
+                observer.observe(el);
+            });
+        });
+    </script>
+
+</body>
+</html>
