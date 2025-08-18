@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaiwanGeoAI-專案藍圖</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        /* Style for section headers */
+        h2 {
+            border-left: 4px solid #3b82f6; /* blue-500 */
+            padding-left: 1rem;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e3a8a; /* blue-900 */
+        }
+        /* Style for sub-headers */
+        h3 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e40af; /* blue-800 */
+        }
+        /* Style for lists */
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        li {
+            margin-bottom: 0.75rem;
+        }
+    </style>
+</head>
+<body class="bg-blue-50 text-gray-800">
+    <div class="container mx-auto max-w-4xl p-6 sm:p-12">
+        <!-- Main Header -->
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-blue-900">TaiwanGeoAI 專案藍圖</h1>
+            <p class="mt-4 text-lg text-blue-700">個人化台灣 AI 地理探索平台 (Python 桌面版)</p>
+            <div class="mt-4 text-sm text-blue-600">
+                <span>版本：1.0</span> | <span>日期：2025年8月14日</span>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="bg-white rounded-xl shadow-lg p-8 md:p-12 leading-relaxed md:leading-loose">
+            
+            <!-- Section 1: Vision and Goals -->
+            <section>
+                <h2>1. 專案願景與目標</h2>
+                <p class="mb-4">本專案旨在打造一個 <strong>安全、私密、高度個人化</strong> 的台灣地理知識工具。其最終目標是交付一個由使用者完全掌控的桌面應用程式，一座「活的數位輿圖」。使用者可利用 Google Gemini AI 的能力一鍵生成指定鄉鎮的豐富地理、人文資料，並對這些資料進行二次編輯、補充與策展，逐步建構出獨一無二的個人專屬台灣知識庫。</p>
+            </section>
+
+            <!-- Section 2: Core Design Principles -->
+            <section>
+                <h2>2. 核心設計原則</h2>
+                <p class="mb-4">本專案的開發將嚴格遵循以下五大核心原則，確保專案方向的正確性：</p>
+                <ul class="list-disc list-inside space-y-3">
+                    <li><strong>使用者中心與完全控制：</strong>使用者是資料的唯一主人，從 API 金鑰到生成內容，一切皆由使用者掌控。</li>
+                    <li><strong>去中心化與本地優先：</strong>所有個人資料與設定檔均儲存在使用者本機，核心功能不依賴任何遠端伺服器。</li>
+                    <li><strong>安全與隱私：</strong>使用者的 Gemini API 金鑰將透過作業系統級別的憑證管理器加密儲存，確保最高等級的隱私保護。</li>
+                    <li><strong>高客製化彈性：</strong>使用者不僅能自訂 AI 生成內容的欄位，還能對已生成的結果進行修改、補充和刪除。</li>
+                    <li><strong>流暢的使用者體驗：</strong>所有耗時的 AI 運算皆在背景執行緒中處理，確保地圖操作與介面互動的即時性與流暢度。</li>
+                </ul>
+            </section>
+
+            <!-- Section 3: Technical Architecture -->
+            <section>
+                <h2>3. 技術架構選型</h2>
+                <p class="mb-4">為實現上述目標，我們選用一套成熟、高效且功能強大的 Python 技術棧：</p>
+                <div class="space-y-4">
+                    <div><strong>應用程式框架：</strong>PyQt6</div>
+                    <p class="pl-4 text-gray-700">理由：提供建構現代化、高效能桌面應用所需的全套工具，擁有豐富的 UI 元件庫與強大的跨平台能力。其信號/槽 (Signal/Slot) 機制是實現安全執行緒間通訊的基石。</p>
+                    
+                    <div><strong>互動地圖引擎：</strong>Folium + PyQt6 QWebEngineView</div>
+                    <p class="pl-4 text-gray-700">理由：Folium 能輕易地將 GeoJSON 資料轉化為互動式 Leaflet.js 地圖。將生成的 HTML 嵌入到 PyQt 的 QWebEngineView 中，是兼顧開發效率與豐富互動體驗的最佳方案。</p>
+
+                    <div><strong>非同步背景處理：</strong>PyQt6 QThread</div>
+                    <p class="pl-4 text-gray-700">理由：這是 PyQt 框架下的標準多執行緒解決方案。它能將網路請求、檔案 I/O 和 AI 推理等耗時操作與主 UI 執行緒完全隔離，避免介面凍結。</p>
+
+                    <div><strong>AI 核心整合：</strong>google-generativeai</div>
+                    <p class="pl-4 text-gray-700">理由：Google 官方提供的 Python SDK，能無縫、穩定地與 Gemini API 進行互動。</p>
+
+                    <div><strong>安全金鑰儲存：</strong>keyring</div>
+                    <p class="pl-4 text-gray-700">理由：提供跨平台的安全憑證存取能力，將敏感的 API 金鑰儲存在作業系統原生的鑰匙圈或憑證管理器中，遠比儲存在本地明文或簡易加密檔案中安全。</p>
+
+                    <div><strong>資料處理與儲存：</strong>Python 標準函式庫 (json, zipfile, pathlib)</div>
+                    <p class="pl-4 text-gray-700">理由：Python 原生支援 JSON 格式的讀寫，zipfile 可輕鬆處理資料的匯出與匯入，pathlib 則提供現代化且穩健的檔案路徑操作。</p>
+                </div>
+            </section>
+
+            <!-- Section 4: System Architecture and Data Flow -->
+            <section>
+                <h2>4. 系統架構與資料流</h2>
+                <p class="mb-4">應用程式的運作流程如下：</p>
+                <ol class="list-decimal list-inside space-y-3">
+                    <li><strong>啟動與初始化：</strong>應用程式啟動，PyQt 主視窗建立。使用 pathlib 檢查資料目錄結構，並使用 keyring 嘗試讀取已儲存的 API 金鑰。</li>
+                    <li><strong>地圖載入：</strong>主程式使用 Folium 讀取本地的台灣鄉鎮 GeoJSON 檔案，生成一張互動式地圖，並將其載入到 QWebEngineView 元件中。</li>
+                    <li><strong>使用者互動 -> 內容顯示：</strong>使用者在地圖上點擊一個鄉鎮。透過 QWebChannel 機制，JavaScript 的點擊事件通知 PyQt。PyQt 接收到鄉鎮 ID 後，讀取對應的 JSON 檔案，並將內容填充到 UI 的資料面板中。</li>
+                    <li><strong>AI 生成觸發 -> 背景任務：</strong>使用者點擊「AI 一鍵資料生成」按鈕。主 UI 執行緒實例化一個 QThread Worker 物件，將鄉鎮 ID 和設定檔內容傳遞給 Worker。Worker 在背景執行緒中建構 Prompt、向 Gemini API 發送請求並解析回傳資料。</li>
+                    <li><strong>背景任務 -> UI 更新：</strong>任務完成後，Worker 發出一個帶有結果資料的信號 (Signal)。主 UI 執行緒中預先定義的槽 (Slot) 接收到該信號，安全地更新介面，並將資料寫入該鄉鎮的 JSON 檔案中。</li>
+                </ol>
+            </section>
+
+            <!-- Section 5: Core Data Structure -->
+            <section>
+                <h2>5. 核心資料結構</h2>
+                <p class="mb-4">資料結構將完全沿用 V3.0 的設計，確保其穩定性與擴充性：</p>
+                <h3>config.json (組態檔)</h3>
+                <p class="mb-4">定義 AI 生成內容的規則。</p>
+                <pre class="bg-gray-100 p-4 rounded-lg text-sm"><code>{
+    "schemaVersion": "3.0",
+    "targetLLM": "Google-Gemini-2.5-Flash",
+    "contentFields": [
+        // 使用者透過視覺化編輯器定義的欄位
+    ]
+}</code></pre>
+                
+                <h3 class="mt-6">.../{township_id}.json (鄉鎮資料檔)</h3>
+                <p class="mb-4">儲存每個鄉鎮的具體內容，展示了 AI 生成與使用者修改後混合的成果。</p>
+                <pre class="bg-gray-100 p-4 rounded-lg text-sm"><code>{
+    "townshipId": 335,
+    "name_zh": "大溪區",
+    "county_zh": "桃園市",
+    "lastUpdated": "2025-08-12T22:30:00Z",
+    "content": {
+        "history_summary": "（使用者修改過的歷史摘要）...",
+        "famous_foods": [
+            { "name": "大溪豆干", "description": "...", "source": "ai_user_modified" },
+            { "name": "百年油飯", "description": "...", "source": "user_added" }
+        ]
+    },
+    "userNotes": {
+        "private_memo": "下次去要記得帶保冷袋裝豆干。"
+    }
+}</code></pre>
+            </section>
+
+            <!-- Section 6: Development Phases -->
+            <section>
+                <h2>6. 開發階段規劃</h2>
+                <p class="mb-4">建議將開發過程分為三個主要階段，以利於迭代和驗證：</p>
+                <h3>第一階段：核心框架與地圖可視化</h3>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li>建立 PyQt6 應用程式的基本骨架與視窗。</li>
+                    <li>整合 Folium 與 QWebEngineView，成功載入並顯示台灣鄉鎮的 GeoJSON 邊界。</li>
+                    <li>實現點擊鄉鎮後，從本地 JSON 檔案讀取資料並靜態顯示在側邊面板的功能。</li>
+                </ol>
+                <p class="mt-2 font-semibold">目標：擁有一個可互動的地圖瀏覽器。</p>
+
+                <h3>第二階段：AI 核心管線整合</h3>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li>開發 API 金鑰設定介面，並使用 keyring 函式庫實現安全的金鑰儲存與讀取。</li>
+                    <li>建構 QThread 背景執行緒，並整合 google-generativeai 函式庫，完成從建構提示到呼叫 API 的完整流程。</li>
+                    <li>實現主執行緒與背景執行緒之間的信號/槽通訊，將 AI 生成的結果非同步地更新並儲存。</li>
+                </ol>
+                <p class="mt-2 font-semibold">目標：實現核心的「一鍵生成」AI 功能。</p>
+
+                <h3>第三階段：功能完善與使用者賦權</h3>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li>開發視覺化 AI 組態編輯器，讓使用者可以不透過程式碼自訂生成內容的欄位。</li>
+                    <li>開發 AI 生成內容的再編輯功能，包含對文字、列表項目的新增、修改與刪除。</li>
+                    <li>開發基於 zipfile 模組的資料庫匯出與匯入功能。</li>
+                    <li>進行全面的 UI/UX 優化，包括載入動畫、錯誤處理、儲存提示等，並完成最終測試與打包。</li>
+                </ol>
+                <p class="mt-2 font-semibold">目標：交付一個功能完整、體驗流暢且真正由使用者掌控的知識工具。</p>
+            </section>
+            
+            <!-- Section 7: Risk Assessment -->
+            <section>
+                <h2>7. 風險評估與應對策略</h2>
+                <ul class="space-y-4">
+                    <li><strong>風險：</strong>Gemini API 規格或費用變更。<br><strong>應對：</strong>將所有 API 呼叫封裝在一個獨立的 GeminiClient 類別中，未來若 API 變更，只需修改此類別，降低對整體程式碼的影響。</li>
+                    <li><strong>風險：</strong>鄉鎮資料量龐大，Folium 生成的 HTML 檔案過大導致載入緩慢。<br><strong>應對：</strong>在生成 GeoJSON 前進行簡化處理；或考慮動態載入，僅顯示可視區域內的資料。</li>
+                    <li><strong>風險：</strong>跨平台打包的複雜性（Windows, macOS, Linux）。<br><strong>應對：</strong>使用 PyInstaller 或 cx_Freeze 等成熟的打包工具，並為不同平台建立獨立的打包腳本與 CI/CD 流程。</li>
+                </ul>
+            </section>
+
+            <!-- Section 8: Conclusion -->
+            <section>
+                <h2>8. 結論</h2>
+                <p>此份計畫藍圖詳細闡述了一個從零開始、使用 Python 技術棧打造「個人化台灣 AI 地理探索平台」的完整路徑。它不僅是以使用者為中心的前瞻性設計，更提供了一套具體、務實且技術上穩健的實施方案。遵循此藍圖，我們將能打造出一個真正獨一無二、安全、強大且完全屬於個人的台灣數位輿圖。</p>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-sm text-blue-600">
+            <p>&copy; 2025 TaiwanGeoAI Project. All Rights Reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>

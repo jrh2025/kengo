@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaiwanGeoAI-使用說明</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        h2 {
+            border-left: 4px solid #6366f1; /* indigo-500 */
+            padding-left: 1rem;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #312e81; /* indigo-900 */
+        }
+        h3 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #3730a3; /* indigo-800 */
+        }
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        li {
+            margin-bottom: 0.75rem;
+        }
+        .key-action {
+            background-color: #e0e7ff; /* indigo-100 */
+            color: #3730a3; /* indigo-800 */
+            padding: 0.1rem 0.5rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-indigo-200 text-gray-800">
+    <div class="container mx-auto max-w-4xl p-6 sm:p-12">
+        <!-- Main Header -->
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-indigo-900">TaiwanGeoAI 使用說明</h1>
+            <p class="mt-4 text-lg text-indigo-700">個人化台灣 AI 地理探索平台 V1.0</p>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="bg-white rounded-xl shadow-lg p-8 md:p-12 leading-relaxed md:leading-loose">
+            
+            <section>
+                <p class="mb-4">您好！歡迎使用「個人化台灣 AI 地理探索平台」。</p>
+                <p class="mb-4">這不僅僅是一個地圖軟體，更是一個專為您打造的私人知識庫。您可以把它想像成一本活的、可以無限擴充的台灣百科全書，而您就是這本書的作者。透過強大的 AI 技術，您可以一鍵生成台灣任一鄉鎮的詳細介紹，並自由地修改、補充，加入自己的照片與筆記，打造出一個完全屬於您的數位台灣。</p>
+                <p class="font-bold text-indigo-800 bg-indigo-100 p-4 rounded-lg">最重要的是，您所有的資料都只會儲存在您自己的電腦上，我們絕不存取，確保您的隱私與安全。</p>
+            </section>
+
+            <!-- Section 1: First Time Setup -->
+            <section>
+                <h2>一、首次啟動：設定您的 AI 金鑰</h2>
+                <p class="mb-4">在開始探索之前，我們需要進行一個簡單的一次性設定，讓軟體能與 AI 連接。</p>
+                <ol class="list-decimal list-inside space-y-3">
+                    <li><strong>開啟金鑰設定視窗：</strong>點擊程式視窗左上角的 <span class="key-action">設定</span> 菜單，選擇 <span class="key-action">設定 Gemini API 金鑰</span>。</li>
+                    <li><strong>輸入您的金鑰：</strong>會彈出一個視窗，請將您自己的 Google Gemini API 金鑰貼到輸入框中。</li>
+                </ol>
+                
+                <h3>如何取得 Google Gemini API 金鑰？</h3>
+                <p class="mb-4">如果您沒有金鑰，可以依照以下步驟免費取得：</p>
+                <ol class="list-decimal list-inside space-y-3">
+                    <li><strong>前往 Google AI Studio：</strong>使用您的網頁瀏覽器，開啟官方網站：<a href="https://aistudio.google.com/" target="_blank" class="text-indigo-600 hover:underline">https://aistudio.google.com/</a></li>
+                    <li><strong>登入 Google 帳號：</strong>使用您的個人 Google 帳號登入。</li>
+                    <li><strong>取得 API 金鑰：</strong>登入後，點擊頁面上的 <span class="key-action">Get API key</span> (取得 API 金鑰) 按鈕。</li>
+                    <li><strong>建立新的 API 金鑰：</strong>在新的頁面中，點擊 <span class="key-action">Create API key in new project</span>。</li>
+                    <li><strong>複製金鑰：</strong>系統會立刻生成一組長字串，點擊旁邊的複製圖示將它完整地複製下來。</li>
+                    <li><strong>貼回本軟體：</strong>回到本軟體的金鑰設定視窗，將剛剛複製的金鑰貼上。</li>
+                    <li><strong>儲存金鑰：</strong>點擊 <span class="key-action">儲存</span> 按鈕。軟體會將您的金鑰安全地加密保存在您的電腦中。</li>
+                </ol>
+                <p class="mt-4">設定完成後，您就可以開始使用 AI 的強大功能了！</p>
+            </section>
+
+            <!-- Section 2: Basic Operations -->
+            <section>
+                <h2>二、基本操作：探索與生成</h2>
+                <p class="mb-4">軟體的主畫面分為兩部分：左邊是<strong>互動地圖</strong>，右邊是<strong>資料顯示區</strong>。</p>
+                <h3>選擇鄉鎮</h3>
+                <p class="mb-4">在地圖上，您可以自由縮放與拖曳。當滑鼠移動到某個鄉鎮上方時，該鄉鎮的邊界會<strong>高亮</strong>顯示。點擊地圖上的任一鄉鎮，右側的資料顯示區就會準備好顯示該鄉鎮的資訊。</p>
+                <h3>AI 一鍵生成資料</h3>
+                <p class="mb-4">選擇一個鄉鎮後，右下角的 <span class="key-action">AI 一鍵生成資料</span> 按鈕就會變為可用狀態。點擊此按鈕，程式會詢問您是否確定，因為這個操作會<strong>覆蓋</strong>目前已有的內容。確認後，您會看到「AI 運算中...」的提示。完成後，豐富的圖文資料就會自動呈現在右側面板上。</p>
+            </section>
+
+            <!-- Section 3: Core Functionality -->
+            <section>
+                <h2>三、核心功能：編輯您的個人知識庫</h2>
+                <p class="mb-4">AI 生成的資料是一個很棒的起點，但真正的樂趣在於將它變成您自己的東西！</p>
+                <ol class="list-decimal list-inside space-y-4">
+                    <li><strong>進入編輯模式：</strong>當右側顯示資料時，點擊 <span class="key-action">編輯</span> 按鈕，顯示的文字就會變成可以修改的輸入框。</li>
+                    <li><strong>修改內容：</strong>
+                        <ul class="list-disc list-inside mt-2 ml-4">
+                            <li><strong>修改文字：</strong>直接在文字框中打字，就可以修正 AI 的內容，或加入您自己的見解。</li>
+                            <li><strong>管理列表：</strong>對於列表項目，可以點擊 <span class="key-action">新增...項目</span> 來增加，或點擊項目旁邊的 <span class="key-action">刪除</span> 按鈕來移除。</li>
+                        </ul>
+                    </li>
+                    <li><strong>上傳您的照片：</strong>在編輯模式下，點擊 <span class="key-action">新增圖片</span> 按鈕，從您的電腦中選擇照片。照片會以縮圖形式顯示。</li>
+                    <li><strong>儲存變更：</strong>完成所有修改後，請務必點擊 <span class="key-action">儲存</span> 按鈕。若想放棄修改，可點擊 <span class="key-action">取消</span> 按鈕。</li>
+                </ol>
+            </section>
+
+            <!-- Section 4: Advanced Features -->
+            <section>
+                <h2>四、進階功能：管理與分享您的成果</h2>
+                <p class="mb-4">當您累積了豐富的資料後，這些功能會非常實用。</p>
+                <ul class="list-disc list-inside space-y-4">
+                    <li><strong>備份與分享 (ZIP)：</strong>在頂部 <span class="key-action">資料</span> 菜單中，選擇 <span class="key-action">匯出鄉鎮資料成 ZIP...</span>，可將目前鄉鎮的所有文字和圖片打包。相對地，也可透過 <span class="key-action">匯入鄉鎮資料...</span> 讀取備份檔。</li>
+                    <li><strong>製作講義 (PDF)：</strong>在 <span class="key-action">資料</span> 菜單中，選擇 <span class="key-action">匯出鄉鎮資料成 PDF...</span>，可將資料製作成一份排版乾淨的 PDF 文件。</li>
+                    <li><strong>調整閱讀舒適度：</strong>到 <span class="key-action">設定</span> -> <span class="key-action">調整字體大小</span> 菜單中隨時調整。</li>
+                    <li><strong>(高手專用) 自訂 AI 生成內容：</strong>到 <span class="key-action">設定</span> -> <span class="key-action">編輯 AI 生成欄位...</span> 進行修改。您可以新增、移除、重新排序 AI 生成的項目，甚至修改給 AI 的指令。</li>
+                </ul>
+                <p class="mt-6">希望這份說明能幫助您快速上手！祝您在探索與建造個人台灣知識庫的旅途中充滿樂趣！</p>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-sm text-indigo-600">
+            <p>&copy; 2025 TaiwanGeoAI Project. All Rights Reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>

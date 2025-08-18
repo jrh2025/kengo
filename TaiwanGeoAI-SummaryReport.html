@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaiwanGeoAI-總結報告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        h2 {
+            border-left: 4px solid #22c55e; /* green-500 */
+            padding-left: 1rem;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #14532d; /* green-900 */
+        }
+        h3 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #166534; /* green-800 */
+        }
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        li {
+            margin-bottom: 0.75rem;
+        }
+    </style>
+</head>
+<body class="bg-green-50 text-gray-800">
+    <div class="container mx-auto max-w-4xl p-6 sm:p-12">
+        <!-- Main Header -->
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-green-900">TaiwanGeoAI 總結報告</h1>
+            <p class="mt-4 text-lg text-green-700">個人化台灣 AI 地理探索平台 V1.0</p>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="bg-white rounded-xl shadow-lg p-8 md:p-12 leading-relaxed md:leading-loose">
+            
+            <!-- Section 1: Design Philosophy and Vision -->
+            <section>
+                <h2>1. 設計理念與願景</h2>
+                <p class="mb-4">本平台的核心理念是打造一座 <strong>安全、私密且高度個人化的「活的數位輿圖」</strong>。在資訊爆炸的時代，我們需要的不再是更多的通用資料，而是一個能讓我們沉澱、整理、並與知識互動的私有空間。此專案的誕生，旨在將強大的 AI 能力交到使用者手中，讓每一位對台灣這片土地懷有情感與好奇心的人，都能成為自己知識庫的建築師。</p>
+                <p>我們的願景是交付一個由使用者 <strong>完全掌控的桌面應用程式</strong>。在這裡，使用者是資料的唯一主人。從決定 AI 生成內容的結構，到對每一筆資料進行細微的修改與補充，再到所有資料安全地儲存在使用者本機，我們致力於打破傳統雲端服務的框架。最終，本工具將不僅僅是一個地理資料查詢器，而是使用者探索台灣、記錄感悟、並逐步建構出獨一無二個人觀點的忠實夥伴。</p>
+            </section>
+
+            <!-- Section 2: Target Audience and Use Cases -->
+            <section>
+                <h2>2. 適用對象與使用時機</h2>
+                <p class="mb-4">本平台為具有探索精神與知識整理需求的各類使用者而設計，能在以下情境發揮最大價值：</p>
+                <ul class="list-disc list-inside space-y-4">
+                    <li><strong>學術研究者與學生：</strong>進行台灣特定鄉鎮的地理、人文、歷史專題研究時。可利用 AI 快速生成基礎資料作為研究起點，再結合田野調查、文獻資料進行編輯與擴充，並上傳實地拍攝的照片，最終匯出為研究報告的素材。</li>
+                    <li><strong>文史工作者與內容創作者：</strong>為部落格文章、書籍、或紀錄片撰寫關於台灣鄉鎮的內容時。平台提供了一個集中的資料工作站，可以客製化 AI 生成的內容欄位以符合創作需求，並將零散的靈感與素材統一管理。</li>
+                    <li><strong>深度旅遊愛好者：</strong>規劃或回顧一趟深入鄉鎮的旅行時。出發前，可生成當地小吃、景點的詳細資訊；旅途中，可隨時編輯、加入私房景點或筆記；歸來後，這裡便是儲存旅行記憶與照片的最佳寶庫。</li>
+                    <li><strong>教育工作者：</strong>編寫鄉土教學課程的教材時。教師可以為不同鄉鎮生成資料，並根據學生的年齡與認知程度，親自編輯內容的深淺，最後匯出成 PDF 講義，實現高度客製化的教學。</li>
+                    <li><strong>所有對台灣充滿好奇的知識收藏家：</strong>當您想系統性地建立一個專屬於自己的台灣知識庫時。本平台提供了一個完美的起點與持續演進的工具，讓您能以鄉鎮為單位，逐步點亮整張台灣地圖。</li>
+                </ul>
+            </section>
+
+            <!-- Section 3: Core Features -->
+            <section>
+                <h2>3. 軟體核心特色</h2>
+                <div class="space-y-6">
+                    <div>
+                        <h3>高度個人化的 AI 內容策展</h3>
+                        <p>使用者不僅能一鍵生成 AI 資料，更是這些資料的「策展人」。您可以無限制地修改文字描述、新增或刪除列表項目（如小吃、景點），甚至上傳自己拍攝的圖片。這是實現「終極個人化」的核心功能，讓 AI 資料從「它的」變成「你的」。</p>
+                    </div>
+                    <div>
+                        <h3>使用者完全掌控的安全性與隱私</h3>
+                        <p>本平台恪守「去中心化」與「本地優先」原則。您的 Google Gemini API 金鑰將透過作業系統級別的憑證管理器加密儲存，提供最高等級的隱私保護。所有鄉鎮資料、圖片及設定檔均儲存在您的本機電腦上，不依賴任何遠端伺服器，確保您對個人資料的絕對控制權。</p>
+                    </div>
+                    <div>
+                        <h3>視覺化的 AI Prompt 自訂能力</h3>
+                        <p>內建的「視覺化 AI 組態編輯器」是一項賦權於使用者的強大功能。您無需撰寫任何程式碼，就能透過圖形介面自由新增、移除、或重新排序 AI 生成的內容欄位。您可以為每個欄位量身打造專屬的 AI 提示(Prompt)，精準地引導 AI 產出您最需要的資訊格式與內容。</p>
+                    </div>
+                    <div>
+                        <h3>流暢的非同步體驗與互動式地圖</h3>
+                        <p>所有耗時的 AI 運算與網路請求都在背景執行緒中處理。這確保了即使在等待 AI 回應時，您依然可以流暢地在地圖上進行縮放、點擊等操作，UI 介面絕不凍結。結合基於 Folium 的互動式地圖，讓您能直觀地點選鄉鎮，即時讀取與編輯資料，體驗無縫接軌。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: Full Feature List -->
+            <section>
+                <h2>4. 完整功能介紹</h2>
+                
+                <h3>地圖與資料探索</h3>
+                <ul class="list-disc list-inside">
+                    <li><strong>互動式台灣地圖：</strong>內建台灣鄉鎮邊界 GeoJSON，提供可縮放、平移的互動式地圖。</li>
+                    <li><strong>視覺化回饋：</strong>滑鼠懸停時會高亮顯示鄉鎮邊界，點擊即可選取。</li>
+                    <li><strong>資料面板：</strong>在視窗右側顯示所選鄉鎮的詳細資料。</li>
+                </ul>
+
+                <h3>AI 核心功能</h3>
+                <ul class="list-disc list-inside">
+                    <li><strong>一鍵生成：</strong>點擊按鈕即可為選定鄉鎮呼叫 Google Gemini AI 生成豐富的圖文資料。</li>
+                    <li><strong>模型選擇：</strong>可從設定菜單中選擇不同的 Gemini AI 模型。</li>
+                    <li><strong>非同步處理：</strong>AI 生成任務在背景執行，不影響主程式的響應。</li>
+                    <li><strong>狀態顯示：</strong>在 AI 運算過程中，介面會顯示「運算中」的提示，並在成功或失敗時提供明確反饋。</li>
+                </ul>
+
+                <h3>內容編輯與管理</h3>
+                <ul class="list-disc list-inside">
+                    <li><strong>圖文編輯模式：</strong>提供獨立的編輯模式，可修改所有由 AI 生成的文字內容。</li>
+                    <li><strong>列表項目管理：</strong>可以自由新增、修改或刪除列表中的項目（如知名小吃、熱門景點）。</li>
+                    <li><strong>圖片管理：</strong>支援從本機上傳圖片，並以縮圖形式呈現在資料中，點擊可放大預覽。</li>
+                    <li><strong>即時存檔：</strong>所有編輯內容都會儲存至該鄉鎮對應的本地 JSON 檔案中。</li>
+                </ul>
+
+                <h3>高度客製化</h3>
+                <ul class="list-disc list-inside">
+                    <li><strong>AI 組態編輯器：</strong>提供視覺化介面，讓使用者自訂 AI 生成的欄位 ID、名稱、類型及 Prompt。</li>
+                    <li><strong>字體大小調整：</strong>可隨時在菜單中放大或縮小資料面板的字體，提升閱讀舒適度。</li>
+                    <li><strong>預設值還原：</strong>在組態編輯器中，可一鍵將 AI 生成規則還原為程式初始設定。</li>
+                </ul>
+
+                <h3>安全與資料管理</h3>
+                <ul class="list-disc list-inside">
+                    <li><strong>安全金鑰儲存：</strong>透過 keyring 函式庫，將 API 金鑰安全地儲存在作業系統的憑證管理器中。</li>
+                    <li><strong>金鑰管理：</strong>提供設定與刪除已儲存 API 金鑰的介面。</li>
+                    <li><strong>資料匯出 (ZIP)：</strong>可將指定鄉鎮的文字資料 (JSON) 與所有圖片打包成一個 .zip 檔案，方便備份與分享。</li>
+                    <li><strong>資料匯入 (ZIP)：</strong>可讀取 .zip 檔案，將其中的資料覆蓋或匯入到指定的鄉鎮中。</li>
+                    <li><strong>資料匯出 (PDF)：</strong>可將目前鄉鎮的完整資料（含圖片）匯出為一個排版簡潔的 PDF 檔案。</li>
+                </ul>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-sm text-green-600">
+            <p>&copy; 2025 TaiwanGeoAI Project. All Rights Reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>

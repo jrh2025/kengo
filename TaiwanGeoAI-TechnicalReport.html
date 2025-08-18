@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaiwanGeoAI-技術報告</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        h2 {
+            border-left: 4px solid #64748b; /* slate-500 */
+            padding-left: 1rem;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b; /* slate-900 */
+        }
+        h3 {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #334155; /* slate-800 */
+        }
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        li {
+            margin-bottom: 0.75rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-200 text-gray-800">
+    <div class="container mx-auto max-w-4xl p-6 sm:p-12">
+        <!-- Main Header -->
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900">TaiwanGeoAI 技術報告</h1>
+            <p class="mt-4 text-lg text-slate-700">個人化台灣 AI 地理探索平台 V1.0</p>
+            <div class="mt-4 text-sm text-slate-600">
+                <span>版本：1.0</span> | <span>日期：2025年8月16日</span>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="bg-white rounded-xl shadow-lg p-8 md:p-12 leading-relaxed md:leading-loose">
+            
+            <!-- Section 1: Project Overview -->
+            <section>
+                <h2>1. 專案概述</h2>
+                <p class="mb-4">本專案旨在開發一個以 Python 為核心技術棧的桌面應用程式，其目標是打造一個安全、私密、由使用者完全掌控的台灣地理知識庫。專案遵循五大核心設計原則：</p>
+                <p class="text-center font-medium text-slate-700 bg-slate-100 p-4 rounded-lg">使用者中心與完全控制、去中心化與本地優先、安全與隱私、高客製化彈性，以及流暢的使用者體驗。</p>
+                <p class="mt-4">所有架構決策與技術選型均圍繞這些原則展開。</p>
+            </section>
+
+            <!-- Section 2: Technology Stack -->
+            <section>
+                <h2>2. 技術棧選型與理由 (Technology Stack)</h2>
+                <p class="mb-4">為實現專案目標，我們選用了一套成熟且高效的技術組合：</p>
+                <div class="space-y-4">
+                    <div><strong>應用程式框架：PyQt6</strong></div>
+                    <p class="pl-4 text-gray-700">理由：提供建構現代化桌面應用所需的全套 UI 元件庫。其核心的信號/槽 (Signal/Slot) 機制是實現安全執行緒間通訊的基石，對於確保背景任務與主 UI 執行緒的穩定互動至關重要。</p>
+                    
+                    <div><strong>互動地圖引擎：Folium + PyQt6.QtWebEngineWidgets.QWebEngineView</strong></div>
+                    <p class="pl-4 text-gray-700">理由：Folium 能輕易地將 GeoJSON 資料轉化為互動式 Leaflet.js 地圖的 HTML/JS/CSS 檔案。將此 HTML 嵌入到 QWebEngineView 中，是兼顧開發效率與豐富互動體驗的最佳方案。</p>
+
+                    <div><strong>非同步背景處理：PyQt6.QtCore.QThread</strong></div>
+                    <p class="pl-4 text-gray-700">理由：此為 PyQt 框架的標準多執行緒解決方案。它能將網路請求 (API 呼叫)、檔案 I/O 和 AI 推理等耗時操作與主 UI 執行緒完全隔離，從根本上避免介面凍結，保障了使用者體驗的流暢度。</p>
+
+                    <div><strong>AI 核心整合：google-generativeai</strong></div>
+                    <p class="pl-4 text-gray-700">理由：作為 Google 官方提供的 Python SDK，它能無縫、穩定地與 Gemini API 進行互動，並支援進階功能，簡化了結構化資料的獲取流程。</p>
+
+                    <div><strong>安全金鑰儲存：keyring</strong></div>
+                    <p class="pl-4 text-gray-700">理由：提供跨平台的安全憑證存取能力，能將敏感的 API 金鑰儲存在作業系統原生的鑰匙圈 (macOS) 或憑證管理器 (Windows) 中。這遠比儲存在本地明文或簡易加密檔案中安全，是實現專案安全與隱私原則的關鍵組件。</p>
+
+                    <div><strong>資料處理與儲存：Python 標準函式庫 (json, zipfile, pathlib)</strong></div>
+                    <p class="pl-4 text-gray-700">理由：json 模組原生支援專案核心資料格式的讀寫；zipfile 可輕鬆實現資料的匯出與匯入功能；而 pathlib 則提供了現代化且穩健的物件導向檔案路徑操作，增強了程式碼的可讀性與可靠性。</p>
+                </div>
+            </section>
+
+            <!-- Section 3: System Architecture and Data Flow -->
+            <section>
+                <h2>3. 系統架構與資料流</h2>
+                <p class="mb-4">應用程式的運作流程體現了 UI 執行緒與背景執行緒的分離設計：</p>
+                <ol class="list-decimal list-inside space-y-3">
+                    <li><strong>啟動與初始化：</strong>MainWindow 實例化，使用 pathlib 檢查核心檔案路徑。使用 keyring 讀取 API 金鑰。啟動 QThread 在背景生成 map.html。</li>
+                    <li><strong>地圖互動 (JS -> Python)：</strong>QWebEngineView 載入 map.html。透過 QWebChannel 將 Python 物件註冊到 JavaScript。當地圖點擊事件觸發時，呼叫 Python 物件的方法，該方法再發出 PyQt 信號將鄉鎮 ID 傳遞給 MainWindow。</li>
+                    <li><strong>AI 生成觸發 (Main Thread -> Worker Thread)：</strong>使用者點擊按鈕。主 UI 執行緒實例化 AIWorker (QObject) 和 QThread，將 Worker 移至新執行緒並傳遞參數後啟動。</li>
+                    <li><strong>AI 任務執行與回傳 (Worker Thread -> Main Thread)：</strong>背景執行緒中，AIWorker 建構 Prompt、呼叫 API、解析資料。完成後發出 finished 信號（帶結果）或 error 信號。主 UI 執行緒中的槽函數接收信號，安全地更新 UI 並儲存檔案。</li>
+                </ol>
+            </section>
+
+            <!-- Section 4: Core Data Structure -->
+            <section>
+                <h2>4. 核心資料結構</h2>
+                <p class="mb-4">資料結構的設計確保了穩定性與擴充性：</p>
+                <h3>config.json (組態檔)</h3>
+                <ul class="list-disc list-inside">
+                    <li><strong>用途：</strong>定義 AI 生成內容的規則，並驅動 UI 的動態生成。</li>
+                    <li><strong>結構：</strong>包含 schemaVersion, targetLLM 及 contentFields 陣列。contentFields 中的每個物件都定義了一個資料欄位的 ID、顯示名稱、類型及 AI 提示 (Prompt)。</li>
+                </ul>
+                
+                <h3 class="mt-6">.../{township_id}.json (鄉鎮資料檔)</h3>
+                <ul class="list-disc list-inside">
+                    <li><strong>用途：</strong>儲存每個鄉鎮的具體內容，是 AI 生成與使用者修改後成果的混合體。</li>
+                    <li><strong>結構：</strong>包含鄉鎮的基本中繼資料，以及一個 content 物件。content 物件的 key 直接對應 config.json 中定義的 fieldId。此外，還包含 images 陣列來追蹤相關圖片檔案。</li>
+                </ul>
+            </section>
+
+            <!-- Section 5: Key Implementation Details -->
+            <section>
+                <h2>5. 關鍵技術實現細節</h2>
+                <ul class="space-y-4">
+                    <li><strong>動態 UI 生成：</strong>資料顯示面板並非靜態佈局。程式會讀取 config.json，並根據 contentFields 的定義，動態地為每個欄位創建對應的 UI 元件。這使得 UI 能自動適應使用者對資料結構的任何修改。</li>
+                    <li><strong>PDF 匯出實現：</strong>此功能利用了一個隱藏的 QWebEngineView 實例。程式先將鄉鎮資料動態生成一份 HTML，載入到隱藏的 WebView 中，待頁面載入完成後，直接呼叫其 page().printToPdf() 方法，利用 Web 引擎強大的渲染能力來生成格式精美的 PDF 檔案。</li>
+                    <li><strong>狀態管理：</strong>在組態編輯器中，通過一個 list of dicts 作為資料的 "single source of truth"。UI 上的任何變更都會先寫回這個 list，儲存時再將整個 list 寫入 JSON。操作時採用「儲存當前 -> 操作資料 -> 重繪UI -> 載入新狀態」的順序，確保資料的完整性。</li>
+                </ul>
+            </section>
+            
+            <!-- Section 6: Risk Assessment -->
+            <section>
+                <h2>6. 風險評估與應對策略</h2>
+                <ul class="space-y-4">
+                    <li><strong>API 規格或費用變更：</strong>所有 API 呼叫邏輯均被封裝在 AIWorker 類別中。未來若 API 發生變更，只需修改此類別。</li>
+                    <li><strong>地圖載入效能：</strong>目前已採用簡化的 GeoJSON。未來可考慮進行更積極的拓樸預簡化。</li>
+                    <li><strong>跨平台打包：</strong>專案選用的技術棧本身具有良好的跨平台特性。應對策略是使用 PyInstaller 等成熟工具，並為不同平台建立獨立的打包腳本與 CI/CD 流程。</li>
+                </ul>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-sm text-slate-600">
+            <p>&copy; 2025 TaiwanGeoAI Project. All Rights Reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>
