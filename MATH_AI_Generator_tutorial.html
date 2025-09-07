@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MATH AI 智慧題庫生成器 - 使用手冊</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8; /* 增加行距 */
+            color: #333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto; /* 增加上下邊距 */
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        h1, h2, h3 {
+            color: #1a73e8;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-top: 2em; /* 增加標題上方間距 */
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            border-bottom: none;
+        }
+        p, li {
+            font-size: 1.1em;
+            margin-bottom: 1em; /* 增加段落間距 */
+        }
+        a {
+            color: #1967d2;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .section {
+            margin-bottom: 40px; /* 增加區塊間距 */
+        }
+        .highlight {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-left: 5px solid #1a73e8;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .highlight strong {
+            color: #0d47a1;
+        }
+        ul {
+            padding-left: 25px;
+        }
+        li {
+            margin-bottom: 0.8em;
+        }
+        strong {
+            color: #d93025;
+        }
+        .download-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f1f8e9;
+            border-radius: 8px;
+        }
+        .download-button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 25px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 1.2em;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+        }
+        .download-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MATH AI 智慧題庫生成器</h1>
+        <p style="text-align: center; font-size: 1.2em; color: #5f6368;">設計理念與詳細使用手冊</p>
+
+        <div class="section" id="philosophy">
+            <h2>一、設計理念：成為教師的專業 AI 助理</h2>
+            <p>在教育現場，教師們花費大量心力在設計高品質、符合課綱且具鑑別度的評量試题上。這個過程不僅耗時，更需要持續的專業投入與創意發想。「MATH AI 智慧題庫生成器」的誕生，旨在解決這個核心痛點。</p>
+            <p>我們的目標不是取代教師，而是<strong>成為教師最強大的專業 AI 助理</strong>。我们相信，AI 的力量在於將教師從重複性的勞動中解放，讓他們能更專注於教學設計、學生互動與因材施教等更具創造性的工作上。</p>
+            <h3>本工具的設計遵循以下核心原則：</h3>
+            <ul>
+                <li><strong>結構化指令，確保專業產出：</strong>AI 的產出品質，取決於輸入指令的品質。本工具的核心是「設定檔產生器」，它引導使用者輸入結構化、標準化且符合教育專業的參數。</li>
+                <li><strong>課綱為本，緊扣教學現場：</strong>所有試題設計皆以台灣的「108課綱」為基礎，確保每一次的生成任務都能精準對應到特定的學習內容條目。</li>
+                <li><strong>流程分離，簡化複雜操作：</strong>將複雜的 AI 生成任務拆解為兩個獨立且連續的步驟：「1. 設定檔產生器」與「2. AI 試題生成器」，引導使用者完成清晰的工作流程。</li>
+                <li><strong>透明與彈性，賦予使用者完全控制權：</strong>使用者可以隨時下載包含完整指令的「Prompt 文字檔」，並將這份指令拿到任何自己慣用的 AI 平台（如 ChatGPT、Claude 等）上使用。</li>
+                <li><strong>面向未來的資料結構：</strong>下載的 JSON 結果完整保留生成條件，方便未來整合進更大的題庫系統。</li>
+                <li><strong>實用的輸出格式，無縫接軌工作流程：</strong>支援多種匯出格式（DOCX, PDF, HTML），並貼心地自動產生教師版（含答案與詳解）與學生版。</li>
+            </ul>
+        </div>
+        
+        <div class="download-section">
+            <h3>程式下載</h3>
+            <p>您可以從以下連結下載「MATH AI 智慧題庫生成器」的 Windows 應用程式：</p>
+            <a href="https://drive.google.com/file/d/1SecmXQoDNxGFnINnbxXgj-zPibcma35O/view?usp=sharing" target="_blank" class="download-button">點此前往下載頁面</a>
+        </div>
+
+        <div class="section" id="manual">
+            <h2>二、詳細使用手冊</h2>
+            <h3>程式核心功能簡介</h3>
+            <div class="highlight">
+                <p>「MATH AI 智慧題庫生成器」主要提供兩大核心功能，您可以根據需求彈性使用：</p>
+                <ul>
+                    <li><strong>功能一：專業 Prompt 產生器（無需 API 金鑰）</strong><br>位於「1. 設定檔產生器」分頁。此功能專注於協助您依據 108 課綱，產生結構化、高品質的 AI 指令 (Prompt)。</li>
+                    <li><strong>功能二：AI 試題自動生成（需要 API 金鑰）</strong><br>位於「2. AI 試題生成器」分頁。此功能會直接連接 Google Gemini AI，執行 Prompt 指令並自動產出試題。</li>
+                </ul>
+            </div>
+
+            <h3>功能一：專業 Prompt 產生器 (無需 API 金鑰)</h3>
+            <p>此功能讓您即便沒有 API 金鑰，也能利用本工具的課綱整合優勢，產出專業的 AI 指令。</p>
+            <ol>
+                <li><strong>啟動程式與準備：</strong>執行 <code>MATH_AI_Generator.exe</code> 檔案來啟動程式。請確保 <code>math_curriculum.json</code> 檔案與執行檔放在同一個資料夾內。</li>
+                <li><strong>定義試題規格：</strong>在「1. 設定檔產生器」分頁填寫所有欄位。其中<strong>「測驗目標」</strong>是影響生成品質最重要的欄位！請盡量寫得明確具體。</li>
+                <li><strong>產出與使用：</strong>點擊<strong>「下載 Prompt 文字檔 (.txt)」</strong>按鈕，程式會將您的所有設定儲存成一個純文字檔。您可以將這個檔案的內容完整複製，貼到任何 AI 服務的對話框中即可生成試題。生成的試題是包含詳解的json檔，你提供這個json檔繼續讓 AI 為你生成互動式的html檔讓它發揮更多價值。</li>
+            </ol>
+
+            <h3>功能二：AI 試題自動生成 (需要設定 API 金鑰)</h3>
+            <p>如果您想一站式完成所有工作，可以直接使用本程式內建的 AI 生成引擎。</p>
+            <ol>
+                <li><strong>設定 API 金鑰 (僅需設定一次)：</strong>
+                    <ul>
+                        <li>前往 <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio 網站</a>，登入您的 Google 帳號，即可免費產生一組 API 金鑰。</li>
+                        <li>在程式的「2. AI 試題生成器」分頁，貼上您的金鑰，勾選「記住金鑰」並點擊「儲存」。</li>
+                    </ul>
+                </li>
+                <li><strong>開始生成：</strong>確認設定無誤後，點擊巨大的<strong>「⚡ 開始生成試題 ⚡」</strong>按鈕。</li>
+                <li><strong>查看與下載成果：</strong>下方的文字框會顯示詳細的運作日誌與最終的試題預覽。生成成功後，即可使用下方的下載按鈕匯出 DOCX / PDF / HTML 或 JSON 檔案。</li>
+            </ol>
+        </div>
+
+        <div class="section" id="faq">
+            <h2>三、常見問題 (FAQ)</h2>
+            <p><strong>Q: 我一定要有 API 金鑰才能使用這個程式嗎？</strong></p>
+            <p>A: 不需要。您可以完全免費地使用「1. 設定檔產生器」的所有功能。只有當您想直接使用「2. AI 試題生成器」的一鍵生成功能時，才需要設定您自己的 API 金鑰。</p>
+            
+            <p><strong>Q: 當我點擊「開始生成試題」時，程式顯示「生成失敗！」該怎麼辦？</strong></p>
+            <p>A: 請先查看日誌區塊顯示的錯誤訊息。常見原因有：API 金鑰錯誤、網路問題、或 API 免費額度暫時用盡。</p>
+            
+            <p><strong>Q: 生成的試題品質不理想，可以怎麼改善？</strong></p>
+            <p>A: 試題品質的關鍵在於第一分頁的<strong>「測驗目標」</strong>。請試著將測驗目標寫得更明確、更具體。例如，與其寫「測驗一元一次方程式」，不如寫「測驗學生是否能將應用題的文字情境，正確轉換為一元一次方程式並求解」。</p>
+        </div>
+        
+        <hr style="margin-top: 40px; border: 1px solid #eee;">
+        <p style="text-align: center; color: #888; font-size: 0.9em;">希望這份手冊能幫助您順利使用「MATH AI 智慧題庫生成器」，若有任何建議，歡迎隨時反饋！</p>
+    </div>
+</body>
+</html>
