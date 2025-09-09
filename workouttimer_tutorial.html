@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Timer 安裝與使用說明</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        h1, h2, h3 {
+            color: #1a237e;
+            line-height: 1.4;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-top: 1.5em;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            border-bottom: 2px solid #303f9f;
+        }
+        h2 {
+            font-size: 1.6em;
+        }
+        h3 {
+            font-size: 1.2em;
+            color: #303f9f;
+            border-bottom: none;
+        }
+        p {
+            margin-bottom: 1em;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        strong {
+            color: #c51162;
+        }
+        code {
+            font-family: "Courier New", Courier, monospace;
+            background-color: #eef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.9em;
+            line-height: 1.5;
+            border: 1px solid #ddd;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 0.5em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Workout Timer (體能訓練計時器)<br>Android Pydroid 3 測試版安裝與使用說明</h1>
+
+        <h2>一、 前言</h2>
+        <p>歡迎您參與「Workout Timer」應用程式的測試。本程式是一款專為間歇性訓練（HIIT）設計的計時器，您可以自訂鍛鍊、休息時間與總次數，並搭配背景音樂，讓您的訓練過程更有效率且充滿動感。</p>
+        <p>本文件將引導您如何在 Android 手機上，透過 Pydroid 3 環境來安裝並執行此應用程式。請依照下列步驟操作，若遇到任何問題，請隨時回報。</p>
+
+        <h2>二、 環境準備</h2>
+        <p>在開始之前，請確保您的 Android 手機已連上網路。</p>
+        
+        <h3>步驟 1：安裝 Pydroid 3</h3>
+        <p>開啟您手機上的「Google Play 商店」。在搜尋欄中輸入 <code>Pydroid 3</code>，找到「Pydroid 3 - IDE for Python 3」，點擊並安裝。</p>
+
+        <h3>步驟 2：在 Pydroid 3 中安裝 Kivy 函式庫</h3>
+        <p>Kivy 是本應用程式的圖形介面框架，必須先安裝才能執行。</p>
+        <ol>
+            <li>開啟 Pydroid 3 應用程式。</li>
+            <li>點擊左上角的選單圖示 (☰)，選擇「Pip」。</li>
+            <li>在「LIBRARY NAME」欄位中輸入 <code>kivy</code>。</li>
+            <li>點擊「INSTALL」按鈕。</li>
+            <li>程式會開始下載並安裝 Kivy。安裝過程可能需要數分鐘，請耐心等候直至出現 "Complete" 或類似的完成訊息。</li>
+        </ol>
+
+        <h3>步驟 3：下載並解壓縮應用程式檔案</h3>
+        <p>所有需要的檔案都已打包成一個壓縮檔，方便您一次下載。</p>
+        <ol>
+            <li>在您的手機瀏覽器中開啟以下連結，下載應用程式壓縮檔：<br>
+                <a href="https://drive.google.com/file/d/1es9duAjCFz90lJ7_CVvNmBSMMntC-rMR/view?usp=sharing" target="_blank">https://drive.google.com/file/d/1es9duAjCFz90lJ7_CVvNmBSMMntC-rMR/view?usp=sharing</a>
+            </li>
+            <li>下載完成後，請到您手機的「檔案管理」或「下載」資料夾中找到 <code>WorkoutTimer.zip</code> 這個檔案。</li>
+            <li>點擊此壓縮檔，並選擇「解壓縮」或「Extract」。請將其解壓縮至您手機內部儲存空間的根目錄或您熟悉的位置。</li>
+            <li>解壓縮後，您會得到一個名為 <code>WorkoutTimer</code> 的資料夾。請確認該資料夾內的結構如下：
+<pre>WorkoutTimer/
+├── main.py
+├── workouttimer.kv
+├── fonts/
+│   └── NotoSansTC-Regular.ttf
+├── music/
+│   └── (此處可能是空的)
+└── sounds/
+    ├── countdown.wav
+    ├── start_work.wav
+    ├── start_rest.wav
+    ├── finish.wav
+    └── background_music.mp3</pre>
+            </li>
+            <li><strong>(重要)</strong> 請將您自己喜歡的 .mp3 或 .wav 音樂檔案複製或移動到 <code>WorkoutTimer/music</code> 這個子資料夾中。這些是您稍後可以在 App 裡選擇播放的背景音樂。</li>
+        </ol>
+
+        <h2>三、 執行應用程式</h2>
+        <ol>
+            <li>再次開啟 Pydroid 3。</li>
+            <li>點擊畫面中的「資料夾」圖示，開啟檔案總管。</li>
+            <li>選擇「Internal Storage」，然後找到並進入您剛剛解壓縮出來的 <code>WorkoutTimer</code> 資料夾。</li>
+            <li>點擊 <code>main.py</code> 檔案將其載入。</li>
+            <li>點擊畫面右下角的<strong>黃色播放按鈕 (▶)</strong>，應用程式便會開始執行。</li>
+        </ol>
+
+        <h2>四、 功能使用說明</h2>
+        <p>應用程式啟動後，您會看到主介面。以下是各項功能的詳細說明：</p>
+        
+        <h3>1. 主顯示區</h3>
+        <ul>
+            <li><strong>狀態標籤 (State Label)：</strong>顯示目前的狀態，例如「準備設定」、「鍛鍊中」、「休息一下」等。</li>
+            <li><strong>時間顯示 (Timer Display)：</strong>以 `分鐘:秒鐘` 的格式顯示剩餘時間。</li>
+            <li><strong>次數計數 (Rounds Label)：</strong>顯示「目前次數 / 總次數」。</li>
+        </ul>
+
+        <h3>2. 時間與次數設定</h3>
+        <p>在計時器處於「準備設定」或「訓練完成」狀態時，您可以設定以下參數：</p>
+        <ul>
+            <li><strong>鍛鍊時間：</strong>在分鐘和秒鐘的數字上<strong>上下滑動</strong>來調整單次鍛鍊的持續時間。</li>
+            <li><strong>休息時間：</strong>同樣透過上下滑動來調整每次休息的持續時間。</li>
+            <li><strong>總次數：</strong>上下滑動來設定總共要執行的鍛鍊回合數。</li>
+        </ul>
+
+        <h3>3. 音樂與音量控制</h3>
+        <ul>
+            <li><strong>選擇音樂：</strong>點擊此按鈕會彈出一個視窗，列出您放在 <code>music</code> 資料夾中的所有音樂檔案。點擊其中一首即可將其設定為背景音樂。</li>
+            <li><strong>音量滑桿 (Volume Slider)：</strong>左右拖動滑桿可以調整背景音樂的音量。當前音量會以百分比顯示在左側。</li>
+            <li><strong>靜音按鈕 (Mute Button)：</strong>點擊可立即將音樂靜音或取消靜音。</li>
+        </ul>
+
+        <h3>4. 主要控制按鈕</h3>
+        <ul>
+            <li><strong>開始 / 暫停 / 繼續 按鈕：</strong>
+                <ul>
+                    <li>在初始狀態下，點擊「開始」以啟動計時器。</li>
+                    <li>在計時器運行中，此按鈕會變為「暫停」。點擊可暫停計時。</li>
+                    <li>在暫停狀態下，此按鈕會變為「繼續」。點擊可從暫停處繼續。</li>
+                </ul>
+            </li>
+            <li><strong>重設 (Reset) 按鈕：</strong>無論在哪個狀態，點擊此按鈕都會立即停止計時器，並將所有設定恢復到初始的「準備設定」畫面。</li>
+        </ul>
+
+        <h2>五、 訓練流程詳解</h2>
+        <ol>
+            <li><strong>設定：</strong>首先，設定好您的「鍛鍊時間」、「休息時間」與「總次數」。</li>
+            <li><strong>開始：</strong>點擊「開始」按鈕。</li>
+            <li><strong>準備：</strong>畫面會變為藍色，並有 5 秒的準備倒數計時。</li>
+            <li><strong>鍛鍊：</strong>倒數結束後，畫面轉為紅色，進入「鍛鍊中」狀態，並播放鍛鍊開始的音效。</li>
+            <li><strong>休息：</strong>鍛鍊時間結束後，畫面轉為綠色，進入「休息一下」狀態，並播放休息開始的音效。</li>
+            <li><strong>循環：</strong>系統將依照您設定的總次數，重複「鍛鍊」與「休息」的循環。</li>
+            <li><strong>完成：</strong>所有次數完成後，畫面會恢復初始顏色，顯示「訓練完成！」，並播放完成音效。此時您可以點擊「再次開始」進行新一輪訓練，或點擊「重設」來重新調整參數。</li>
+        </ol>
+
+        <h2>六、 疑難排解</h2>
+        
+        <h3>應用程式閃退或顯示錯誤：</h3>
+        <ul>
+            <li>最可能的原因是 Kivy 函式庫未成功安裝。請回到「二、 環境準備」的「步驟 2」重新安裝 Kivy。</li>
+            <li>請確認您已成功解壓縮 <code>WorkoutTimer.zip</code> 檔案，且 <code>WorkoutTimer</code> 資料夾結構完整。</li>
+        </ul>
+
+        <h3>「選擇音樂」按鈕無反應或顯示資料夾是空的：</h3>
+        <ul>
+            <li>請確認您已經在 <code>WorkoutTimer/music</code> 資料夾中放入了至少一個 .mp3 或 .wav 檔案。</li>
+        </ul>
+
+        <h3>文字顯示不正常或變成方塊：</h3>
+        <ul>
+            <li>請確認 <code>WorkoutTimer/fonts</code> 資料夾中存在 <code>NotoSansTC-Regular.ttf</code> 檔案。</li>
+        </ul>
+
+    </div>
+</body>
+</html>
