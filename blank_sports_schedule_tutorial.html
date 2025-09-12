@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>賽程安排工具：設計理念與使用說明</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft JhengHei', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 2; /* 加寬行距 */
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px 40px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+            margin-top: 1.8em;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            border-bottom: none;
+        }
+        h2 {
+            font-size: 2em;
+        }
+        h3 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #e9ecef;
+        }
+        p, li {
+            font-size: 1.1em;
+            color: #555;
+        }
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 12px; /* 增加列表項間距 */
+        }
+        strong {
+            color: #0056b3; /* 強調文字顏色 */
+        }
+        .header-meta {
+            text-align: center;
+            color: #888;
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>賽程安排工具</h1>
+        <p class="header-meta">完整設計理念、使用說明與賽制邏輯詳解<br>文件版本：1.1 | 最後更新時間：2025年9月12日</p>
+        
+        <h2>一、 設計理念</h2>
+        <p>本「賽程安排工具」旨在為賽事組織者提供一個快速、準確且具備彈性的解決方案，用以自動生成符合標準競賽規則的賽程圖表。工具的核心設計理念圍繞以下幾點：</p>
+        
+        <h3>模組化與關注點分離 (Modularity & Separation of Concerns):</h3>
+        <ul>
+            <li>專案被明確地劃分為兩個核心模組：<strong>邏輯層 (tournament_logic.py)</strong> 與 <strong>表現層 (bssapp.py)</strong>。</li>
+            <li><strong>邏輯層</strong> 專注於賽制演算法的實現，例如如何根據隊伍數安排種子序、如何產生輪空（BYE）、如何建構複雜的雙敗淘汰賽結構等。這一層不關心最終圖表的外觀。</li>
+            <li><strong>表現層</strong> 則負責處理使用者介面 (GUI)、接收使用者輸入，並根據邏輯層產生的數據，將其視覺化繪製成圖表。</li>
+            <li>這種分離使得程式碼更容易維護和擴展。未來若要新增一種賽制，只需在邏輯層開發新函式；若要支援新的輸出格式（如 SVG），只需在表現層添加新的繪圖函式，而不會互相干擾。</li>
+        </ul>
+
+        <h3>彈性化的輸出選項 (Flexible Output Options):</h3>
+        <p>為了滿足不同的使用情境，本工具支援三種主流的檔案格式匯出：</p>
+        <ul>
+            <li><strong>PNG:</strong> 點陣圖格式，適用於網路分享、社群媒體發布或嵌入簡報。</li>
+            <li><strong>PDF:</strong> 向量圖形格式，確保在任何尺寸下都能清晰列印，適合作為官方文件或海報。</li>
+            <li><strong>HTML:</strong> 網頁格式，方便在網站上直接展示，並具備良好的互動潛力。</li>
+        </ul>
+
+        <h3>自動化與標準化 (Automation & Standardization):</h3>
+        <ul>
+            <li>工具自動處理了賽程編排中最繁瑣的部分，如計算總籤位數 (2的次方)、為高順位種子分配輪空、以及依照「蛇行排列」原則將強隊分散在賽區各處，確保了賽程的公平性與專業性。</li>
+            <li>對於雙敗淘汰賽，工具能自動生成包含勝部、敗部及總決賽的完整結構，並正確處理勝者晉級與敗者落入敗部的流向，避免了人工編排可能出現的錯誤。</li>
+        </ul>
+        
+        <h3>使用者友善的介面 (User-Friendly Interface):</h3>
+        <ul>
+            <li>採用 customtkinter 打造的圖形化介面直觀簡潔，使用者無需具備任何程式設計背景。</li>
+            <li>透過清晰的標籤和下拉式選單，引導使用者完成「輸入標題 -> 選擇賽制 -> 輸入隊伍數 -> 選擇版面 -> 匯出」的完整流程，學習成本極低。</li>
+        </ul>
+
+        <h2>二、 使用說明</h2>
+
+        <h3>2.1 介面總覽</h3>
+        <p>開啟 賽程安排工具.exe 後，您會看到一個簡潔的主視窗，包含以下幾個部分：</p>
+        <ul>
+            <li><strong>比賽標題:</strong> 用於輸入本次賽事的完整名稱，例如「2025年度羽球錦標賽」。此標題將會顯示在所有匯出圖表的頂部。</li>
+            <li><strong>選擇賽制:</strong> 下拉式選單，提供三種賽制選項：單敗淘汰制、雙敗淘汰制、循環賽。</li>
+            <li><strong>參賽隊伍數:</strong> 輸入本次賽事的總隊伍數量，必須為大於等於 2 的整數。</li>
+            <li><strong>版面方向:</strong> 下拉式選單，提供 橫式 和 直式 兩種圖表佈局。此選項僅對淘汰賽制有效。</li>
+            <li><strong>功能按鈕:</strong>
+                <ul>
+                    <li>產生 PNG 圖表: 點擊後會生成一張圖片檔 (.png)。</li>
+                    <li>匯出為 PDF: 點擊後會生成一份 PDF 文件 (.pdf)。</li>
+                    <li>匯出為 HTML: 點擊後會生成一個網頁檔案 (.html)。</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>2.2 操作步驟</h3>
+        <ol>
+            <li><strong>填寫標題:</strong> 在「比賽標題」欄位中輸入您的賽事名稱。</li>
+            <li><strong>選擇賽制:</strong> 從下拉選單中選擇您需要的賽制。</li>
+            <li><strong>輸入隊伍數:</strong> 在「參賽隊伍數」欄位中輸入數字。</li>
+            <li><strong>選擇版面:</strong> 如果您選擇的是淘汰賽制，請從「版面方向」中選擇 橫式 或 直式。</li>
+            <li><strong>點擊匯出:</strong> 根據您的需求，點擊三種匯出按鈕中的一個。</li>
+            <li><strong>完成提示:</strong> 程式會跳出一個對話框，提示您檔案已成功生成，並詢問是否要立即開啟。生成的檔案會保存在與本執行檔相同的資料夾下。</li>
+        </ol>
+
+        <h2>三、 各賽制功能與邏輯詳解</h2>
+        
+        <h3>3.1 單敗淘汰制 (Single Elimination)</h3>
+        <p><strong>功能說明:</strong> 產生經典的樹狀對戰圖。輸一場即淘汰，效率最高。若隊伍數不是2的次方（如 11 隊），程式會自動計算出 16 個籤位，並將前 5 名種子設定為 輪空 (BYE) ，直接晉級第二輪。</p>
+        <p><strong>核心安排邏輯:</strong></p>
+        <ul>
+            <li><strong>計算「滿額籤位」:</strong> 程式會根據您輸入的「參賽隊伍數」（例如13隊），找到大於等於它的最小2的次方數，即16。這就是本次賽事的「總籤位數」。</li>
+            <li><strong>確定輪空名額:</strong> 輪空名額 = 總籤位數 - 實際參賽隊伍數。輪空名額會獎勵給排名最高的 種子 (Seed) 選手。</li>
+            <li><strong>安排對戰（蛇行排列法）:</strong> 這是確保強隊被均勻分散到不同賽區的核心演算法。以一個8隊的滿額賽事為例，其種子排列順序會是 [1, 8, 5, 4, 3, 6, 7, 2]。當兩兩一組放入賽程表時，會得到 (1 vs 8)、(5 vs 4)、(3 vs 6)、(7 vs 2) 的對戰組合，確保1號和2號種子只可能在決賽相遇。</li>
+            <li><strong>整合輪空與對戰:</strong> 最後，程式會將輪空的種子和需要打第一輪的種子，按照「蛇行排列」的理想位置，一一放入最終的對戰表中。</li>
+        </ul>
+
+        <h3>3.2 雙敗淘汰制 (Double Elimination)</h3>
+        <p><strong>功能說明:</strong> 產生一張包含 勝部 (Winners Bracket) 和 敗部 (Losers Bracket) 的複合圖表。每位參賽者有兩次機會，落敗一次後會掉入敗部繼續比賽。圖表中會清晰地標示出勝者與敗者的流向路徑，最終匯集至 總決賽 (Grand Finals)。</p>
+        <p><strong>核心安排邏輯:</strong></p>
+        <ul>
+            <li><strong>建立勝部賽程:</strong> 勝部的結構就是一個標準的「單敗淘汰賽」，完全複用前述的種子與排列邏輯。</li>
+            <li><strong>建構敗部賽程（分層掉落）:</strong> 這是雙敗淘汰賽最複雜的環節。其核心是「越晚從勝部掉下來的選手，在敗部的起點也越有利」。勝部第一輪的敗者，會掉入敗部的最開始幾輪。勝部第二輪的敗者，會掉入敗部稍後一點的輪次，與第一輪敗者中的勝出者對戰。程式透過一個「合併-淘汰」模型來模擬這個過程，確保賽程的公平性。</li>
+            <li><strong>敗部決賽與總決賽:</strong> 在所有敗者都進入敗部後，敗部會繼續進行單敗淘汰，直到產生唯一的「敗部冠軍」。最後，由「勝部冠軍」對陣「敗部冠軍」，來決定最終的總冠軍。</li>
+        </ul>
+
+        <h3>3.3 循環賽 (Round Robin)</h3>
+        <p><strong>功能說明:</strong> 不會產生樹狀圖，而是生成一個詳細的賽程表。圖表會以「輪次卡片」的形式展示每一輪的所有對戰組合，下方附上一張「對戰矩陣」，方便快速查詢任兩隊之間的比賽場次編號。若隊伍數為奇數，程式會自動為每一輪安排一個隊伍輪空 (BYE)。</p>
+        <p><strong>核心安排邏輯（多邊形輪轉法/固定一點輪轉法）：</strong></p>
+        <ul>
+            <li><strong>處理奇偶數隊伍:</strong> 如果參賽隊伍是奇數（例如7隊），程式會自動加入一個虛擬的「BYE (輪空)」隊伍，使其變為偶數（8隊），以便演算法運作。</li>
+            <li><strong>固定一點，其餘輪轉:</strong>
+                <ul>
+                    <li>a. <strong>固定1號種子：</strong> 程式會將1號種子固定在所有輪次的第一個對戰位置上。</li>
+                    <li>b. <strong>旋轉其餘隊伍：</strong> 將剩下的所有隊伍（2號到N號）視為一個可旋轉的列表。</li>
+                    <li>c. <strong>產生對戰組合：</strong> 在每一輪中，1號種子會對上列表中的某個隊伍，其餘隊伍則按順序兩兩配對。</li>
+                    <li>d. <strong>產生後續輪次：</strong> 透過將可旋轉的列表 順時針旋轉一個位置 ，來產生全新且不重複的下一輪對戰組合。這個過程會持續 N-1 次（N為偶數化後的隊伍數），直到所有比賽都安排完畢。</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h2>四、 匯出檔案說明</h2>
+        <ul>
+            <li><strong>PNG:</strong> 圖片檔，適合用於網頁、簡報或社群媒體分享。優點是通用性高，但放大後可能會失真。</li>
+            <li><strong>PDF:</strong> 文件檔，內部圖形為向量格式，無論放大多少倍都能保持清晰，是列印海報或作為正式賽程文件的最佳選擇。</li>
+            <li><strong>HTML:</strong> 網頁檔，可以使用任何瀏覽器開啟，方便在網站上發布。對於複雜的雙敗淘汰賽，圖表會以圖片形式內嵌，確保顯示效果。</li>
+        </ul>
+        
+        <p style="text-align: center; margin-top: 40px; color: #888;">希望這份文件能幫助您更好地理解與使用本工具。祝您的賽事舉辦順利！</p>
+    </div>
+
+</body>
+</html>
