@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device--width, initial-scale=1.0">
+    <title>MATH AI 智慧題庫管理器 - 設計理念與使用手冊</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            line-height: 1.8;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px 40px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #eeeeee;
+            padding-bottom: 10px;
+            margin-top: 1.5em;
+        }
+        h1 {
+            font-size: 2.2em;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+        }
+        h2 {
+            font-size: 1.8em;
+        }
+        h3 {
+            font-size: 1.4em;
+            border-bottom: none;
+        }
+        p, li {
+            font-size: 1.1em;
+            text-align: justify;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        code {
+            background-color: #ecf0f1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .button-like {
+            display: inline-block;
+            background-color: #3498db;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        ul {
+            list-style-type: disc;
+            padding-left: 25px;
+        }
+        li {
+            margin-bottom: 12px;
+        }
+        strong {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>MATH AI 智慧題庫管理器</h1>
+        
+        <h2>一、設計理念：從「生成」到「管理」，打造教師的永續智慧題庫</h2>
+        <p>在「MATH AI 智慧題庫生成器」成功地扮演了教師專業 AI 助理的角色後，我們迎來了生態系的第二部曲：「MATH AI 智慧題庫管理器」。如果說第一部曲是專注於「高品質內容的創造」，那麼第二部曲的核心使命便是<strong>「專業知識的永續管理與高效應用」</strong>。</p>
+        <p>我們深刻理解，單次生成的試題雖然寶貴，但其真正的價值在於能夠被系統性地累積、管理、篩選與再利用。本工具旨在將一次性的 AI 產出，轉化為教師個人的、可持續增長的數位資產。</p>
+        
+        <h3>本工具的設計遵循以下核心原則：</h3>
+        <ul>
+            <li><strong>無縫整合，延續專業價值：</strong>本工具是「智慧題庫生成器」的完美延伸。它能直接讀取前一階段產出的 JSON 檔案，並完整解析其中包含的 <code>generation_constraints</code>（生成條件）。這意味著所有依據 108 課綱設計的專業參數，如年級、主題、學習內容條目、難度等，都能被完整地匯入資料庫，確保了資料的專業性與結構化得以延續。</li>
+            <li><strong>直覺化管理，賦予教師完全掌控權：</strong>我們將傳統資料庫的複雜操作，轉化為一個直觀的圖形化介面。教師無需學習任何資料庫語言，即可輕鬆地對題庫進行篩選、查詢、檢視、編輯甚至刪除。目標是將管理權完全交還給第一線的教育工作者，讓他們能輕鬆維護自己的專屬題庫。</li>
+            <li><strong>彈性出卷，滿足多元評量需求：</strong>題庫的最終目的是應用於教學評量。本工具內建強大的「試卷產生器」，提供兩種核心出題模式：「自動出題」與「手動選題」。無論是需要快速生成一份符合特定條件的隨機考卷，還是希望親自逐題挑選組成一份高鑑別度的期末考卷，系統都能滿足需求，將教師從繁瑣的組卷排版工作中解放出來。</li>
+            <li><strong>多元格式輸出，即時應用於教學現場：</strong>承襲第一部曲的實用性，所有產出的試卷均支援匯出為 DOCX、PDF、HTML 及 JSON 等多種格式。系統同樣貼心地自動生成「教師版」（含答案與詳解）與「學生版」，確保產出的試卷能無縫接軌教師的實際工作流程，無論是紙本印刷還是線上派發，都毫不費力。</li>
+        </ul>
+        <p>總結來說，「MATH AI 智慧題庫管理器」是您智慧教學旅程的下一步。它不僅是一個管理工具，更是一個知識資產的賦能平台，旨在幫助教師將 AI 生成的創意火花，沉澱為歷久彌新的專業題庫，並輕鬆應用於每一次的教學評量之中。</p>
+
+        <h2>二、程式下載</h2>
+        <p>您可以從以下連結下載「MATH AI 智慧題庫管理器」的 Windows 應用程式：</p>
+        <a href="https://drive.google.com/file/d/1Kyr8oOVq0IyMtiL91eGMPKD2ofXTj1Hg/view?usp=drive_link" class="button-like" target="_blank">點此前往 Google Drive 下載</a>
+
+        <h2>三、詳細使用手冊</h2>
+        
+        <h3>程式核心功能簡介</h3>
+        <p>「MATH AI 智慧題庫管理器」主要提供兩大核心功能，分別對應程式介面的兩個分頁：</p>
+        <ul>
+            <li><strong>功能一：題庫總覽與管理 (位於「1. 題庫總覽與管理」分頁)</strong><br>此功能是您的個人題庫中心。您可以在此匯入、瀏覽、篩選、編輯和刪除所有題目。</li>
+            <li><strong>功能二：試卷產生器 (位於「2. 試卷產生器」分頁)</strong><br>此功能讓您利用資料庫中的題目，快速、彈性地組織成一份完整的評量試卷，並匯出成您需要的檔案格式。</li>
+        </ul>
+
+        <h3>操作流程詳解</h3>
+        
+        <h4>準備工作：</h4>
+        <ol>
+            <li>執行 <code>MATH_AI_Qmanager.exe</code> 檔案來啟動程式。</li>
+            <li>程式會在首次執行時，於同一個資料夾內自動建立一個名為 <code>question_bank.db</code> 的資料庫檔案，用以儲存您的所有題目。</li>
+        </ol>
+
+        <h4>流程一：建立與管理您的題庫</h4>
+        <ul>
+            <li><strong>匯入題庫：</strong>
+                <ol>
+                    <li>點擊左上角的 <strong>匯入 JSON 題庫檔</strong> 按鈕。</li>
+                    <li>選擇由「MATH AI 智慧題庫生成器」所產出的 <code>.json</code> 檔案（可單選或多選）。</li>
+                    <li>程式會自動將題目匯入資料庫，並提示成功匯入及因 ID 重複而跳過的題數。</li>
+                </ol>
+            </li>
+            <li><strong>瀏覽與篩選題目：</strong>
+                <p>使用上方的「年級」、「主題」下拉選單或輸入「關鍵字」來快速找到您需要的題目。題庫列表會根據您的篩選條件即時更新。</p>
+            </li>
+            <li><strong>管理單一題目：</strong>
+                <p>在題目列表的右側，每一道題目都配有三個按鈕：</p>
+                <ul>
+                    <li><strong>檢視：</strong>以唯讀模式開啟一個新視窗，查看題目的完整詳細資訊。</li>
+                    <li><strong>編輯：</strong>開啟一個可編輯的視窗，您可以修改題幹、選項、答案、詳解等所有欄位。修改後點擊「儲存」即可更新資料庫。</li>
+                    <li><strong>刪除：</strong>永久刪除該道題目。程式會彈出對話框要求您再次確認。</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h4>流程二：產生與匯出試卷</h4>
+        <p>當您的題庫中有足夠的題目後，即可開始產生試卷。</p>
+        <ol>
+            <li><strong>切換分頁：</strong>點擊進入 <strong>「2. 試卷產生器」</strong> 分頁。</li>
+            <li><strong>選擇出題模式：</strong>
+                <ul>
+                    <li><strong>自動出題 (預設模式):</strong><br>
+                        適用情境：需要快速生成練習卷、小考卷，或隨機抽題時。<br>
+                        操作：設定「年級」、「主題」、「難度」等篩選條件，並在「題數」欄位輸入您希望的題目數量。點擊 <strong>⚡ 產生試卷</strong> 按鈕。
+                    </li>
+                    <li><strong>手動選題：</strong><br>
+                        適用情境：需要精確控制每一道題目，例如組合期中/期末考卷時。<br>
+                        操作：點擊頂部的 <strong>手動選題</strong> 按鈕。在左側的「題庫來源區」找到題目並點擊 <strong>加入 →</strong>。被選中的題目會出現在右側清單中。
+                    </li>
+                </ul>
+            </li>
+            <li><strong>預覽與匯出：</strong>
+                <p>生成的試卷會即時顯示在下方的「試卷預覽」區塊。確認無誤後，即可點擊最下方的按鈕匯出：</p>
+                <ul>
+                    <li><strong>下載 DOCX / PDF / HTML：</strong>自動產生教師版 (含答案) 與學生版兩個檔案。</li>
+                    <li><strong>下載 JSON：</strong>將這份試卷的所有題目打包成一份新的 JSON 檔案，方便未來進行線上測驗等進階應用。</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2>四、常見問題 (FAQ)</h2>
+        <ul>
+            <li><strong>Q: 我可以不使用「MATH AI 智慧題庫生成器」，直接用這個程式嗎？</strong><br>
+                A: 不行。本程式的設計是專門用來匯入並管理由第一部曲「生成器」所產出的、包含完整結構化資訊的 <code>.json</code> 檔案。建議兩套程式搭配使用。
+            </li>
+            <li><strong>Q: 我編輯過的題目會儲存在哪裡？</strong><br>
+                A: 您所有的題目資料，包括新增、編輯與刪除，都會被永久儲存在與執行檔位於同一個資料夾的 <code>question_bank.db</code> 檔案中。只要不刪除此檔案，您的題庫就會一直存在。
+            </li>
+            <li><strong>Q: 如果我的 <code>question_bank.db</code> 檔案遺失或損毀了怎麼辦？</strong><br>
+                A: 您可以隨時透過「匯入 JSON」功能，從原始的 JSON 備份檔中重新建立您的題庫。這也凸顯了妥善保存原始生成結果的重要性。
+            </li>
+        </ul>
+
+    </div>
+
+</body>
+</html>
