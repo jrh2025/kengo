@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣主動式ETF績效比較工具：設計理念與使用說明</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', Arial, sans-serif;
+            line-height: 2; /* 加寬行距，提升閱讀舒適度 */
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px 40px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        h1, h2, h3 {
+            color: #1a5276;
+            border-bottom: 2px solid #aed6f1;
+            padding-bottom: 10px;
+            margin-top: 2em;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: none;
+            font-size: 2.2em;
+        }
+        h2 {
+            font-size: 1.8em;
+        }
+        h3 {
+            font-size: 1.4em;
+            border-bottom-style: dotted;
+        }
+        p {
+            margin: 1.2em 0;
+            text-align: justify;
+        }
+        ul {
+            list-style-type: disc;
+            padding-left: 30px;
+        }
+        li {
+            margin-bottom: 0.8em;
+        }
+        strong {
+            color: #c0392b;
+        }
+        memo {
+            background-color: #ecf0f1;
+            color:blue ;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        a {
+            color: #2980b9;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .download-section {
+            background-color: #eaf2f8;
+            border-left: 5px solid #3498db;
+            padding: 20px;
+            margin: 2em 0;
+            border-radius: 5px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            margin-top: 1em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>台灣主動式ETF績效比較工具</h1>
+        <p style="text-align: center; font-size: 1.1em; color: #555;">設計理念與使用說明 (v2.0)</p>
+
+        <div class="download-section">
+            <h2>程式下載與安裝</h2>
+            <ul>
+                <li><strong>程式壓縮檔 (TWActiveETFAnalyzer.zip)</strong>: 
+                    <a href="https://drive.google.com/file/d/1II3q-R38Ise4F-UFreMwHNpHCbSVtD1N/view?usp=sharing" target="_blank">點此透過 Google Drive 下載</a>
+                </li>
+                <li><strong>執行方式</strong>: 下載後解壓縮，直接執行資料夾內的 <code>TWActiveETFAnalyzer.exe</code> 即可開啟，無需安裝。</li>
+            </ul>
+        </div>
+
+        <h2>一、設計理念</h2>
+
+        <h3>1. 核心目標</h3>
+        <p>
+            隨著台灣主動式 ETF 市場的興起，投資人需要一個能夠快速、直觀地比較這些新興金融商品績效的平台。「台灣主動式ETF績效比較工具」的誕生，旨在解決此一需求。我們的核心目標是提供一個<strong>整合性、視覺化且易於操作的桌面應用程式</strong>，幫助使用者擺脫在不同財經網站間反覆切換查詢的繁瑣，實現一站式的績效追蹤與分析。
+        </p>
+
+        <h3>2. 設計價值</h3>
+        <ul>
+            <li><strong>整合性 (Integration)</strong>：將數據獲取、量化分析、圖表繪製、個股資訊查詢等多重功能，全部整合在單一介面中，提供流暢無斷點的使用體驗。</li>
+            <li><strong>視覺化 (Visualization)</strong>：我們相信「一張圖勝過千言萬語」。本工具透過標準化的績效走勢圖與指標比較圖，讓不同 ETF 之間的表現優劣一目了然，使數據不再冰冷。</li>
+            <li><strong>易用性 (Ease of Use)</strong>：採用現代化的深色主題與簡潔的單行式控制面板，最大化內容顯示區域。所有功能直觀易懂，無需學習成本即可快速上手。</li>
+            <li><strong>客製化 (Customization)</strong>：使用者不僅可以自訂分析的時間區間，更可以透過「管理ETF清單」功能，建立專屬於自己的觀察名單，讓工具更貼近個人需求。</li>
+        </ul>
+
+        <h3>3. 技術架構</h3>
+        <p>本工具全程使用 Python 語言開發，核心技術棧包含：</p>
+        <ul>
+            <li><strong>圖形介面 (GUI)</strong>: PyQt6</li>
+            <li><strong>數據處理與分析</strong>: Pandas, NumPy, SciPy</li>
+            <li><strong>數據獲取</strong>: yfinance, FinMind</li>
+            <li><strong>圖表繪製</strong>: Plotly</li>
+        </ul>
+
+        <h2>二、核心功能與使用說明</h2>
+
+        <h3>1. 主介面概覽</h3>
+        <p>程式主介面分為兩大區塊：上方為整合所有功能的「控制面板」，下方為呈現分析結果的「內容顯示區」。</p>
+
+        <h3>2. 數據管理與標的篩選</h3>
+        
+        <h4>載入本地數據</h4>
+        <p>點擊後會讀取 <code>data_cache</code> 資料夾中的快取資料並立即進行分析。</p>
+        
+        <h4>更新全部數據</h4>
+        <p>從線上更新您清單中所有 ETF 及台股加權指數的歷史資料至最新，並存入 <code>data_cache</code>。</p>
+
+        <h4>管理ETF清單 (篩選比較標的)</h4>
+        
+        <p>
+            這是本工具的核心客製化功能，您可以透過此處<strong>篩選</strong>要呈現在圖表與指標中的個股。點擊後會彈出如上圖的管理視窗，您可以自由新增或刪除您想追蹤的 ETF。只有<strong>存在於此清單中的 ETF</strong>，才會被納入數據更新與績效比較的範圍。所有變更會直接儲存至 <code>config/active_etfs.yaml</code> 設定檔中。
+        </p>
+        
+        <h4>內建 ETF 清單</h4>
+        <p>程式首次啟動時，內建包含以下台灣主動式 ETF 作為預設觀察名單：</p>
+        <ul>
+            <li><code>00980A</code> - 主動野村臺灣優選</li>
+            <li><code>00981A</code> - 主動統一台股增長</li>
+            <li><code>00982A</code> - 主動群益台灣強棒</li>
+            <li><code>00983A</code> - 主動中信ARK創新</li>
+            <li><code>00984A</code> - 主動安聯台灣高息</li>
+            <li><code>00985A</code> - 主動野村台灣50</li>
+            <li><code>00986A</code> - 主動台新龍頭成長</li>
+        </ul>
+
+        <h3>3. 四大功能頁籤</h3>
+        <p>分析結果透過四個不同的頁籤呈現：</p>
+        <ul>
+            <li><strong>績效走勢圖</strong>：將所有 ETF 在選定區間內的價格標準化，繪製出相對報酬率走勢圖。圖中以灰色虛線標示「台股加權指數(TAIEX)」作為市場表現的對照基準。<memo>(可點選右邊個股進行顯示或不顯示切換)</memo></li>
+            <li><strong>量化指標比較</strong>：以表格形式，精確計算並陳列各 ETF 在選定區間內的五大核心量化指標（年化報酬率、年化波動率、夏普比率、Beta、Alpha）。</li>
+            <li><strong>指標視覺化比較</strong>：將「夏普比率」、「Beta」、「Alpha」這三個關鍵指標以長條圖呈現，讓您能快速找出表現最優異的標的。<memo>(可點選右邊指標進行顯示或不顯示切換)</memo></li>
+            <li><strong>ETF 詳細資訊</strong>：可從下拉選單中選擇任一 ETF，程式會透過 <code>yfinance</code> API 抓取該 ETF 的基本檔案、持股比例等詳細資訊。</li>
+        </ul>
+
+        <h2>三、重要聲明與限制</h2>
+        <p>為了讓使用者能正確理解本工具的數據與分析結果，請務必詳閱以下聲明：</p>
+        <ul>
+            <li><strong>資料來源</strong>：本工具所有股價數據均透過 <code>yfinance</code> 第三方函式庫，擷取自 <strong>Yahoo Finance</strong>。數據的即時性、準確性與完整性，完全以 Yahoo Finance 提供的資料為準。</li>
+            <li><strong>績效計算基礎</strong>：所有績效圖表與量化指標（如年化報酬率）的計算，<strong>僅基於每日的「收盤價 (Closing Price)」</strong>進行回測分析。</li>
+            <li><strong>計算限制</strong>：<strong>本工具的計算「未」將現金股利 (配息)、股票股利或股票分割 (分拆) 等還原權值的因素納入考量</strong>。因此，圖表所呈現的績效，會與計入股息再投資的總報酬率 (Total Return) 有所差異。</li>
+            <li><strong>工具定位</strong>：本工具旨在作為一個<strong>方便、簡易的績效觀察與比較輔助工具</strong>，並非專業的投資分析軟體。所有數據與分析結果僅供參考，不應作為任何投資決策的唯一依據。</li>
+        </ul>
+    </div>
+
+</body>
+</html>
