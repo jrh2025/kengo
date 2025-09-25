@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 插畫提示詞生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .tag-btn {
+            @apply px-3 py-2 m-1.5 border border-slate-300 rounded-lg cursor-pointer transition-all duration-200 ease-in-out flex flex-col items-center justify-center text-center;
+            @apply bg-slate-100 text-slate-700;
+        }
+        .tag-btn:hover {
+            @apply border-sky-400 bg-sky-50 shadow-sm;
+        }
+        .tag-btn.selected {
+            @apply bg-sky-500 text-white border-sky-500 shadow-md;
+        }
+        .tag-btn .en-text {
+            @apply text-xs opacity-70;
+        }
+        .tag-btn.selected .en-text {
+            @apply text-sky-100;
+        }
+        .section-title {
+            @apply text-xl font-bold text-slate-800 mb-3 border-b-2 border-sky-200 pb-2;
+        }
+        .prompt-output {
+            @apply p-4 border rounded-lg min-h-[90px] whitespace-pre-wrap break-words;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-sky-700">AI 插畫提示詞生成器</h1>
+            <p class="text-slate-500 mt-2">點擊下方雙語標籤，輕鬆組合出高品質的繪本風格插畫提示詞。</p>
+        </header>
+
+        <main class="space-y-8">
+            <!-- 輸出與功能按鈕 -->
+            <section>
+                <h2 class="section-title">生成的提示詞 (Generated Prompt)</h2>
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-600 mb-2">中文預覽 (僅供參考)</h3>
+                        <div id="prompt-output-zh" class="prompt-output bg-white border-slate-200 text-slate-600">請開始點擊下方標籤以生成提示詞...</div>
+                    </div>
+                    <div class="relative">
+                        <h3 class="text-lg font-semibold text-slate-600 mb-2">英文提示詞 (請複製此處)</h3>
+                        <div id="prompt-output-en" class="prompt-output bg-slate-100 border-slate-300 text-slate-800 font-mono">Please start selecting tags below to generate the prompt...</div>
+                        <button id="copy-btn" class="absolute top-10 right-2 bg-sky-600 text-white px-3 py-1 rounded-md text-sm hover:bg-sky-700 transition-colors">複製</button>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-4">
+                     <button id="reset-btn" class="bg-slate-500 text-white px-4 py-2 rounded-md hover:bg-slate-600 transition-colors">全部重設</button>
+                </div>
+            </section>
+
+            <!-- 主體 -->
+            <section id="subject-section">
+                <h2 class="section-title">1. 主體 (Subject)</h2>
+                <input type="text" id="subject-input" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-400 focus:border-sky-400 outline-none" placeholder="輸入核心主體，例如：祈禱中的天使女孩, 看書的狐狸, 睡在月亮上的貓">
+            </section>
+
+            <!-- 風格與藝術方向 -->
+            <section id="style-section">
+                <h2 class="section-title">2. 風格與藝術方向 (Style & Direction)</h2>
+                <div class="flex flex-wrap">
+                    <div class="tag-btn" data-en="flat illustration"><div>平面插畫</div><div class="en-text">flat illustration</div></div>
+                    <div class="tag-btn" data-en="picture book art"><div>繪本藝術</div><div class="en-text">picture book art</div></div>
+                    <div class="tag-btn" data-en="storybook illustration"><div>故事書插畫</div><div class="en-text">storybook</div></div>
+                    <div class="tag-btn" data-en="scandinavian design"><div>斯堪地那維亞</div><div class="en-text">scandinavian</div></div>
+                    <div class="tag-btn" data-en="hand-drawn texture"><div>手繪紋理</div><div class="en-text">hand-drawn</div></div>
+                    <div class="tag-btn" data-en="minimalist"><div>極簡主義</div><div class="en-text">minimalist</div></div>
+                    <div class="tag-btn" data-en="clean lines"><div>簡潔線條</div><div class="en-text">clean lines</div></div>
+                    <div class="tag-btn" data-en="stylized"><div>風格化</div><div class="en-text">stylized</div></div>
+                    <div class="tag-btn" data-en="whimsical"><div>異想天開</div><div class="en-text">whimsical</div></div>
+                    <div class="tag-btn" data-en="gouache painting"><div>水粉畫</div><div class="en-text">gouache</div></div>
+                    <div class="tag-btn" data-en="watercolor style"><div>水彩風格</div><div class="en-text">watercolor</div></div>
+                    <div class="tag-btn" data-en="linocut print style"><div>版畫風格</div><div class="en-text">linocut print</div></div>
+                    <div class="tag-btn" data-en="children's drawing"><div>兒童畫</div><div class="en-text">children's drawing</div></div>
+                    <div class="tag-btn" data-en="folk art style"><div>民間藝術</div><div class="en-text">folk art</div></div>
+                    <div class="tag-btn" data-en="art nouveau"><div>新藝術運動</div><div class="en-text">art nouveau</div></div>
+                    <div class="tag-btn" data-en="ukiyo-e"><div>浮世繪</div><div class="en-text">ukiyo-e</div></div>
+                    <div class="tag-btn" data-en="ink wash painting"><div>水墨畫</div><div class="en-text">ink wash</div></div>
+                    <div class="tag-btn" data-en="vector art"><div>向量藝術</div><div class="en-text">vector art</div></div>
+                    <div class="tag-btn" data-en="chibi style"><div>Q版風格</div><div class="en-text">chibi style</div></div>
+                    <div class="tag-btn" data-en="doodle art"><div>塗鴉藝術</div><div class="en-text">doodle art</div></div>
+                    <div class="tag-btn" data-en="colored pencil art"><div>色鉛筆</div><div class="en-text">colored pencil</div></div>
+                    <div class="tag-btn" data-en="pixel art"><div>像素藝術</div><div class="en-text">pixel art</div></div>
+                    <div class="tag-btn" data-en="cel shaded"><div>賽璐璐風格</div><div class="en-text">cel shaded</div></div>
+                    <div class="tag-btn" data-en="concept art"><div>概念藝術</div><div class="en-text">concept art</div></div>
+                    <div class="tag-btn" data-en="sticker design"><div>貼紙設計</div><div class="en-text">sticker design</div></div>
+                </div>
+            </section>
+
+            <!-- 環境與背景 -->
+            <section id="environment-section">
+                <h2 class="section-title">3. 環境與背景 (Environment & Background)</h2>
+                <div class="flex flex-wrap">
+                    <div class="tag-btn" data-en="surrounded by autumn leaves"><div>秋葉環繞</div><div class="en-text">autumn leaves</div></div>
+                    <div class="tag-btn" data-en="dandelion seeds floating"><div>蒲公英飄浮</div><div class="en-text">dandelions</div></div>
+                    <div class="tag-btn" data-en="stylized plants"><div>風格化植物</div><div class="en-text">stylized plants</div></div>
+                    <div class="tag-btn" data-en="enchanted forest"><div>魔法森林</div><div class="en-text">enchanted forest</div></div>
+                    <div class="tag-btn" data-en="starry night"><div>星夜</div><div class="en-text">starry night</div></div>
+                    <div class="tag-btn" data-en="sitting on a cloud"><div>坐在雲上</div><div class="en-text">on a cloud</div></div>
+                    <div class="tag-btn selected" data-en="white background"><div>白色背景</div><div class="en-text">white background</div></div>
+                    <div class="tag-btn" data-en="minimal background"><div>極簡背景</div><div class="en-text">minimal bg</div></div>
+                    <div class="tag-btn" data-en="cozy interior"><div>舒適室內</div><div class="en-text">cozy interior</div></div>
+                    <div class="tag-btn" data-en="in a flower field"><div>在花田中</div><div class="en-text">flower field</div></div>
+                    <div class="tag-btn" data-en="under the sea"><div>海底世界</div><div class="en-text">under the sea</div></div>
+                    <div class="tag-btn" data-en="lush garden"><div>茂盛花園</div><div class="en-text">lush garden</div></div>
+                    <div class="tag-btn" data-en="patterned background"><div>圖案背景</div><div class="en-text">patterned bg</div></div>
+                    <div class="tag-btn" data-en="steampunk city"><div>蒸汽龐克城市</div><div class="en-text">steampunk city</div></div>
+                    <div class="tag-btn" data-en="cyberpunk street"><div>賽博龐克街道</div><div class="en-text">cyberpunk street</div></div>
+                    <div class="tag-btn" data-en="floating islands"><div>浮空島</div><div class="en-text">floating islands</div></div>
+                    <div class="tag-btn" data-en="crystal cave"><div>水晶洞穴</div><div class="en-text">crystal cave</div></div>
+                    <div class="tag-btn" data-en="ancient library"><div>古代圖書館</div><div class="en-text">ancient library</div></div>
+                    <div class="tag-btn" data-en="candy land"><div>糖果王國</div><div class="en-text">candy land</div></div>
+                    <div class="tag-btn" data-en="volcanic plains"><div>火山平原</div><div class="en-text">volcanic plains</div></div>
+                    <div class="tag-btn" data-en="deep space"><div>深邃太空</div><div class="en-text">deep space</div></div>
+                    <div class="tag-btn" data-en="coral reef"><div>珊瑚礁</div><div class="en-text">coral reef</div></div>
+                    <div class="tag-btn" data-en="geometric patterns"><div>幾何圖案</div><div class="en-text">geometric</div></div>
+                </div>
+            </section>
+
+            <!-- 色彩 -->
+            <section id="color-section">
+                <h2 class="section-title">4. 色彩 (Colors)</h2>
+                 <div class="flex flex-wrap">
+                    <div class="tag-btn selected" data-en="autumn color palette"><div>秋季色盤</div><div class="en-text">autumn palette</div></div>
+                    <div class="tag-btn" data-en="earth tones"><div>大地色系</div><div class="en-text">earth tones</div></div>
+                    <div class="tag-btn" data-en="muted colors"><div>柔和色調</div><div class="en-text">muted colors</div></div>
+                    <div class="tag-btn" data-en="soft pastels"><div>柔和粉彩</div><div class="en-text">soft pastels</div></div>
+                    <div class="tag-btn" data-en="warm hues"><div>暖色調</div><div class="en-text">warm hues</div></div>
+                    <div class="tag-btn" data-en="vibrant pastels"><div>鮮豔粉彩</div><div class="en-text">vibrant pastels</div></div>
+                    <div class="tag-btn" data-en="monochromatic"><div>單色</div><div class="en-text">monochromatic</div></div>
+                    <div class="tag-btn" data-en="cool color palette"><div>冷色盤</div><div class="en-text">cool palette</div></div>
+                    <div class="tag-btn" data-en="limited color palette"><div>有限色盤</div><div class="en-text">limited palette</div></div>
+                    <div class="tag-btn" data-en="high contrast"><div>高對比度</div><div class="en-text">high contrast</div></div>
+                    <div class="tag-btn" data-en="sepia tone"><div>棕褐色調</div><div class="en-text">sepia tone</div></div>
+                    <div class="tag-btn" data-en="complementary colors"><div>互補色</div><div class="en-text">complementary</div></div>
+                    <div class="tag-btn" data-en="analogous colors"><div>鄰近色</div><div class="en-text">analogous</div></div>
+                    <div class="tag-btn" data-en="triadic color scheme"><div>三等分配色</div><div class="en-text">triadic color</div></div>
+                    <div class="tag-btn" data-en="cyberpunk neon"><div>賽博龐克霓虹</div><div class="en-text">cyberpunk neon</div></div>
+                    <div class="tag-btn" data-en="cottagecore pastels"><div>田園牧歌粉彩</div><div class="en-text">cottagecore</div></div>
+                    <div class="tag-btn" data-en="noir monochrome"><div>黑白電影</div><div class="en-text">noir monochrome</div></div>
+                    <div class="tag-btn" data-en="iridescent"><div>虹彩色</div><div class="en-text">iridescent</div></div>
+                    <div class="tag-btn" data-en="glowing colors"><div>發光色彩</div><div class="en-text">glowing colors</div></div>
+                </div>
+            </section>
+            
+            <!-- 氛圍與燈光 -->
+            <section id="mood-section">
+                <h2 class="section-title">5. 氛圍與燈光 (Mood & Lighting)</h2>
+                 <div class="flex flex-wrap">
+                    <div class="tag-btn" data-en="soft lighting"><div>柔和光線</div><div class="en-text">soft lighting</div></div>
+                    <div class="tag-btn" data-en="peaceful mood"><div>寧靜氛圍</div><div class="en-text">peaceful</div></div>
+                    <div class="tag-btn" data-en="calm and serene"><div>平靜祥和</div><div class="en-text">calm and serene</div></div>
+                    <div class="tag-btn" data-en="gentle glow"><div>溫和光輝</div><div class="en-text">gentle glow</div></div>
+                    <div class="tag-btn" data-en="dreamy atmosphere"><div>夢幻</div><div class="en-text">dreamy</div></div>
+                    <div class="tag-btn" data-en="mysterious"><div>神秘</div><div class="en-text">mysterious</div></div>
+                    <div class="tag-btn" data-en="dramatic lighting"><div>戲劇性光線</div><div class="en-text">dramatic light</div></div>
+                    <div class="tag-btn" data-en="nostalgic"><div>懷舊</div><div class="en-text">nostalgic</div></div>
+                    <div class="tag-btn" data-en="playful and cheerful"><div>俏皮開朗</div><div class="en-text">playful</div></div>
+                    <div class="tag-btn" data-en="golden hour light"><div>黃金時刻</div><div class="en-text">golden hour</div></div>
+                    <div class="tag-btn" data-en="backlighting"><div>逆光</div><div class="en-text">backlighting</div></div>
+                    <div class="tag-btn" data-en="cinematic lighting"><div>電影感光線</div><div class="en-text">cinematic</div></div>
+                    <div class="tag-btn" data-en="eerie"><div>詭異</div><div class="en-text">eerie</div></div>
+                    <div class="tag-btn" data-en="majestic"><div>宏偉壯麗</div><div class="en-text">majestic</div></div>
+                    <div class="tag-btn" data-en="melancholic"><div>憂鬱</div><div class="en-text">melancholic</div></div>
+                    <div class="tag-btn" data-en="rim lighting"><div>邊緣光</div><div class="en-text">rim lighting</div></div>
+                    <div class="tag-btn" data-en="volumetric lighting"><div>體積光</div><div class="en-text">volumetric light</div></div>
+                    <div class="tag-btn" data-en="caustic lighting"><div>焦散光</div><div class="en-text">caustic light</div></div>
+                    <div class="tag-btn" data-en="bioluminescent"><div>生物光</div><div class="en-text">bioluminescent</div></div>
+                </div>
+            </section>
+
+            <!-- 排除詞 -->
+            <section id="negative-section">
+                <h2 class="section-title">6. 排除詞 (Negative Prompts)</h2>
+                 <div class="flex flex-wrap">
+                    <div class="tag-btn" data-en="ugly"><div>醜陋</div><div class="en-text">ugly</div></div>
+                    <div class="tag-btn" data-en="blurry"><div>模糊</div><div class="en-text">blurry</div></div>
+                    <div class="tag-btn" data-en="distorted"><div>扭曲</div><div class="en-text">distorted</div></div>
+                    <div class="tag-btn" data-en="extra limbs"><div>多餘肢體</div><div class="en-text">extra limbs</div></div>
+                    <div class="tag-btn" data-en="bad anatomy"><div>糟糕結構</div><div class="en-text">bad anatomy</div></div>
+                    <div class="tag-btn" data-en="watermark"><div>浮水印</div><div class="en-text">watermark</div></div>
+                    <div class="tag-btn" data-en="text"><div>文字</div><div class="en-text">text</div></div>
+                    <div class="tag-btn" data-en="signature"><div>簽名</div><div class="en-text">signature</div></div>
+                    <div class="tag-btn" data-en="realistic"><div>寫實</div><div class="en-text">realistic</div></div>
+                    <div class="tag-btn" data-en="photorealistic"><div>照片般逼真</div><div class="en-text">photorealistic</div></div>
+                    <div class="tag-btn" data-en="3D render"><div>3D渲染</div><div class="en-text">3D render</div></div>
+                    <div class="tag-btn" data-en="jpeg artifacts"><div>壓縮失真</div><div class="en-text">jpeg artifacts</div></div>
+                    <div class="tag-btn" data-en="asymmetrical eyes"><div>不對稱眼睛</div><div class="en-text">asymmetrical eyes</div></div>
+                    <div class="tag-btn" data-en="deformed hands"><div>變形的手</div><div class="en-text">deformed hands</div></div>
+                    <div class="tag-btn" data-en="poorly drawn face"><div>臉部崩壞</div><div class="en-text">poorly drawn face</div></div>
+                    <div class="tag-btn" data-en="cropped"><div>裁剪</div><div class="en-text">cropped</div></div>
+                    <div class="tag-btn" data-en="out of frame"><div>畫出框架</div><div class="en-text">out of frame</div></div>
+                    <div class="tag-btn" data-en="low resolution"><div>低解析度</div><div class="en-text">low resolution</div></div>
+                    <div class="tag-btn" data-en="mutation"><div>突變</div><div class="en-text">mutation</div></div>
+                    <div class="tag-btn" data-en="disfigured"><div>毀容</div><div class="en-text">disfigured</div></div>
+                 </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const subjectInput = document.getElementById('subject-input');
+            const promptOutputZh = document.getElementById('prompt-output-zh');
+            const promptOutputEn = document.getElementById('prompt-output-en');
+            const copyBtn = document.getElementById('copy-btn');
+            const resetBtn = document.getElementById('reset-btn');
+
+            const updatePrompt = () => {
+                let promptPartsEn = [];
+                let negativePartsEn = [];
+                let promptPartsZh = [];
+                let negativePartsZh = [];
+
+                const subjectValue = subjectInput.value.trim();
+                if (subjectValue !== '') {
+                    promptPartsEn.push(subjectValue);
+                    promptPartsZh.push(subjectValue);
+                }
+
+                const tagSections = ['style-section', 'environment-section', 'color-section', 'mood-section'];
+                tagSections.forEach(sectionId => {
+                    document.querySelectorAll(`#${sectionId} .tag-btn.selected`).forEach(btn => {
+                        promptPartsEn.push(btn.dataset.en);
+                        promptPartsZh.push(btn.querySelector('div:first-child').textContent);
+                    });
+                });
+                
+                document.querySelectorAll('#negative-section .tag-btn.selected').forEach(btn => {
+                    negativePartsEn.push(btn.dataset.en);
+                    negativePartsZh.push(btn.querySelector('div:first-child').textContent);
+                });
+
+                let finalPromptEn = promptPartsEn.join(', ');
+                if (negativePartsEn.length > 0) {
+                    finalPromptEn += ` --no ${negativePartsEn.join(', ')}`;
+                }
+                
+                let finalPromptZh = promptPartsZh.join('，');
+                 if (negativePartsZh.length > 0) {
+                    finalPromptZh += ` --排除 ${negativePartsZh.join('，')}`;
+                }
+
+                promptOutputEn.textContent = finalPromptEn.length > 0 ? finalPromptEn : 'Please start selecting tags below to generate the prompt...';
+                promptOutputZh.textContent = finalPromptZh.length > 0 ? finalPromptZh : '請開始點擊下方標籤以生成提示詞...';
+            };
+            
+            document.querySelectorAll('.tag-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.classList.toggle('selected');
+                    updatePrompt();
+                });
+            });
+
+            subjectInput.addEventListener('input', updatePrompt);
+
+            copyBtn.addEventListener('click', () => {
+                const textToCopy = promptOutputEn.textContent;
+                if (textToCopy.startsWith('Please start')) return; // Don't copy placeholder text
+
+                if(navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(textToCopy);
+                } else {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = textToCopy;
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                    } catch (err) {
+                        console.error('Fallback: Oops, unable to copy', err);
+                    }
+                    document.body.removeChild(textArea);
+                }
+
+                copyBtn.textContent = '已複製!';
+                setTimeout(() => {
+                    copyBtn.textContent = '複製';
+                }, 2000);
+            });
+            
+            resetBtn.addEventListener('click', () => {
+                document.querySelectorAll('.tag-btn.selected').forEach(btn => btn.classList.remove('selected'));
+                subjectInput.value = '';
+                
+                document.querySelector('#environment-section .tag-btn[data-en="white background"]').classList.add('selected');
+                document.querySelector('#color-section .tag-btn[data-en="autumn color palette"]').classList.add('selected');
+                
+                updatePrompt();
+            });
+
+            updatePrompt();
+        });
+    </script>
+</body>
+</html>
+
