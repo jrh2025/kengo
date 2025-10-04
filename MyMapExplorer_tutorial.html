@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>「我的地圖探險家」：你的「人生尋寶圖」！</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            margin: 0;
+            padding: 2em;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: #ffffff;
+            padding: 2em 3em;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            color: #0077b6;
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 0.5em;
+        }
+
+        h2 {
+            color: #0096c7;
+            border-bottom: 2px solid #ade8f4;
+            padding-bottom: 10px;
+            margin-top: 2em;
+            font-size: 1.8em;
+        }
+        
+        h3 {
+            color: #333;
+            font-size: 1.4em;
+            margin-top: 1.5em;
+        }
+
+        p, li {
+            font-size: 1.1em;
+            line-height: 1.9; /* 加寬行距 */
+            text-align: justify;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        li {
+            margin-bottom: 1.2em;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        li::before {
+            content: '✦';
+            color: #00b4d8;
+            position: absolute;
+            left: 0;
+            top: 5px;
+        }
+        
+        strong {
+            color: #023e8a;
+        }
+
+        .download-section {
+            text-align: center;
+            margin-top: 3em;
+        }
+
+        .download-link {
+            display: inline-block;
+            background-color: #0077b6;
+            color: #ffffff;
+            padding: 15px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.2em;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 119, 182, 0.3);
+        }
+
+        .download-link:hover {
+            background-color: #0096c7;
+            transform: translateY(-3px);
+        }
+        
+        .center-text {
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>「我的地圖探險家」：你的「人生尋寶圖」！</h1>
+
+        <p>初心就只是想要客製化具有個人風格的地圖，並且能夠分享給朋友，一開始用Google Map 但實在限制太多了，後來發現 OpenStreetMap 簡直如獲至寶，於是將它結合 Python 寫了個小工具來實現製作個人風格地圖的想法。</p>
+        <p>如果，有一張地圖，上面標的不只是制式的餐廳或加油站...，而是「當年翹課必去的網咖」、「推薦當地必去景點」，甚至是「全宇宙最好吃的巷口那家麵線」，這是不是酷多了？</p>
+        <p>別再讓珍貴回憶塵封在腦海裡啦！「我的地圖探險家」就是你的記憶魔法師，準備好一起施展魔法了嗎？</p>
+
+        <h2>創意發想：地圖也能擁有自己的風格？</h2>
+        <p>起點很簡單：地圖就該像家裡的貓一樣，有點個性，而且只屬於你。 受夠了那些千篇一律的電子地圖，決定打造一個工具，把腦海中那些亂七八糟、五味雜陳的私房景點，通通「具現化」出來，變成一張可以玩、可以看、可以到處跟朋友炫耀的「人生尋寶圖」。</p>
+
+        <h2>設計理念</h2>
+        <ul>
+            <li><strong>快速上手</strong>：操作流程直覺容易上手。</li>
+            <li><strong>控制狂最愛</strong>：從地點、描述到圖示，所有的一切都讓你親手掌控，你的地圖，你說了算！</li>
+            <li><strong>AI 當你的神隊友</strong>：想不出介紹文案？AI 幫你寫！做不出酷炫圖示？AI 幫你畫！</li>
+        </ul>
+
+        <h2>功能特色介紹</h2>
+        <ul>
+            <li><strong>【獨家亮點】自訂 AI 圖示，地圖顏值擔當！</strong><br>這絕對是最好玩的功能！還在用地圖內建的小圖釘嗎？太遜了！現在是腦洞大開的時刻！你可以使用任何 AI 生圖工具（例如 Midjourney, DALL-E 等），詠唱你獨有的魔法咒語，產生一顆「噴火的漢堡」、「戴著墨鏡的珍奶」「一座雄偉的城堡」，或是一個代表你和朋友之間秘密暗號的圖案，而且圖示還會跟著地圖一起縮放。 專業建議：為了讓你的圖示成為地圖上的超級巨星，建議使用 128x128 像素的大小，並且儲存成透明背景 (去背) 的 PNG 檔案，這樣它就能完美地與地圖融合，看起來專業又帥氣！</li>
+            <li><strong>專案管理大師</strong>：為「吃貨養成日誌」、「失戀散心地圖」等不同主題建立專案，讓你的故事地圖庫整齊又有條理。</li>
+            <li><strong>一鍵網路抓寶</strong>：想快速建立一份「附近所有咖啡廳」的地圖？輸入地區和選擇主題，程式自動幫你把網路上的資料抓進來，堪稱懶人救星(當然還是得要自行檢視增刪)！</li>
+            <li><strong>AI 內文生成器</strong>：選一個地標，再選一個場景，它就能立刻掰…不對，是「生成」一段介紹文，讓你的地圖充滿驚喜。(建議自己再行檢視修改)</li>
+            <li><strong>專案分享，友情加溫</strong>：將你嘔心瀝血打造的地圖專案，打包成一個檔案，傳給你的好友或另一半。分享回憶，就是這麼簡單！</li>
+        </ul>
+
+        <h2>快速上手指南</h2>
+        <ul>
+            <li><strong>開新專案</strong>：在左邊輸入一個酷炫的專案名稱，例如「我的耍廢角落」。</li>
+            <li><strong>新增地標</strong>：點「新增地點」，輸入地址，或直接在地圖上找到那個神秘的角落。然後，別忘了上傳你用 AI 算出來的超帥圖示！</li>
+            <li><strong>召喚 AI</strong>：點選剛新增的地標，在下方描述區塊，讓 AI 幫你想一段有趣的文案，然後按下「儲存描述」。</li>
+            <li><strong>秀出成果</strong>：點一下「產生/更新地圖」，專屬你的尋寶圖就會在瀏覽器中閃亮登場(直接分享這個html給你的朋友)！點「匯出專案」可以跟同好交流地圖！</li>
+        </ul>
+
+        <div class="download-section">
+            <h2>還在等什麼？探險正要開始！</h2>
+            <p>別再讓回憶變成失憶(意)了。現在就下載「我的地圖探險家」，把你的生活、你的故事、你的愛，通通放進地圖裡，打造一份連你自己都會愛不釋手的終極地圖吧！</p>
+            <h3>下載傳送門：</h3>
+            <a href="https://drive.google.com/file/d/1PWAghlbHKagG7ZeJ_cPxHedMKzSuM6L3/view?usp=drive_link" class="download-link" target="_blank">點擊這裡從 Google Drive 下載</a>
+        </div>
+    </div>
+
+</body>
+</html>
