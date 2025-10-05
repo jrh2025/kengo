@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧圖示去背分割工具 - 懶人救星手冊</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            line-height: 2.2; /* 超寬鬆行距，眼睛零負擔 */
+            color: #333;
+            background-color: #f9f9f9;
+            padding: 20px 40px;
+            max-width: 800px;
+            margin: 20px auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            background: #fff;
+        }
+        h1, h2, h3 {
+            color: #0078d4;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            border: none;
+        }
+        p, li {
+            font-size: 1.1em;
+        }
+        code {
+            background-color: #eef;
+            padding: 3px 6px;
+            border-radius: 5px;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        .download-section {
+            text-align: center;
+            margin: 50px 0;
+        }
+        .download-button {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 15px 30px;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.4);
+        }
+        .download-button:hover {
+            background-color: #218838;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(40, 167, 69, 0.6);
+        }
+        .highlight {
+            background-color: #fffbe5;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .note {
+            background-color: #f0f8ff;
+            border-left: 5px solid #0078d4;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>智慧圖示去背分割工具</h1>
+    <p style="text-align: center; font-size: 1.2em; color: #555;">—— 獻給每一個不想再做重複勞動的聰明人</p>
+
+    <div class="note">
+        <p><strong>前言：</strong> 你是否曾經盯著一張塞滿了上百個小圖示的圖片，感覺人生就像一場無止盡的「Ctrl+C、Ctrl+V、去背、儲存」地獄？我們懂你。這就是為什麼這個小工具會誕生——為了把你的寶貴時間，從滑鼠點擊的無限輪迴中拯救出來！</p>
+    </div>
+
+    <h2>這玩意兒是啥？能吃嗎？🤔</h2>
+    <p>簡單來說，這是一個被賦予了魔法（呃，我是說 AI 和電腦視覺技術）的桌面小程式。你只要把一張塞滿圖示的「大圖」餵給它，它就會自動幫你把裡面每一個小圖示，完美地<span class="highlight">裁切</span>出來，順便施展一個「萬物皆可透明」的<span class="highlight">去背</span>咒語，最後整整齊齊地交給你。</p>
+    <p>它背後的秘密武器？我們請來了好幾位大神：</p>
+    <ul>
+        <li><strong>介面設計師 <code>CustomTkinter</code></strong>：負責把門面打理得漂漂亮亮，讓你用得舒心。</li>
+        <li><strong>鷹眼偵探 <code>OpenCV</code></strong>：負責在圖片裡找出所有圖示的藏身之處，眼力堪比掃描器。</li>
+        - <li><strong>AI 藝術家 <code>Rembg</code></strong>：這位藝術家有嚴重的潔癖，能以像素級的精準度，把你不要的背景通通擦掉。</li>
+        <li><strong>多工處理大師 <code>Threading</code></strong>：確保程式在埋頭苦幹時，不會變成一塊動不了的磚頭，讓你的介面永遠流暢。</li>
+    </ul>
+
+    <h2>所以...我為什麼需要它？ (程式特色) ✨</h2>
+    <ul>
+        <li><strong>三種人格，應付各種場面</strong>：內建三種處理模式，不管是規規矩矩的網格圖，還是背景單純的散亂圖，甚至是各種奇奇怪怪顏色背景的圖片，它都能變身應對！</li>
+        <li><strong>AI 去背，比你手動還乾淨</strong>：那個叫 Rembg 的 AI 藝術家，去背效果好到讓你懷疑人生，比傳統的魔術棒強上一萬倍。</li>
+        <li><strong>專屬的「顏色調節工具」</strong>：獨家內建一個「調色盤」小工具，讓你用滑桿輕鬆告訴程式：「喏，這個綠到發光的顏色就是背景，其他的都給我留著！」操作直覺到不行。</li>
+        <li><strong>進度條，滿滿的安全感</strong>：它在工作時會喋喋不休地在狀態欄報告進度：「我找到16個圖示囉！」「正在處理第5個...」，讓你對一切都瞭若指掌。</li>
+        <li><strong>免安裝，下載即用</strong>：我們把它打包成了一個綠色軟體，不用安裝任何東西，解壓縮就能跑。把它丟進隨身碟，你就是整個辦公室最酷的仔！</li>
+    </ul>
+
+    <div class="download-section">
+        <a href="https://drive.google.com/file/d/1G-C8hH6t61qfUbqbMY9vHkuVfRUF4Te4/view?usp=drive_link" class="download-button" target="_blank">點我下載 v2.2 懶人包</a>
+        <p style="font-size: 0.9em; color: #888;">(把滑鼠移上來，它會變得很開心)</p>
+    </div>
+
+    <h2>魔法詠唱手冊 (使用說明) 📜</h2>
+    <h3>第一步：召喚程式與選擇祭品</h3>
+    <p>解壓縮檔案，點兩下那個看起來很厲害的 <code>智慧圖示分割工具.exe</code>。然後，點擊「選擇圖片」按鈕，把你想要處理的圖片（祭品）交給它。</p>
+
+    <h3>第二步：選擇你的戰鬥風格</h3>
+    <p>根據你的圖片特性，選擇一種模式。每個選項下面都有貼心小提示：</p>
+    <ul>
+        <li><strong>網格線偵測</strong>：當你的圖示們像豆腐塊一樣，被線條整齊地隔開時，選這個。</li>
+        <li><strong>灰階物體偵測</strong>：當背景顏色很單純（比如一片白或一片灰），而且跟圖示顏色差很多時，選這個。</li>
+        <li><span class="highlight">HSV 顏色空間偵測</span>：<strong>(強力推薦！)</strong> 無論你的背景是螢光綠、天空藍還是芭比粉，只要是單一顏色，選這個就對了！這是最強的模式。</li>
+    </ul>
+
+    <h3>第三步：微調你的魔法參數 (如果需要的話)</h3>
+    <p>如果選了最強的 <strong>HSV 模式</strong>，強烈建議你點一下「開啟顏色調節工具」按鈕。你會看到一個新視窗：</p>
+    <div class="note">
+        <p><strong>調節工具小訣竅：</strong> 你的目標很簡單——拖動滑桿，讓右邊預覽圖裡的<span class="highlight">背景變成純白，你想留下的東西變成純黑</span>。搞定後，直接關掉這個小視窗，魔法數值就自動設定好了！</p>
+    </div>
+
+    <h3>第四步：見證奇蹟的時刻！</h3>
+    <p>點下那個超大的「開始處理」按鈕，然後泡杯咖啡，翹起二郎腿，看著狀態欄的文字飛速滾動。等它告訴你「處理完成！」，你就可以在程式的資料夾旁邊，找到一個用時間命名的全新資料夾，裡面裝滿了所有處理好的、閃閃發光的 PNG 圖示！</p>
+
+</body>
+</html>
