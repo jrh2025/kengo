@@ -1,0 +1,475 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台股量價結構與動能深度分析系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+        }
+
+        .prose h3 {
+            position: relative;
+            padding-left: 1rem;
+        }
+
+            .prose h3::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 0.25em;
+                bottom: 0.25em;
+                width: 4px;
+                background-color: #3b82f6;
+                border-radius: 2px;
+            }
+        /* Dashboard Specific Styles */
+        .signal-card {
+            transition: all 0.3s ease;
+            opacity: 0.4;
+            transform: scale(0.98);
+        }
+
+            .signal-card.active {
+                opacity: 1;
+                transform: scale(1);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header / Navigation Stub -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+        <div class="max-w-4xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2 font-bold text-slate-800 text-lg">
+                <span class="bg-brand-600 text-white p-1 rounded">📊</span>
+                台股量價分析系統
+            </div>
+            <nav class="hidden sm:flex gap-6 text-sm font-medium text-slate-500">
+                <a href="#overview" class="hover:text-brand-600 transition duration-200">產品介紹</a>
+                <a href="#features" class="hover:text-brand-600 transition duration-200">功能演示</a>
+                <a href="#tech" class="hover:text-brand-600 transition duration-200">技術文件</a>
+            </nav>
+            <!-- Mobile Try Button (Visible only on small screens) -->
+            <a href="https://gemini.google.com/share/53398e315c9b" target="_blank" class="sm:hidden text-xs bg-brand-600 text-white px-3 py-1.5 rounded font-medium">試用</a>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-4xl mx-auto px-6 py-12">
+
+        <!-- Hero Section -->
+        <div id="overview" class="mb-16 text-center sm:text-left scroll-mt-24">
+            <span class="inline-block py-1 px-3 rounded-full bg-brand-50 text-brand-600 text-xs font-semibold tracking-wide uppercase mb-4">
+                Product Overview
+            </span>
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-6 leading-tight">
+                台股量價結構與動能深度分析系統<br>
+                <span class="text-slate-500 text-2xl font-normal block mt-2">Taiwan Stock Price-Volume Dynamics Analyzer</span>
+            </h1>
+            <p class="text-lg text-slate-600 max-w-2xl leading-relaxed mb-8">
+                專為台股投資人打造的聰明小幫手。透過簡單易懂的「量價分析」，幫您過濾掉市場上令人眼花撩亂的雜訊，輕鬆抓出股票上漲或下跌的關鍵訊號。
+            </p>
+
+            <!-- Call to Action Button -->
+            <a href="https://gemini.google.com/share/53398e315c9b" target="_blank" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-brand-600 hover:bg-brand-700 md:text-lg transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 group">
+                立即線上試用
+                <svg class="ml-2 -mr-1 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+            </a>
+        </div>
+
+        <!-- Section 1: System Overview -->
+        <section class="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 mb-12">
+            <h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-3">
+                <span class="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 text-sm">1</span>
+                系統概述
+            </h2>
+            <div class="prose text-slate-600">
+                <p class="mb-4">
+                    本系統不依賴傳統看盤軟體的臃腫架構，而是採用輕量化、高效能的 React 框架與客製化 SVG 繪圖引擎。
+                </p>
+                <p>
+                    我們直接串接了 <strong>FinMind</strong> 的即時數據，利用內建的運算引擎，把複雜難懂的數字變成一眼就能看懂的市場情緒訊號，確保在任何裝置上皆能提供流暢的互動分析體驗。
+                </p>
+            </div>
+        </section>
+
+        <!-- Section 2: Core Features & Interactive Demo -->
+        <section id="features" class="mb-16 scroll-mt-24">
+            <h2 class="text-2xl font-bold text-slate-800 mb-8 flex items-center gap-3">
+                <span class="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 text-sm">2</span>
+                核心功能演示 (Interactive Demo)
+            </h2>
+
+            <!-- Interactive Dashboard Container -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden mb-8">
+                <!-- Toolbar -->
+                <div class="bg-slate-50 border-b border-slate-200 p-4 flex flex-wrap gap-4 justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-slate-700">模擬模式：</span>
+                        <div class="flex bg-white rounded-lg border border-slate-200 p-1">
+                            <button onclick="switchMode('standard')" id="btn-std" class="px-3 py-1 text-xs font-medium rounded bg-brand-100 text-brand-700 shadow-sm transition">標準模式</button>
+                            <button onclick="switchMode('trend')" id="btn-trend" class="px-3 py-1 text-xs font-medium rounded text-slate-500 hover:text-slate-800 transition">趨勢比較</button>
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-400 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        系統狀態：模擬數據運作中
+                    </div>
+                </div>
+
+                <div class="grid lg:grid-cols-3">
+                    <!-- Chart Area -->
+                    <div class="lg:col-span-2 p-6 border-r border-slate-100">
+                        <div class="flex justify-between items-end mb-4">
+                            <div>
+                                <h3 class="font-bold text-slate-800">2330 台積電 (模擬走勢)</h3>
+                                <p class="text-xs text-slate-400">請在圖表上滑動以查看即時判讀</p>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="demoChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- AI Logic Panel -->
+                    <div class="bg-slate-50/50 p-6 flex flex-col justify-center">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 text-center">AI 演算法訊號</h4>
+                        <div class="space-y-3">
+                            <!-- Signal Cards -->
+                            <div id="card-bull" class="signal-card p-3 rounded-lg border border-red-200 bg-red-50 text-red-800">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-sm">價漲量增</span>
+                                    <span class="text-[10px] bg-red-200 px-1.5 py-0.5 rounded text-red-800 font-bold">多頭</span>
+                                </div>
+                                <p class="text-xs opacity-80">買盤積極，趨勢動能強勁。</p>
+                            </div>
+
+                            <div id="card-warn" class="signal-card p-3 rounded-lg border border-orange-200 bg-orange-50 text-orange-800">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-sm">價漲量縮</span>
+                                    <span class="text-[10px] bg-orange-200 px-1.5 py-0.5 rounded text-orange-800 font-bold">背離</span>
+                                </div>
+                                <p class="text-xs opacity-80">買盤縮手，可能面臨回檔。</p>
+                            </div>
+
+                            <div id="card-bear" class="signal-card p-3 rounded-lg border border-green-200 bg-green-50 text-green-800">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-sm">價跌量增</span>
+                                    <span class="text-[10px] bg-green-200 px-1.5 py-0.5 rounded text-green-800 font-bold">恐慌</span>
+                                </div>
+                                <p class="text-xs opacity-80">賣壓沈重，籌碼鬆動。</p>
+                            </div>
+
+                            <div id="card-bottom" class="signal-card p-3 rounded-lg border border-blue-200 bg-blue-50 text-blue-800">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-sm">價跌量縮</span>
+                                    <span class="text-[10px] bg-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-bold">觀望</span>
+                                </div>
+                                <p class="text-xs opacity-80">賣盤力竭，底部可能接近。</p>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-slate-200 text-center">
+                            <p class="text-[10px] text-slate-400">目前數據模擬：隨機遊走 (Random Walk) + 常態分佈成交量</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Static Feature List (Kept for context) -->
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg p-5 border border-slate-100 shadow-sm">
+                    <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                        <span class="text-brand-500">●</span> 多重基準深度解析
+                    </h3>
+                    <p class="text-sm text-slate-600">支援前日、MA5、MA10 等多維度基準切換，自動標記變動幅度超過 <span class="bg-slate-100 px-1 rounded font-bold text-slate-700">20%</span> 的異常訊號。</p>
+                </div>
+                <div class="bg-white rounded-lg p-5 border border-slate-100 shadow-sm">
+                    <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                        <span class="text-brand-500">●</span> 互動式歷史覆盤
+                    </h3>
+                    <p class="text-sm text-slate-600">時間軸回溯功能，可選擇近 30 個交易日內任一天進行分析，搭配十字游標查看精確數據。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3 & 4: Tech & Value -->
+        <div id="tech" class="grid md:grid-cols-3 gap-8 mb-12 scroll-mt-24">
+            <div class="md:col-span-2">
+                <section class="bg-slate-800 text-white rounded-2xl p-8 shadow-lg h-full">
+                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        技術架構
+                    </h2>
+                    <div class="grid sm:grid-cols-2 gap-6 text-sm text-slate-300">
+                        <div>
+                            <strong class="text-white block mb-1">前端框架</strong>
+                            React.js (Component-Based)
+                        </div>
+                        <div>
+                            <strong class="text-white block mb-1">樣式系統</strong>
+                            Tailwind CSS (Responsive)
+                        </div>
+                        <div>
+                            <strong class="text-white block mb-1">圖表核心</strong>
+                            Native SVG (自研演算法，零相依性)
+                        </div>
+                        <div>
+                            <strong class="text-white block mb-1">數據處理</strong>
+                            Async/Await 非同步抓取與前端即時運算
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <div class="md:col-span-1">
+                <section class="bg-brand-50 rounded-2xl p-8 border border-brand-100 h-full flex flex-col justify-center">
+                    <h2 class="text-xl font-bold text-brand-800 mb-4">應用價值</h2>
+                    <p class="text-brand-700 text-sm leading-relaxed">
+                        提供投資人一個上帝視角，從資金流向與籌碼換手的角度，驗證價格走勢的真實性 (Validity)，是進行波段操作與趨勢追蹤的強力輔助工具。
+                    </p>
+                </section>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-8 text-center text-slate-500 text-sm">
+        <p class="mt-2 text-xs">Built with React & Tailwind CSS</p>
+    </footer>
+
+    <!-- Interactive Demo Script -->
+    <script>
+        // Simulation Data Generator
+        const generateDemoData = () => {
+            let price = 500;
+            let vol = 20000;
+            const data = [];
+            for(let i=0; i<30; i++) {
+                // Simulate price movement
+                const changePct = (Math.random() - 0.48) * 0.04;
+                const newPrice = price * (1 + changePct);
+                const priceChange = newPrice - price;
+
+                // Simulate volume (correlated with volatility)
+                const volChangePct = (Math.random() - 0.4) * 0.5;
+                const newVol = Math.max(5000, vol * (1 + volChangePct + Math.abs(changePct)*5));
+                const volChange = newVol - vol;
+
+                data.push({
+                    day: `T-${30-i}`,
+                    price: newPrice,
+                    volume: newVol,
+                    priceChange,
+                    volChange
+                });
+
+                price = newPrice;
+                vol = newVol;
+            }
+            return data;
+        };
+
+        const demoData = generateDemoData();
+        let demoChart = null;
+
+        function initDemoChart(mode = 'standard') {
+            const ctx = document.getElementById('demoChart').getContext('2d');
+
+            // Destroy existing if any
+            if(demoChart) demoChart.destroy();
+
+            const labels = demoData.map(d => d.day);
+            const prices = demoData.map(d => d.price);
+            const volumes = demoData.map(d => d.volume);
+
+            const config = {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { display: false }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            grid: { color: '#f1f5f9' },
+                            min: 0
+                        }
+                    },
+                    plugins: {
+                        legend: { display: mode === 'trend' },
+                        tooltip: {
+                            enabled: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(0);
+                                }
+                            }
+                        }
+                    },
+                    onHover: (e, activeEls) => {
+                        if(activeEls.length > 0) {
+                            const idx = activeEls[0].index;
+                            updateCards(idx);
+                        }
+                    }
+                }
+            };
+
+            if (mode === 'standard') {
+                config.data.datasets = [
+                    {
+                        type: 'line',
+                        label: '收盤價',
+                        data: prices,
+                        borderColor: '#f59e0b',
+                        borderWidth: 2,
+                        yAxisID: 'y',
+                        tension: 0.1,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    },
+                    {
+                        type: 'bar',
+                        label: '成交量',
+                        data: volumes,
+                        backgroundColor: (ctx) => {
+                            const idx = ctx.dataIndex;
+                            const change = demoData[idx].priceChange;
+                            return change >= 0 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)';
+                        },
+                        yAxisID: 'y1',
+                        barPercentage: 0.6
+                    }
+                ];
+            } else {
+                // Trend Mode (Normalized)
+                const normalize = (arr) => {
+                    const min = Math.min(...arr);
+                    const max = Math.max(...arr);
+                    return arr.map(v => ((v - min) / (max - min)) * 100);
+                };
+                config.type = 'line';
+                config.options.scales.y = { min: 0, max: 100, display: false };
+                config.options.scales.y1 = { display: false };
+
+                config.data.datasets = [
+                    {
+                        label: '價格趨勢 (%)',
+                        data: normalize(prices),
+                        borderColor: '#f59e0b',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        pointRadius: 0
+                    },
+                    {
+                        label: '量能趨勢 (%)',
+                        data: normalize(volumes),
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        pointRadius: 0
+                    }
+                ];
+            }
+
+            demoChart = new Chart(ctx, config);
+        }
+
+        function updateCards(index) {
+            const current = demoData[index];
+            const pChange = current.priceChange;
+            const vChange = current.volChange;
+
+            // Logic
+            let activeId = '';
+            if (pChange >= 0 && vChange >= 0) activeId = 'card-bull';
+            else if (pChange >= 0 && vChange < 0) activeId = 'card-warn';
+            else if (pChange < 0 && vChange >= 0) activeId = 'card-bear';
+            else activeId = 'card-bottom';
+
+            // Reset
+            document.querySelectorAll('.signal-card').forEach(el => el.classList.remove('active'));
+
+            // Activate
+            const el = document.getElementById(activeId);
+            if(el) el.classList.add('active');
+        }
+
+        function switchMode(mode) {
+            const btnStd = document.getElementById('btn-std');
+            const btnTrend = document.getElementById('btn-trend');
+
+            if (mode === 'standard') {
+                btnStd.className = "px-3 py-1 text-xs font-medium rounded bg-brand-100 text-brand-700 shadow-sm transition";
+                btnTrend.className = "px-3 py-1 text-xs font-medium rounded text-slate-500 hover:text-slate-800 transition";
+            } else {
+                btnTrend.className = "px-3 py-1 text-xs font-medium rounded bg-brand-100 text-brand-700 shadow-sm transition";
+                btnStd.className = "px-3 py-1 text-xs font-medium rounded text-slate-500 hover:text-slate-800 transition";
+            }
+            initDemoChart(mode);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initDemoChart('standard');
+            updateCards(demoData.length - 1); // Init with last data
+        });
+    </script>
+
+</body>
+</html>
