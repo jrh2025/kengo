@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全能拼貼大師 - 使用說明手冊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .guide-section {
+            @apply bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6;
+        }
+
+        .feature-icon {
+            @apply w-10 h-10 rounded-full flex items-center justify-center text-white mb-3 text-lg;
+        }
+
+        .step-num {
+            @apply w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold mr-2 inline-flex;
+        }
+
+        .key-term {
+            @apply font-bold text-gray-800 bg-gray-100 px-1 rounded;
+        }
+
+        .highlight-box {
+            @apply bg-gradient-to-br from-indigo-50 to-blue-50 p-5 rounded-lg border border-indigo-100;
+        }
+    </style>
+</head>
+
+<body class="text-gray-600">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-12 px-4 mb-8 shadow-lg">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl font-bold mb-4"><i class="fas fa-shapes mr-3"></i>全能拼貼大師</h1>
+            <p class="text-xl opacity-90 mb-6">簡單、強大、注重隱私的網頁版拼貼工具</p>
+
+            <a href="https://jrh2025.github.io/kengo/Image_Collage_Master.html" target="_blank"
+                class="inline-flex items-center bg-white text-blue-600 font-bold py-3 px-8 rounded-full shadow-md hover:bg-yellow-50 transition transform hover:-translate-y-1">
+                <i class="fas fa-rocket mr-2"></i> 立即線上使用
+            </a>
+
+            <div class="mt-8 flex justify-center gap-2 opacity-80 text-sm">
+                <span class="bg-white/20 px-3 py-1 rounded-full"><i class="fas fa-check mr-1"></i>免安裝</span>
+                <span class="bg-white/20 px-3 py-1 rounded-full"><i class="fas fa-check mr-1"></i>免註冊</span>
+                <span class="bg-white/20 px-3 py-1 rounded-full"><i class="fas fa-check mr-1"></i>隱私安全</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-4xl mx-auto px-4 pb-12">
+
+        <!-- Philosophy / Why -->
+        <section class="guide-section border-t-4 border-indigo-500">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="fas fa-heart text-red-500 mr-3"></i>為什麼開發這個工具？
+            </h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div class="flex">
+                        <div class="feature-icon bg-green-500 flex-shrink-0"><i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="font-bold text-gray-800 text-lg">完全免費、終身免訂閱</h3>
+                            <p class="text-sm">市面上有太多修圖軟體需要付月費或充滿廣告。這款工具承諾乾淨、免費，讓創作回歸單純。</p>
+                        </div>
+                    </div>
+                    <div class="flex">
+                        <div class="feature-icon bg-blue-500 flex-shrink-0"><i class="fas fa-user-shield"></i></div>
+                        <div class="ml-4">
+                            <h3 class="font-bold text-gray-800 text-lg">極致隱私：照片不上傳</h3>
+                            <p class="text-sm">最重要的一點！所有圖片處理皆在您的<span class="key-term">瀏覽器本地端</span>完成。照片<span
+                                    class="text-red-500 font-bold">不會</span>上傳到任何雲端伺服器，無需擔心私人照片外洩。</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex">
+                        <div class="feature-icon bg-purple-500 flex-shrink-0"><i class="fas fa-bolt"></i></div>
+                        <div class="ml-4">
+                            <h3 class="font-bold text-gray-800 text-lg">輕量快速、免安裝</h3>
+                            <p class="text-sm">不必下載龐大的軟體，打開網頁即可使用。支援電腦與平板，操作流暢不卡頓。</p>
+                        </div>
+                    </div>
+                    <div class="flex">
+                        <div class="feature-icon bg-orange-500 flex-shrink-0"><i class="fas fa-laptop-code"></i></div>
+                        <div class="ml-4">
+                            <h3 class="font-bold text-gray-800 text-lg">開源透明</h3>
+                            <p class="text-sm">程式碼公開透明，是一個純粹的 HTML 網頁應用，安全可靠。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Access Links -->
+        <section class="guide-section">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-l-4 border-blue-500 pl-3">如何開始使用</h2>
+            <p class="mb-4">您可以選擇最適合您的方式來啟動全能拼貼大師：</p>
+
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="highlight-box hover:shadow-md transition">
+                    <h3 class="font-bold text-blue-700 text-lg mb-2"><i class="fas fa-globe mr-2"></i>方式一：線上使用</h3>
+                    <p class="text-sm mb-3">最快速的方式，點擊連結即可開始創作。</p>
+                    <a href="https://jrh2025.github.io/kengo/Image_Collage_Master.html" target="_blank"
+                        class="text-blue-600 font-bold underline hover:text-blue-800 break-all">
+                        https://jrh2025.github.io/kengo/Image_Collage_Master.html
+                    </a>
+                </div>
+
+                <div class="highlight-box bg-green-50 border-green-100 hover:shadow-md transition">
+                    <h3 class="font-bold text-green-700 text-lg mb-2"><i class="fas fa-download mr-2"></i>方式二：下載離線使用
+                        (推薦)</h3>
+                    <p class="text-sm mb-2">您可以將整個網頁下載回電腦，享受更穩定、無網路也能用的體驗。</p>
+                    <a href="#local-guide" class="text-green-600 font-bold hover:text-green-800 text-sm">
+                        <i class="fas fa-arrow-right mr-1"></i> 查看下載教學
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Modes Intro -->
+        <section class="guide-section">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-l-4 border-blue-500 pl-3">功能模式介紹</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-th-large text-blue-500 text-xl mr-2"></i>
+                        <h3 class="font-bold text-gray-800">標準格子模式</h3>
+                    </div>
+                    <p class="text-sm">經典版型，自動對齊。適合多圖快速組合，支援 1~9 張照片的多種排列。</p>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-hand-paper text-purple-500 text-xl mr-2"></i>
+                        <h3 class="font-bold text-gray-800">自由拼貼模式</h3>
+                    </div>
+                    <p class="text-sm">無拘無束的畫布。圖片可以隨意堆疊、旋轉、縮放，像貼貼紙一樣自由。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Start: Upload -->
+        <section class="guide-section">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-l-4 border-green-500 pl-3">上傳圖片技巧</h2>
+            <div class="space-y-4">
+                <div class="flex items-start">
+                    <div class="feature-icon bg-green-500 mt-1 flex-shrink-0"><i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="font-bold text-lg text-gray-800">推薦：直接拖放上傳</h3>
+                        <p>這是最快的方法！直接從電腦資料夾選取多張照片，<span class="key-term">拖曳</span> 到網頁視窗中放開即可。</p>
+                        <ul class="list-disc pl-5 mt-1 text-sm text-gray-500">
+                            <li><strong>格子模式下：</strong> 圖片會自動填入空的格子。</li>
+                            <li><strong>自由模式下：</strong> 圖片會隨機散佈在畫布上。</li>
+                        </ul>
+                        <p class="text-sm text-yellow-600 mt-2"><i class="fas fa-lightbulb mr-1"></i>
+                            提示：若上傳遮罩不小心卡住，點擊畫面任意處即可取消。</p>
+                    </div>
+                </div>
+                <div class="flex items-start border-t pt-4">
+                    <div class="feature-icon bg-blue-500 mt-1 flex-shrink-0"><i class="fas fa-mouse-pointer"></i></div>
+                    <div class="ml-4">
+                        <h3 class="font-bold text-lg text-gray-800">按鈕上傳</h3>
+                        <p>您也可以使用介面上的 <span class="key-term">批次上傳</span> 按鈕，或直接點擊格子內的灰色區塊來單張上傳。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Detailed Operations -->
+        <section class="guide-section">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-l-4 border-blue-500 pl-3">詳細操作指南</h2>
+
+            <div class="mb-6">
+                <h3 class="font-bold text-xl text-blue-700 mb-3">1. 標準格子模式</h3>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li><span class="font-bold">切換版型：</span> 左側面板點擊 <span class="step-num">1</span>~<span
+                            class="step-num">9</span> 數字，選擇照片數量後挑選喜歡的版型。</li>
+                    <li><span class="font-bold">調整圖片 (Pan)：</span> 按住格子內的照片 <span class="key-term">拖曳</span>，可調整顯示位置。
+                    </li>
+                    <li><span class="font-bold">縮放圖片 (Zoom)：</span> 滑鼠滾輪可放大縮小照片。</li>
+                    <li><span class="font-bold">交換位置：</span> 將照片拖曳到另一個格子，放開後自動交換。</li>
+                </ul>
+            </div>
+
+            <div class="mb-6 border-t pt-4">
+                <h3 class="font-bold text-xl text-purple-700 mb-3">2. 自由拼貼 & 文字工具</h3>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li><span class="font-bold">物件操作：</span> 點選物件後，可透過周圍的控制點進行縮放與旋轉。</li>
+                    <li><span class="font-bold">圖層管理：</span> 左側面板提供「移到最上層」功能，點擊物件時也會自動浮起。</li>
+                    <li><span class="font-bold">豐富字型：</span> 支援黑體、圓體、手寫風、像素風等多種中英文字型，並可設定粗體與顏色。</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Local Use Guide -->
+        <section id="local-guide" class="guide-section bg-green-50 border-green-200">
+            <h2 class="text-2xl font-bold text-green-800 mb-4 flex items-center">
+                <i class="fas fa-download mr-3"></i>如何下載至電腦離線使用？
+            </h2>
+            <p class="mb-4">將工具下載回電腦有三大好處：<span class="font-bold">1. 無網路也能用 2. 開啟速度更快 3. 絕對的隱私保障</span>。</p>
+
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-green-100">
+                <h3 class="font-bold text-lg mb-3">操作步驟：</h3>
+                <ol class="list-decimal pl-5 space-y-3">
+                    <li>
+                        開啟線上連結：
+                        <a href="https://jrh2025.github.io/kengo/Image_Collage_Master.html" target="_blank"
+                            class="text-blue-600 underline">Image_Collage_Master.html</a>
+                    </li>
+                    <li>
+                        在網頁空白處點擊 <span class="key-term">滑鼠右鍵</span>，選擇 <span class="key-term">「另存新檔」 (Save
+                            As...)</span>。
+                    </li>
+                    <li>
+                        將檔案儲存到您的桌面或習慣的資料夾（檔名通常為 <code>Image_Collage_Master.html</code>）。
+                    </li>
+                    <li>
+                        <strong>完成！</strong> 以後只要雙擊這個檔案，就會用瀏覽器開啟，完全不需要連上網路即可使用所有功能。
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- Download Work -->
+        <section class="guide-section text-center">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">作品輸出</h2>
+            <p class="mb-6">完成後點擊右上角的 <span class="inline-block bg-blue-600 text-white px-3 py-1 rounded text-sm"><i
+                        class="fas fa-download mr-1"></i>下載</span> 按鈕，即可獲得高解析度 PNG 圖片。</p>
+        </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-gray-400 py-8 text-center">
+        <p>&copy; <span id="current-year"></span> 全能拼貼大師 User Guide. Created with AI & Heart.</p>
+    </footer>
+
+    <script>
+        document.getElementById('current-year').innerText = new Date().getFullYear();
+    </script>
+
+</body>
+
+</html>
