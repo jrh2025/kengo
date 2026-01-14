@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國中小學生全方位導師綜合評語系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* 視覺風格定義 */
+        .theme-day {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --item-inactive-bg: #f1f5f9;
+        }
+
+        .theme-night {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --item-inactive-bg: #1a2235;
+        }
+
+        .theme-comfort {
+            --bg-color: #fdf6e3;
+            --card-bg: #f5edda;
+            --text-main: #5c4b37;
+            --text-muted: #8d7a64;
+            --border-color: #e6dec5;
+            --item-inactive-bg: #efe7d1;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+        }
+
+        .custom-card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            border-width: 1px;
+        }
+
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .item-row {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            user-select: none;
+            border-width: 1px;
+        }
+
+        .item-inactive {
+            opacity: 0.5;
+            background-color: var(--item-inactive-bg);
+            filter: grayscale(0.5);
+            border-color: transparent;
+        }
+
+        .item-active {
+            opacity: 1;
+            background-color: var(--card-bg);
+            border-left: 4px solid #3b82f6;
+            border-color: var(--border-color);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .score-btn {
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.15s;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-muted);
+        }
+
+        .item-active .score-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .score-btn.selected {
+            background-color: #3b82f6 !important;
+            color: white !important;
+            border-color: #3b82f6 !important;
+        }
+
+        .grade-btn,
+        .style-btn {
+            transition: all 0.2s;
+            border-width: 1px;
+            background-color: var(--card-bg);
+            color: var(--text-main);
+        }
+
+        .grade-btn.selected,
+        .style-btn.selected {
+            background-color: #3b82f6 !important;
+            color: white !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+
+        .mini-score-btn {
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-muted);
+        }
+
+        .mini-score-btn.selected {
+            background: #3b82f6 !important;
+            color: white !important;
+            border-color: #3b82f6 !important;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="p-2 md:p-6 theme-day">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header 區塊 -->
+        <div class="custom-card rounded-2xl shadow-sm p-6 mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                <h1 class="text-2xl md:text-3xl font-extrabold text-blue-600">國中小學生全方位導師綜合評語系統</h1>
+                <div class="flex flex-wrap justify-center gap-2">
+                    <!-- API Key Setting Button -->
+                    <button onclick="toggleApiKeyInput()"
+                        class="px-4 py-2 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-key"></i> 設定 API Key
+                    </button>
+                    <button onclick="confirmReset()"
+                        class="px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-xl text-xs font-bold hover:bg-red-600 hover:text-white transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> 重置評量
+                    </button>
+                </div>
+            </div>
+
+            <!-- Enhanced API Key Input Panel -->
+            <div id="api-key-panel"
+                class="hidden mb-6 p-5 bg-blue-50 border border-blue-100 rounded-2xl flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-xs font-bold text-blue-700">Google Gemini API Key 管理</span>
+                        <span id="api-status-label"
+                            class="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-200 text-slate-600 w-fit">檢測中...</span>
+                    </div>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank"
+                        class="text-[10px] text-blue-500 underline flex items-center gap-1">
+                        <i class="fa-solid fa-external-link text-[8px]"></i> 獲取免費金鑰
+                    </a>
+                </div>
+                <div class="flex flex-col md:flex-row gap-2">
+                    <div class="relative flex-1">
+                        <input type="password" id="user-api-key" placeholder="貼上金鑰後系統將自動記憶於本地..."
+                            class="w-full pl-4 pr-10 py-2 rounded-xl border border-blue-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-slate-700">
+                        <button onclick="togglePasswordVisibility()"
+                            class="absolute right-3 top-2.5 text-slate-400 hover:text-blue-500 transition-colors">
+                            <i id="password-toggle-icon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="saveApiKey()"
+                            class="flex-1 md:flex-none px-6 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 transition">儲存</button>
+                        <button onclick="deleteApiKey()"
+                            class="flex-1 md:flex-none px-6 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-600 hover:text-white transition">刪除金鑰</button>
+                    </div>
+                </div>
+                <p class="text-[9px] text-blue-400 italic">* 金鑰將加密儲存於您的瀏覽器 localStorage 中，我們不會將其傳送到任何第三方伺服器（Gemini API
+                    除外）。</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 border-y border-slate-100 py-6 mb-4">
+                <!-- 適用對象選擇 (含自動記憶) -->
+                <div class="flex flex-col items-center lg:items-start gap-3">
+                    <span class="text-xs font-bold text-muted flex items-center gap-2">
+                        <i class="fa-solid fa-child-reaching text-blue-500"></i> 適用對象（自動記憶）：
+                    </span>
+                    <div class="flex flex-wrap gap-2" id="grade-selector">
+                        <button onclick="selectGrade('國小低年級')"
+                            class="grade-btn px-4 py-1.5 text-xs border rounded-full font-bold">國小低年級</button>
+                        <button onclick="selectGrade('國小中年級')"
+                            class="grade-btn px-4 py-1.5 text-xs border rounded-full font-bold">國小中年級</button>
+                        <button onclick="selectGrade('國小高年級')"
+                            class="grade-btn px-4 py-1.5 text-xs border rounded-full font-bold">國小高年級</button>
+                        <button onclick="selectGrade('國中')"
+                            class="grade-btn px-4 py-1.5 text-xs border rounded-full font-bold">國中</button>
+                    </div>
+                </div>
+
+                <!-- 視覺風格選擇 (含自動記憶) -->
+                <div class="flex flex-col items-center lg:items-end gap-3">
+                    <span class="text-xs font-bold text-muted flex items-center gap-2">
+                        <i class="fa-solid fa-palette text-blue-500"></i> 視覺風格（自動記憶）：
+                    </span>
+                    <div class="flex gap-2">
+                        <button onclick="changeTheme('day')" id="btn-theme-day"
+                            class="style-btn px-4 py-1.5 text-xs border rounded-full font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-sun"></i> 白天
+                        </button>
+                        <button onclick="changeTheme('night')" id="btn-theme-night"
+                            class="style-btn px-4 py-1.5 text-xs border rounded-full font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-moon"></i> 黑夜
+                        </button>
+                        <button onclick="changeTheme('comfort')" id="btn-theme-comfort"
+                            class="style-btn px-4 py-1.5 text-xs border rounded-full font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-eye text-amber-600"></i> 舒適
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-center text-[11px] text-muted mb-2">
+                💡 <span class="text-blue-600 font-bold">連點兩下項目</span> 以開啟評量。點擊藍色 <span
+                    class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-100 text-blue-600 text-[10px] font-bold">?</span>
+                查看詳細描述。
+            </p>
+            <div id="top-hint" class="text-center text-xs font-bold transition-colors"></div>
+        </div>
+
+        <!-- 主要評量區 -->
+        <div id="assessment-container" class="space-y-6"></div>
+
+        <!-- 已評量清單匯總 -->
+        <div id="summary-list-container" class="mt-12 custom-card rounded-2xl shadow-sm overflow-hidden hidden">
+            <div class="bg-blue-600/5 px-6 py-4 border-b flex justify-between items-center">
+                <h3 class="font-bold flex items-center gap-2 text-sm md:text-base">
+                    <i class="fa-solid fa-list-check text-blue-500"></i> 已評量項目清單
+                </h3>
+                <div class="flex items-center gap-3">
+                    <button onclick="confirmReset()"
+                        class="text-xs text-red-500 font-bold hover:underline">清空全部</button>
+                    <span id="total-count-badge"
+                        class="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-bold">0 項目</span>
+                </div>
+            </div>
+            <div id="summary-content" class="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4"></div>
+        </div>
+
+        <!-- 底部生成按鈕 -->
+        <div class="mt-8 mb-20 p-10 custom-card rounded-2xl border-dashed text-center">
+            <div id="bottom-hint" class="mb-6 text-sm font-bold transition-colors"></div>
+            <button onclick="generateAIComments()"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-12 py-4 rounded-2xl font-bold shadow-xl shadow-blue-200 transition-all flex items-center gap-3 mx-auto">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> 生成 AI 綜合分析報告
+            </button>
+        </div>
+    </div>
+
+    <!-- 項目說明彈窗 -->
+    <div id="help-modal"
+        class="fixed inset-0 bg-slate-900/60 hidden z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="custom-card rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
+            <div class="p-4 bg-blue-600 text-white flex justify-between items-center">
+                <h4 id="help-title" class="font-bold text-sm">項目說明</h4>
+                <button onclick="closeHelp()" class="text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6">
+                <p id="help-desc" class="text-sm leading-relaxed italic opacity-90"></p>
+                <div class="mt-6 flex justify-end">
+                    <button onclick="closeHelp()"
+                        class="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-md">我了解了</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重置確認彈窗 -->
+    <div id="reset-modal"
+        class="fixed inset-0 bg-slate-900/60 hidden z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="custom-card rounded-2xl max-w-xs w-full shadow-2xl p-6 text-center">
+            <div
+                class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h4 class="font-bold text-lg mb-2">確定要重置嗎？</h4>
+            <p class="text-sm text-muted mb-6">這將會清空目前所有已點選的指標與分數，且無法復原。</p>
+            <div class="flex gap-3">
+                <button onclick="closeResetModal()"
+                    class="flex-1 py-2 rounded-xl border border-slate-200 font-bold text-xs bg-slate-50">取消</button>
+                <button onclick="resetAllAssessments()"
+                    class="flex-1 py-2 bg-red-600 text-white rounded-xl font-bold text-xs">確定重置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI 分析結果報告彈窗 -->
+    <div id="ai-modal"
+        class="fixed inset-0 bg-slate-900/80 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="custom-card rounded-3xl max-w-5xl w-full max-h-[95vh] overflow-hidden flex flex-col shadow-2xl">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-robot text-blue-500"></i> AI 學生綜合分析報告
+                </h2>
+                <button onclick="closeModal()" class="text-muted hover:text-blue-600 text-2xl">&times;</button>
+            </div>
+            <div id="ai-loading" class="p-20 flex flex-col items-center justify-center hidden">
+                <div class="loading-spinner mb-4"></div>
+                <p id="loading-status-text" class="text-muted font-medium text-sm">正在分析數據並撰寫五種風格評語...</p>
+            </div>
+            <div id="ai-content-wrapper" class="p-6 overflow-y-auto space-y-6 custom-scroll">
+                <div class="bg-slate-50/50 rounded-2xl p-6 border border-slate-200">
+                    <h3 class="text-center font-bold text-muted mb-4 text-sm md:text-base">五大向度發展指標雷達圖</h3>
+                    <div class="w-full max-w-sm mx-auto aspect-square">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+                <div id="ai-comments-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-10"></div>
+            </div>
+            <div class="p-4 border-t border-slate-100 flex justify-end">
+                <button onclick="closeModal()"
+                    class="bg-slate-200 text-slate-700 px-8 py-2 rounded-xl font-bold text-sm">關閉報告</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const categories = {
+            self_management: {
+                title: "身心素養與自我管理", color: "blue", items: [
+                    { name: "生活起居自理", desc: "能獨立管理個人事務，如準時起床、整理服儀、收納書包及個人物品。" },
+                    { name: "健康作息睡眠", desc: "具備穩定的作息規律，能確保充足睡眠，假日不熬夜，維持生理時鐘穩定。" },
+                    { name: "飲食營養均衡", desc: "有良好的進食習慣，理解並實踐健康飲食，不依賴零食或含糖飲料。" },
+                    { name: "體能活動習慣", desc: "有規律運動的意識與行為，理解體力是學習的基礎，能自主參與身體活動。" },
+                    { name: "情緒覺察調節", desc: "能識別自身情緒，並能運用適當方法紓解壓力或挫折感，不遷怒環境。" },
+                    { name: "挫折恢復韌性", desc: "面對失敗或批評時展現正向心態，能快速調適並從中學習改善方案。" },
+                    { name: "儀容衛生維護", desc: "維持個人清潔與得體外貌，在不同場合展現合宜的生理衛生習慣。" },
+                    { name: "數位時間掌控", desc: "能自律地管理 3C 產品使用時間，不因網路沉迷影響課業、社交或睡眠。" },
+                    { name: "隱私邊界尊重", desc: "懂得保護個人隱私資訊，同時也尊重他人的空間與個人財物界線。" },
+                    { name: "自信自尊發展", desc: "相信自己的價值，能正向評價自我能力，並維持健康的自信心。" },
+                    { name: "自主困難解決", desc: "遇到挑戰先嘗試動腦解決而非立即求救，展現初步的獨立排難能力。" },
+                    { name: "安全風險意識", desc: "能辨識生活中的潛在風險，具備自我保護常識並遠離危險情境。" }
+                ]
+            },
+            learning: {
+                title: "學習特質與學科能力", color: "emerald", items: [
+                    { name: "課堂專注投入", desc: "上課期間能維持高效專注，目光隨師長引導，積極參與課室互動。" },
+                    { name: "學習任務管理", desc: "能準時完成各項作業與交辦任務，並對其產出品質負責任。" },
+                    { name: "閱讀理解深度", desc: "能分析文章脈絡，抓取關鍵資訊並推論作者意圖，而非僅是表層閱讀。" },
+                    { name: "數理邏輯應用", desc: "具備量化思考與空間推理能力，能運用邏輯工具解決實際問題。" },
+                    { name: "語文表達溝通", desc: "能有條理地運用口語或文字傳達想法，結構清晰且語意明確。" },
+                    { name: "資訊檢索分析", desc: "能運用數位工具查找資料，並具備過濾虛假或無效資訊的基本素養。" },
+                    { name: "學習監控修正", desc: "了解自己的學習狀態，考後會認真訂正錯誤並針對弱點調整方法。" },
+                    { name: "系統連結整合", desc: "能將不同學科的知識點進行聯想與整合，展現跨領域學習的潛力。" },
+                    { name: "計畫制定執行", desc: "具備時間規劃能力，能為大考或專題制定複習進度並按部就班執行。" },
+                    { name: "科學探究精神", desc: "對未知現象有好奇心，喜歡透過觀察、假設與實驗來驗證想法。" },
+                    { name: "記憶提取效能", desc: "能運用技巧將知識內化，並在需要時（如考試或報告）精準提取。" },
+                    { name: "美感應用表達", desc: "在作品排版、視覺呈現上具備美學素養，讓學習成果更具吸引力。" }
+                ]
+            },
+            social: {
+                title: "人際互動與團隊合作", color: "amber", items: [
+                    { name: "同理心與感受", desc: "能敏銳覺察他人的需求與感受，展現體貼並願意提供心理支持。" },
+                    { name: "溝通傾聽技巧", desc: "溝通時能耐心聆聽，並以尊重對方的口氣表達個人意見，不強加於人。" },
+                    { name: "團隊協作貢獻", desc: "在群體中能發揮所長，積極分擔任務並主動協助夥伴，共創成果。" },
+                    { name: "衝突協商處理", desc: "發生摩擦時能冷靜對話，尋求雙贏的替代方案，而非採取情緒對抗。" },
+                    { name: "師生信任互動", desc: "與長輩維持良性且信任的關係，願意接納導引並適時尋求諮詢。" },
+                    { name: "友誼建立維持", desc: "具備穩定的社交圈與深度友誼，能與同儕共享秘密與互相支持。" },
+                    { name: "異性社交尊重", desc: "與不同性別相處態度大方、自然，維持適當界線並落實平權精神。" },
+                    { name: "社交韌性抗壓", desc: "面對小團體排擠或摩擦時能保持理智，不因人際壓力而迷失自我。" },
+                    { name: "換位思考能力", desc: "吵架時能嘗試站在對方立場思考，理解不同的視角與需求。" },
+                    { name: "助人合作熱忱", desc: "在他人需要時主動給予幫助，享受團隊合作帶來的成就感。" },
+                    { name: "歸屬感與責任", desc: "覺得自己是班級的一份子，願意為班級榮譽付出並維護團體氛圍。" },
+                    { name: "社交媒體形象", desc: "在社群網路上展現正向言行，不過度沉溺於虛擬認可。" }
+                ]
+            },
+            citizenship: {
+                title: "道德實踐與公民意識", color: "purple", items: [
+                    { name: "誠實誠信品格", desc: "言行一致，勇於承認錯誤並承擔結果，不因怕受罰而說謊。" },
+                    { name: "正義公平守護", desc: "在意群體中的公平，面對不正當行為有勇氣發聲或向長輩反應。" },
+                    { name: "守法規範遵循", desc: "理解並認同校規與社會規範的價值，非盲目服從而是內化自律。" },
+                    { name: "公共服務參與", desc: "主動承擔公共勞務，對於維護公共環境或事務有高度使命感。" },
+                    { name: "多元文化包容", desc: "尊重不同背景、身分或習慣的人士，不存偏見且樂於交流。" },
+                    { name: "媒體資訊素養", desc: "能辨識假訊息與網路標題黨，不隨意散播未經證實的言論。" },
+                    { name: "網路公民禮儀", desc: "在網路互動中維持禮貌，理解數位足跡的重要性，遠離網路霸凌。" },
+                    { name: "感恩與謙虛心", desc: "能看見他人的付出並表達謝意，對成就保持謙和，不驕傲自滿。" },
+                    { name: "是非辨別分析", desc: "面對誘惑或同儕壓力能冷靜判斷對錯，有堅定的道德底線。" },
+                    { name: "權威理性對話", desc: "對長輩或制度有疑問時，能採取理性有禮的方式溝通與爭取權益。" },
+                    { name: "環境永續守護", desc: "具備環保意識，能確實確實落實垃圾分類、節約能源等綠色行為。" },
+                    { name: "公民價值落實", desc: "理解並實踐民主、平等與自由的價值，並在班級生活中體現。" }
+                ]
+            },
+            potential: {
+                title: "多元潛能與創新素養", color: "pink", items: [
+                    { name: "好奇心與探索", desc: "對新事物保有高度興趣，不設限自己的發展，勇於跨出舒適圈。" },
+                    { name: "創新思維展現", desc: "面對老問題時能嘗試提出不同想法，在勞作或專題中展現創意。" },
+                    { name: "藝術鑑賞力", desc: "能欣賞生活中的各種藝術形式，並能表達個人對美感的見解。" },
+                    { name: "美感實踐作品", desc: "在作業、筆記或活動佈置中，能運用色彩與排版展現美學品味。" },
+                    { name: "動手實作興趣", desc: "喜歡親自動手操作或組裝物品，享受從無到有的創造過程。" },
+                    { name: "數位工具適應", desc: "能快速上手新型數位軟體，並將其轉化為輔助學習的高效工具。" },
+                    { name: "跨域整合能力", desc: "能聯結不同學科的技巧解決問題，如用數學與美感完成模型。" },
+                    { name: "舞台表達展演", desc: "在人群面前表現自我時大方得體，能將想法透過展演清晰呈現。" },
+                    { name: "未來職涯願景", desc: "對未來職涯或學業發展有初步藍圖，並願意為此進行自主學習。" },
+                    { name: "批判思考分析", desc: "不盲從主流或權威，能對既有現象提出有建設性的反思。" },
+                    { name: "生活品味營造", desc: "注意生活細節，對於打造具美感的個人生活與學習空間有興趣。" },
+                    { name: "跨學科洞察力", desc: "能看見事物背後的邏輯關聯，具備多角度看問題的能力。" }
+                ]
+            }
+        };
+
+        let selectedGrade = localStorage.getItem('teacher_pref_grade') || "國小低年級";
+        let currentTheme = localStorage.getItem('teacher_pref_theme') || "day";
+        let storedApiKey = localStorage.getItem('teacher_api_key') || "";
+        const scoreState = {};
+        let radarChartInstance = null;
+
+        function init() {
+            const container = document.getElementById('assessment-container');
+            Object.keys(categories).forEach(catKey => {
+                const cat = categories[catKey];
+                scoreState[catKey] = cat.items.map(() => ({ active: false, value: 3 }));
+                const section = document.createElement('div');
+                section.innerHTML = `
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="h-5 w-1.5 bg-${cat.color}-500 rounded-full"></div>
+                        <h2 class="text-lg font-bold">${cat.title}</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2" id="grid-${catKey}"></div>
+                `;
+                container.appendChild(section);
+                const grid = document.getElementById(`grid-${catKey}`);
+                cat.items.forEach((itemObj, index) => {
+                    const card = document.createElement('div');
+                    card.id = `card-${catKey}-${index}`;
+                    card.className = "item-row item-inactive p-2.5 rounded-xl border flex flex-col gap-2 relative group";
+                    let buttonsHtml = '';
+                    for (let i = 1; i <= 5; i++) {
+                        buttonsHtml += `<button class="score-btn" onclick="updateValue(event, '${catKey}', ${index}, ${i})">${i}</button>`;
+                    }
+                    card.innerHTML = `
+                        <div class="flex items-center gap-2 overflow-hidden pr-8 text-slate-700">
+                            <span class="text-[10px] font-bold text-muted flex-shrink-0">${index + 1}</span>
+                            <span class="text-xs font-medium truncate">${itemObj.name}</span>
+                        </div>
+                        <button onclick="showHelp(event, '${catKey}', ${index})" 
+                            class="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[11px] font-bold flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm z-10">?</button>
+                        <div class="flex items-center justify-between mt-auto">
+                            <div class="flex gap-1" id="btns-${catKey}-${index}">${buttonsHtml}</div>
+                            <span id="val-badge-${catKey}-${index}" class="text-[10px] font-bold text-muted">--</span>
+                        </div>
+                    `;
+                    card.addEventListener('dblclick', () => toggleItem(catKey, index));
+                    grid.appendChild(card);
+                });
+            });
+
+            // 加載偏好
+            selectGrade(selectedGrade);
+            changeTheme(currentTheme);
+            document.getElementById('user-api-key').value = storedApiKey;
+            checkApiKeyStatus();
+            renderSummaryList();
+        }
+
+        // --- API Key 管理強化 ---
+
+        function toggleApiKeyInput() {
+            const panel = document.getElementById('api-key-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('user-api-key');
+            const icon = document.getElementById('password-toggle-icon');
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('user-api-key').value.trim();
+            if (!key) {
+                alert("請輸入金鑰內容再儲存。");
+                return;
+            }
+            storedApiKey = key;
+            localStorage.setItem('teacher_api_key', key);
+            checkApiKeyStatus();
+            alert("API 金鑰已儲存並記憶於本地。");
+        }
+
+        function deleteApiKey() {
+            if (confirm("確定要刪除已儲存的 API 金鑰嗎？這將導致無法生成評語。")) {
+                storedApiKey = "";
+                localStorage.removeItem('teacher_api_key');
+                document.getElementById('user-api-key').value = "";
+                checkApiKeyStatus();
+                alert("金鑰已刪除。");
+            }
+        }
+
+        function checkApiKeyStatus() {
+            const label = document.getElementById('api-status-label');
+            if (storedApiKey) {
+                label.innerText = "● 金鑰已設定";
+                label.classList.replace('bg-slate-200', 'bg-green-100');
+                label.classList.replace('text-slate-600', 'text-green-600');
+            } else {
+                label.innerText = "○ 尚未設定金鑰";
+                label.classList.replace('bg-green-100', 'bg-red-50');
+                label.classList.replace('text-green-600', 'text-red-500');
+            }
+        }
+
+        // --- 其他介面邏輯 ---
+
+        function changeTheme(theme) {
+            currentTheme = theme;
+            localStorage.setItem('teacher_pref_theme', theme);
+            document.body.className = `p-2 md:p-6 theme-${theme}`;
+            document.querySelectorAll('.style-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById(`btn-theme-${theme}`).classList.add('selected');
+        }
+
+        function selectGrade(grade) {
+            selectedGrade = grade;
+            localStorage.setItem('teacher_pref_grade', grade);
+            const btns = document.querySelectorAll('.grade-btn');
+            btns.forEach(btn => {
+                if (btn.innerText === grade) btn.classList.add('selected');
+                else btn.classList.remove('selected');
+            });
+        }
+
+        function confirmReset() { document.getElementById('reset-modal').classList.remove('hidden'); }
+        function closeResetModal() { document.getElementById('reset-modal').classList.add('hidden'); }
+        function resetAllAssessments() {
+            Object.keys(scoreState).forEach(catKey => {
+                scoreState[catKey].forEach((item, index) => {
+                    item.active = false; item.value = 3;
+                    const card = document.getElementById(`card-${catKey}-${index}`);
+                    card.className = "item-row item-inactive p-2.5 rounded-xl border flex flex-col gap-2 relative group";
+                    const badge = document.getElementById(`val-badge-${catKey}-${index}`);
+                    badge.innerText = '--'; badge.className = "text-[10px] font-bold text-muted";
+                    const btns = document.getElementById(`btns-${catKey}-${index}`).querySelectorAll('.score-btn');
+                    btns.forEach(b => b.classList.remove('selected'));
+                });
+            });
+            renderSummaryList(); closeResetModal();
+        }
+
+        function showHelp(event, catKey, index) {
+            event.stopPropagation();
+            const item = categories[catKey].items[index];
+            document.getElementById('help-title').innerText = item.name;
+            document.getElementById('help-desc').innerText = item.desc;
+            document.getElementById('help-modal').classList.remove('hidden');
+        }
+        function closeHelp() { document.getElementById('help-modal').classList.add('hidden'); }
+
+        function toggleItem(catKey, index) {
+            const card = document.getElementById(`card-${catKey}-${index}`);
+            const isActive = !scoreState[catKey][index].active;
+            scoreState[catKey][index].active = isActive;
+            const badge = document.getElementById(`val-badge-${catKey}-${index}`);
+            if (isActive) {
+                card.classList.remove('item-inactive'); card.classList.add('item-active');
+                badge.innerText = scoreState[catKey][index].value; badge.className = "text-[10px] font-bold text-blue-600";
+                refreshButtonStyles(catKey, index);
+            } else {
+                card.classList.add('item-inactive'); card.classList.remove('item-active');
+                badge.innerText = '--'; badge.className = "text-[10px] font-bold text-muted";
+                const btns = document.getElementById(`btns-${catKey}-${index}`).querySelectorAll('.score-btn');
+                btns.forEach(b => b.classList.remove('selected'));
+            }
+            renderSummaryList();
+        }
+
+        function updateValue(event, catKey, index, val) {
+            if (event) event.stopPropagation();
+            if (!scoreState[catKey][index].active) return;
+            scoreState[catKey][index].value = val;
+            document.getElementById(`val-badge-${catKey}-${index}`).innerText = val;
+            refreshButtonStyles(catKey, index); renderSummaryList();
+        }
+
+        function refreshButtonStyles(catKey, index) {
+            const btns = document.getElementById(`btns-${catKey}-${index}`).querySelectorAll('.score-btn');
+            btns.forEach((btn, i) => (i + 1 === scoreState[catKey][index].value) ? btn.classList.add('selected') : btn.classList.remove('selected'));
+        }
+
+        function renderSummaryList() {
+            const container = document.getElementById('summary-list-container');
+            const content = document.getElementById('summary-content');
+            const badgeLabel = document.getElementById('total-count-badge');
+            const topHint = document.getElementById('top-hint');
+            const bottomHint = document.getElementById('bottom-hint');
+            content.innerHTML = '';
+            let totalActive = 0;
+            Object.keys(categories).forEach(catKey => {
+                const activeItems = scoreState[catKey].map((s, i) => ({ ...s, index: i, name: categories[catKey].items[i].name })).filter(s => s.active);
+                if (activeItems.length > 0) {
+                    totalActive += activeItems.length;
+                    const group = document.createElement('div'); group.className = "flex flex-col space-y-2";
+                    let itemsHtml = activeItems.map(item => {
+                        let miniBtns = '';
+                        for (let i = 1; i <= 5; i++) miniBtns += `<button onclick="updateValue(null, '${catKey}', ${item.index}, ${i})" class="mini-score-btn ${item.value === i ? 'selected' : ''}">${i}</button>`;
+                        return `<div class="flex flex-col gap-1 bg-blue-600/5 p-2 rounded-lg border border-blue-600/10"><div class="flex justify-between items-center text-[10px]"><div class="flex items-center gap-1 min-w-0"><button onclick="toggleItem('${catKey}', ${item.index})" class="text-red-400 hover:text-red-600 transition"><i class="fa-solid fa-trash-can"></i></button><span class="truncate" title="${item.name}">${item.name}</span></div><span class="font-bold text-blue-600">${item.value}</span></div><div class="flex gap-0.5 justify-end">${miniBtns}</div></div>`;
+                    }).join('');
+                    group.innerHTML = `<h4 class="text-xs font-bold text-blue-600 border-b border-blue-100 pb-1 mb-2">${categories[catKey].title}</h4><div class="space-y-1.5">${itemsHtml}</div>`;
+                    content.appendChild(group);
+                }
+            });
+            let hintHtml = totalActive === 0 ? "尚未選擇任何評量指標" : (totalActive < 3 ? `⚠️ 已評量 ${totalActive} 項，尚需 ${3 - totalActive} 項` : `✅ 已評量 ${totalActive} 項，符合 AI 評語條件`);
+            let hintClass = totalActive === 0 ? "text-muted" : (totalActive < 3 ? "text-red-500" : "text-emerald-600");
+            topHint.innerHTML = hintHtml; topHint.className = `text-center text-xs font-bold transition-colors ${hintClass}`;
+            bottomHint.innerHTML = hintHtml; bottomHint.className = `mb-6 text-sm font-bold transition-colors ${hintClass}`;
+            badgeLabel.innerText = `${totalActive} 項目`;
+            totalActive > 0 ? container.classList.remove('hidden') : container.classList.add('hidden');
+        }
+
+        async function generateAIComments() {
+            if (!storedApiKey) {
+                alert("請先點擊上方『設定 API Key』按鈕並輸入您的 Google Gemini API 金鑰。");
+                toggleApiKeyInput();
+                return;
+            }
+
+            const activeData = []; const averages = {};
+            Object.keys(categories).forEach(catKey => {
+                const catScores = scoreState[catKey].filter(s => s.active);
+                if (catScores.length > 0) {
+                    const avg = catScores.reduce((a, b) => a + b.value, 0) / catScores.length;
+                    averages[categories[catKey].title] = avg.toFixed(1);
+                    scoreState[catKey].forEach((s, idx) => { if (s.active) activeData.push({ category: categories[catKey].title, item: categories[catKey].items[idx].name, score: s.value }); });
+                } else averages[categories[catKey].title] = 0;
+            });
+
+            if (activeData.length < 3) { alert("❗ 評量項目不足：請至少連點兩下開啟 3 個指標。"); return; }
+            document.getElementById('ai-modal').classList.remove('hidden');
+            document.getElementById('ai-loading').classList.remove('hidden');
+            document.getElementById('ai-content-wrapper').classList.add('hidden');
+
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            if (radarChartInstance) radarChartInstance.destroy();
+            radarChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: Object.values(categories).map(c => c.title),
+                    datasets: [{ label: '向度得分', data: Object.values(categories).map(c => averages[c.title]), fill: true, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgb(59, 130, 246)', pointBackgroundColor: 'rgb(59, 130, 246)' }]
+                },
+                options: { scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, display: false }, grid: { color: currentTheme === 'night' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }, pointLabels: { color: currentTheme === 'night' ? '#94a3b8' : '#64748b', font: { size: 10 } } } }, plugins: { legend: { display: false } } }
+            });
+
+            const systemPrompt = `你是一位資深的國中小導師。學生處於：${selectedGrade}。請根據提供的評量數據撰寫五種風格評語（warm, objective, future, short_positive, short_neutral）。每一項風格都必須產出內容。嚴禁出現具體的分數數字。務必以繁體中文撰寫流暢段落。模型：gemini-2.5-flash-preview-09-2025`;
+
+            const callAPIWithRetry = async (retryCount = 0) => {
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${storedApiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: JSON.stringify(activeData) }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] },
+                            generationConfig: {
+                                responseMimeType: "application/json",
+                                responseSchema: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        warm: { type: "STRING" }, objective: { type: "STRING" }, future: { type: "STRING" }, short_positive: { type: "STRING" }, short_neutral: { type: "STRING" }
+                                    },
+                                    required: ["warm", "objective", "future", "short_positive", "short_neutral"]
+                                }
+                            }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error?.message || "網路錯誤");
+                    }
+
+                    const data = await response.json();
+                    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!resultText) throw new Error("AI 回傳內容為空");
+                    renderAIComments(JSON.parse(resultText));
+                } catch (error) {
+                    if (retryCount < 5) {
+                        const delay = Math.pow(2, retryCount) * 1000;
+                        document.getElementById('loading-status-text').innerText = `連線稍慢，正在嘗試重新發送 (${retryCount + 1}/5)...`;
+                        await new Promise(res => setTimeout(res, delay));
+                        return callAPIWithRetry(retryCount + 1);
+                    }
+                    document.getElementById('ai-comments-grid').innerHTML = `<p class="text-red-500 text-center col-span-2 p-10 bg-red-50 rounded-xl">AI 分析失敗。原因：${error.message}。請確認 API Key 是否正確且評量項目充足。</p>`;
+                    document.getElementById('ai-loading').classList.add('hidden');
+                    document.getElementById('ai-content-wrapper').classList.remove('hidden');
+                }
+            };
+            await callAPIWithRetry();
+        }
+
+        function renderAIComments(c) {
+            const grid = document.getElementById('ai-comments-grid');
+            const styles = [
+                { id: 'warm', label: '☀️ 溫暖激勵型', text: c.warm, bg: 'bg-pink-500/5', border: 'border-pink-500/20', textCol: 'text-pink-600' },
+                { id: 'objective', label: '📊 客觀分析型', text: c.objective, bg: 'bg-blue-500/5', border: 'border-blue-500/20', textCol: 'text-blue-600' },
+                { id: 'future', label: '🚀 未來引導型', text: c.future, bg: 'bg-emerald-500/5', border: 'border-emerald-500/20', textCol: 'text-emerald-600', span: true },
+                { id: 'sp', label: '✨ 精簡鼓勵', text: c.short_positive, bg: 'bg-orange-500/5', border: 'border-orange-500/20', textCol: 'text-orange-600' },
+                { id: 'sn', label: '📝 精簡務實', text: c.short_neutral, bg: 'bg-slate-500/5', border: 'border-slate-500/20', textCol: 'text-slate-600' }
+            ];
+            grid.innerHTML = styles.map(s => `<div class="p-5 ${s.bg} border ${s.border} rounded-2xl relative ${s.span ? 'md:col-span-2' : ''}"><div class="flex justify-between items-center mb-3"><h4 class="font-bold ${s.textCol} text-sm">${s.label}</h4><button onclick="copyText('txt-${s.id}', this)" class="text-[10px] bg-white text-slate-800 border border-slate-200 px-3 py-1 rounded-lg shadow-sm hover:bg-slate-50 transition font-bold">一鍵複製</button></div><p id="txt-${s.id}" class="text-[11px] leading-relaxed">${s.text}</p></div>`).join('');
+            document.getElementById('ai-loading').classList.add('hidden');
+            document.getElementById('ai-content-wrapper').classList.remove('hidden');
+        }
+
+        function copyText(id, btn) {
+            const text = document.getElementById(id).innerText;
+            const textArea = document.createElement("textarea"); textArea.value = text; document.body.appendChild(textArea); textArea.select();
+            try {
+                document.execCommand('copy'); const original = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-check"></i> 已複製'; btn.className = "text-[10px] bg-green-600 text-white px-3 py-1 rounded-lg shadow-sm font-bold";
+                setTimeout(() => { btn.innerHTML = original; btn.className = "text-[10px] bg-white text-slate-800 border border-slate-200 px-3 py-1 rounded-lg shadow-sm hover:bg-slate-50 transition font-bold"; }, 2000);
+            } catch (err) { } document.body.removeChild(textArea);
+        }
+
+        function closeModal() { document.getElementById('ai-modal').classList.add('hidden'); }
+        window.onload = init;
+    </script>
+</body>
+
+</html>
