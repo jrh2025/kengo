@@ -183,7 +183,7 @@
 
         <div class="mt-4 flex justify-between items-center text-xs text-slate-400">
             <span id="fileCount">0 檔案</span>
-            <span>Pure Frontend Scanner v1.5 (Drag & Drop Support)</span>
+            <span>Pure Frontend Scanner v1.6 (Fix Server Paths)</span>
         </div>
     </main>
 
@@ -236,8 +236,10 @@
 
                 for await (const entry of dirHandle.values()) {
                     if (entry.kind === 'file' && (entry.name.endsWith('.html') || entry.name.endsWith('.htm'))) {
-                        // 排除自己
-                        if (entry.name === 'viewer.html' || entry.name === 'index.html') continue;
+
+                        // 動態排除自己 (不論叫 viewer.html 或 view.html)
+                        const currentFilename = window.location.pathname.split('/').pop();
+                        if (entry.name === currentFilename || entry.name === 'index.html') continue;
 
                         const file = await entry.getFile();
                         // 讀取檔案內容以解析 Title (只讀取前 4KB 優化效能)
@@ -360,10 +362,28 @@
                 const links = Array.from(doc.querySelectorAll('a'));
 
                 // 3. 過濾出 .html 連結
+
+                // 取得目前執行檔名 (例如 view.html) 以便排除
+                const currentFilename = window.location.pathname.split('/').pop() || 'viewer.html';
+
                 const htmlLinks = links
                     .map(a => a.getAttribute('href'))
-                    .filter(href => href && (href.endsWith('.html') || href.endsWith('.htm')))
-                    .filter(href => !href.startsWith('/') && !href.includes('viewer.html') && href !== 'index.html');
+                    .filter(href => {
+                        if (!href) return false;
+                        const lower = href.toLowerCase();
+
+                        // 必須是 html 結尾
+                        if (!lower.endsWith('.html') && !lower.endsWith('.htm')) return false;
+
+                        // 排除特殊檔案
+                        if (href.includes(currentFilename)) return false;
+                        if (href.includes('viewer.html')) return false; // Hardcode fallback
+                        if (lower === 'index.html') return false;
+
+                        // 允許絕對路徑 (startsWith /) 和上層路徑 (../)
+                        // 只要它是 html 檔，我們就嘗試列出
+                        return true;
+                    });
 
                 let processedCount = 0;
                 setLoading(true, `正在分析 0/${htmlLinks.length} 個檔案...`);
@@ -396,7 +416,8 @@
                 globalFiles = results.filter(f => f !== null);
 
                 if (globalFiles.length === 0) {
-                    alert("掃描完成，但在目錄中沒有找到其他 HTML 檔案 (或者伺服器未列出檔案)。");
+                    // 偵測到 0 個檔案，提供更具體的錯誤診斷
+                    alert("掃描完成，但未找到任何 HTML 檔案。\n\n可能原因：\n1. 伺服器未開啟「目錄列表 (Directory Listing)」功能。\n2. 目錄下存在 index.html 檔案蓋過了列表。\n3. 您所在的目錄確實沒有其他 .html 檔。");
                 }
 
                 renderTable();
