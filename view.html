@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧網頁索引系統</title>
+    <!-- 引入 Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 FontAwesome 圖示 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#0f172a',
+                        accent: '#3b82f6',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 拖放區域的高亮效果 */
+        .drag-active {
+            border: 2px dashed #3b82f6;
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .drag-overlay {
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 antialiased min-h-screen flex flex-col transition-colors duration-200" id="dropZone">
+
+    <!-- Drag Overlay (Hidden by default) -->
+    <div id="dragOverlay"
+        class="fixed inset-0 z-[100] hidden flex-col items-center justify-center bg-blue-50/90 backdrop-blur-sm drag-overlay">
+        <i class="fa-solid fa-folder-open text-6xl text-accent mb-4 animate-bounce"></i>
+        <h2 class="text-2xl font-bold text-slate-700">釋放以讀取資料夾</h2>
+        <p class="text-slate-500 mt-2">放開滑鼠即可開始掃描</p>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="bg-brand text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-network-wired text-accent text-xl"></i>
+                <h1 class="text-lg font-bold tracking-wide">HTML Directory Viewer <span
+                        class="text-xs opacity-50 font-normal border border-slate-600 px-1 rounded ml-1">Pure
+                        Frontend</span></h1>
+            </div>
+            <div class="text-xs text-slate-400 hidden md:block">
+                <i class="fa-solid fa-shield-halved mr-1"></i> Client-Side Processing
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 flex-grow max-w-6xl">
+
+        <!-- Controls -->
+        <div class="glass-panel rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3">
+                    <!-- 智慧按鈕：根據環境切換功能 -->
+                    <button id="btnSmartScan" onclick="handleSmartScan()"
+                        class="bg-accent hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow transition-all flex items-center gap-2 font-medium">
+                        <i class="fa-solid fa-folder-tree"></i> <span id="btnSmartText">掃描目錄</span>
+                    </button>
+                    <!-- 備用按鈕 -->
+                    <button id="btnLocal" onclick="selectLocalDirectory()"
+                        class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-4 py-2 rounded-lg shadow-sm transition-all flex items-center gap-2">
+                        <i class="fa-regular fa-folder-open"></i> 選擇其他資料夾
+                    </button>
+                </div>
+
+                <!-- Search & Status -->
+                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                    <div class="relative w-full sm:w-64">
+                        <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400 text-sm"></i>
+                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="過濾標題或檔名..."
+                            class="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-accent focus:border-transparent outline-none text-sm">
+                    </div>
+                    <div id="statusTag"
+                        class="hidden px-3 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-check-circle"></i> <span id="statusText">Ready</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hint Text -->
+            <div class="mt-4 flex flex-col gap-1">
+                <p class="text-xs text-slate-500 leading-relaxed flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-accent"></i>
+                    <span>
+                        <strong>狀態說明：</strong> <span id="envStatus">正在偵測執行環境...</span>
+                    </span>
+                </p>
+                <p id="localHint" class="text-xs text-orange-500 pl-6 hidden">
+                    <i class="fa-solid fa-lightbulb mr-1"></i>
+                    <strong>專家提示：</strong> 因瀏覽器安全限制無法自動選取目前目錄，建議直接將<strong>資料夾拖入此視窗</strong>即可快速讀取。
+                </p>
+                <p id="pathHint" class="text-xs text-slate-400 pl-6 font-mono hidden"></p>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden min-h-[400px] relative">
+
+            <!-- Loading Overlay -->
+            <div id="loadingOverlay"
+                class="hidden absolute inset-0 bg-white/80 z-10 flex flex-col items-center justify-center">
+                <div class="w-10 h-10 border-4 border-slate-200 border-t-accent rounded-full loading-spinner mb-3">
+                </div>
+                <p class="text-slate-500 font-medium" id="loadingText">正在分析檔案...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center text-slate-300">
+                <i class="fa-solid fa-folder-open text-6xl mb-4 opacity-50"></i>
+                <p class="text-lg font-medium">尚未載入任何檔案</p>
+                <p class="text-sm mt-2" id="emptyHintText">點擊左上角按鈕開始掃描</p>
+            </div>
+
+            <div class="overflow-x-auto h-full">
+                <table class="w-full text-left border-collapse hidden" id="mainTable">
+                    <thead class="bg-slate-50 sticky top-0 z-0">
+                        <tr
+                            class="text-xs font-semibold tracking-wide text-slate-500 uppercase border-b border-slate-200">
+                            <th class="p-4 cursor-pointer hover:bg-slate-100 group w-5/12" onclick="sortTable('title')">
+                                網頁標題 (Title) <i
+                                    class="fa-solid fa-sort ml-1 text-slate-300 group-hover:text-slate-500"></i>
+                            </th>
+                            <th class="p-4 cursor-pointer hover:bg-slate-100 group w-3/12"
+                                onclick="sortTable('filename')">
+                                檔名 <i class="fa-solid fa-sort ml-1 text-slate-300 group-hover:text-slate-500"></i>
+                            </th>
+                            <th class="p-4 cursor-pointer hover:bg-slate-100 group w-2/12" onclick="sortTable('size')">
+                                大小 <i class="fa-solid fa-sort ml-1 text-slate-300 group-hover:text-slate-500"></i>
+                            </th>
+                            <th class="p-4 cursor-pointer hover:bg-slate-100 group w-2/12 text-center">
+                                動作
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="fileListBody" class="divide-y divide-slate-100 text-sm text-slate-700">
+                        <!-- JS renders rows here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-4 flex justify-between items-center text-xs text-slate-400">
+            <span id="fileCount">0 檔案</span>
+            <span>Pure Frontend Scanner v1.5 (Drag & Drop Support)</span>
+        </div>
+    </main>
+
+    <script>
+        // 全域檔案列表資料
+        let globalFiles = [];
+        let sortDirection = 1; // 1: asc, -1: desc
+
+        // ----------------------------------------------------
+        // 核心功能: 智慧掃描入口 (Smart Scan)
+        // ----------------------------------------------------
+        async function handleSmartScan() {
+            if (window.location.protocol.startsWith('http')) {
+                // 伺服器環境：直接掃描索引
+                await scanServerIndex();
+            } else {
+                // 本地環境：
+                // 技術限制說明：
+                // 瀏覽器安全沙箱 (Sandbox) 禁止網頁得知其硬碟絕對路徑，
+                // 亦禁止在無使用者互動下自動指定路徑。必須顯示 Picker。
+                await selectLocalDirectory();
+            }
+        }
+
+        // ----------------------------------------------------
+        // 功能 1: 檔案系統存取 API (本機/授權模式)
+        // ----------------------------------------------------
+        async function selectLocalDirectory(draggedHandle = null) {
+            if (!('showDirectoryPicker' in window) && !draggedHandle) {
+                alert("您的瀏覽器不支援 File System Access API (請使用 Chrome, Edge 或 Opera)。");
+                return;
+            }
+
+            try {
+                let dirHandle;
+
+                if (draggedHandle) {
+                    // 如果是透過拖放傳入的 Handle
+                    dirHandle = draggedHandle;
+                } else {
+                    // 否則開啟資料夾選取器
+                    dirHandle = await window.showDirectoryPicker({
+                        id: 'html-viewer-cwd',
+                        mode: 'read'
+                    });
+                }
+
+                setLoading(true, "正在讀取並分析本機檔案...");
+                globalFiles = [];
+
+                for await (const entry of dirHandle.values()) {
+                    if (entry.kind === 'file' && (entry.name.endsWith('.html') || entry.name.endsWith('.htm'))) {
+                        // 排除自己
+                        if (entry.name === 'viewer.html' || entry.name === 'index.html') continue;
+
+                        const file = await entry.getFile();
+                        // 讀取檔案內容以解析 Title (只讀取前 4KB 優化效能)
+                        const chunk = file.slice(0, 4096);
+                        const text = await chunk.text();
+                        const title = extractTitle(text);
+
+                        // 建立 Blob URL 以支援本機「開新分頁」
+                        const blobUrl = URL.createObjectURL(file);
+
+                        globalFiles.push({
+                            filename: entry.name,
+                            title: title || entry.name,
+                            hasTitle: !!title,
+                            size: file.size,
+                            url: blobUrl, // 使用 Blob URL
+                            isLocal: true,
+                            handle: entry
+                        });
+                    }
+                }
+                renderTable();
+                setLoading(false);
+                updateStatus(`已授權並讀取 ${globalFiles.length} 個檔案`);
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    console.log("使用者取消了目錄選取");
+                    return;
+                }
+                console.error(err);
+                setLoading(false);
+                alert("讀取資料夾失敗: " + err.message);
+            }
+        }
+
+        // ----------------------------------------------------
+        // 新增功能: 拖放支援 (Drag & Drop)
+        // ----------------------------------------------------
+        const dropZone = document.getElementById('dropZone');
+        const dragOverlay = document.getElementById('dragOverlay');
+
+        // 防止瀏覽器預設開啟檔案的行為
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // 視覺回饋
+        dropZone.addEventListener('dragenter', () => {
+            dropZone.classList.add('drag-active');
+            dragOverlay.classList.remove('hidden');
+            dragOverlay.classList.add('flex');
+        }, false);
+
+        dropZone.addEventListener('dragleave', (e) => {
+            // 只有當離開的是 dropZone 本身，而不是進入子元素時才移除
+            if (e.relatedTarget === null) {
+                dropZone.classList.remove('drag-active');
+                dragOverlay.classList.add('hidden');
+                dragOverlay.classList.remove('flex');
+            }
+        }, false);
+
+        // 確保 drop 在 overlay 上也能觸發
+        dragOverlay.addEventListener('dragleave', (e) => {
+            if (e.relatedTarget === null) {
+                dropZone.classList.remove('drag-active');
+                dragOverlay.classList.add('hidden');
+                dragOverlay.classList.remove('flex');
+            }
+        });
+
+        dropZone.addEventListener('drop', async (e) => {
+            dropZone.classList.remove('drag-active');
+            dragOverlay.classList.add('hidden');
+            dragOverlay.classList.remove('flex');
+
+            const items = [...e.dataTransfer.items];
+            const item = items[0]; // 只處理第一個項目
+
+            if (item && item.kind === 'file') {
+                // 嘗試取得 FileSystemHandle (Chrome/Edge 支援)
+                if (item.getAsFileSystemHandle) {
+                    const handle = await item.getAsFileSystemHandle();
+                    if (handle.kind === 'directory') {
+                        // 如果是資料夾，直接呼叫處理函式
+                        await selectLocalDirectory(handle);
+                    } else {
+                        alert("請拖入一個「資料夾」，而不是單一檔案。");
+                    }
+                } else {
+                    alert("您的瀏覽器不支援拖放目錄讀取 (需要 Chrome 86+ 或 Edge)。");
+                }
+            }
+        }, false);
+
+
+        // ----------------------------------------------------
+        // 功能 2: 伺服器索引解析 (Server Mode)
+        // ----------------------------------------------------
+        async function scanServerIndex() {
+            setLoading(true, "正在掃描伺服器目錄...");
+            globalFiles = [];
+
+            try {
+                // 1. 嘗試讀取當前目錄 "./"
+                // 伺服器必須開啟 Directory Listing (如 Apache Options +Indexes)
+                const response = await fetch('./');
+                if (!response.ok) throw new Error("無法讀取目錄 (Server responded " + response.status + ")");
+
+                const text = await response.text();
+
+                // 2. 解析 HTML 索引
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+                const links = Array.from(doc.querySelectorAll('a'));
+
+                // 3. 過濾出 .html 連結
+                const htmlLinks = links
+                    .map(a => a.getAttribute('href'))
+                    .filter(href => href && (href.endsWith('.html') || href.endsWith('.htm')))
+                    .filter(href => !href.startsWith('/') && !href.includes('viewer.html') && href !== 'index.html');
+
+                let processedCount = 0;
+                setLoading(true, `正在分析 0/${htmlLinks.length} 個檔案...`);
+
+                // 4. 並發讀取每個檔案以獲取 Title
+                const filePromises = htmlLinks.map(async (filename) => {
+                    try {
+                        const fRes = await fetch(filename);
+                        const fText = await fRes.text();
+                        const title = extractTitle(fText);
+
+                        processedCount++;
+                        updateLoadingText(`正在分析 ${processedCount}/${htmlLinks.length} 個檔案...`);
+
+                        return {
+                            filename: decodeURIComponent(filename),
+                            title: title || decodeURIComponent(filename),
+                            hasTitle: !!title,
+                            size: 0,
+                            url: filename,
+                            isLocal: false
+                        };
+                    } catch (e) {
+                        console.warn(`Failed to parse ${filename}`, e);
+                        return null;
+                    }
+                });
+
+                const results = await Promise.all(filePromises);
+                globalFiles = results.filter(f => f !== null);
+
+                if (globalFiles.length === 0) {
+                    alert("掃描完成，但在目錄中沒有找到其他 HTML 檔案 (或者伺服器未列出檔案)。");
+                }
+
+                renderTable();
+                setLoading(false);
+                updateStatus(`已索引 ${globalFiles.length} 個伺服器檔案`);
+
+            } catch (err) {
+                setLoading(false);
+                console.log("Server scan failed:", err);
+                alert("伺服器掃描失敗。\n\n請確認：\n1. 您是透過 HTTP/HTTPS 存取。\n2. 伺服器已開啟目錄列表功能 (Directory Listing)。");
+            }
+        }
+
+        // ----------------------------------------------------
+        // 共用工具函式
+        // ----------------------------------------------------
+
+        function extractTitle(htmlContent) {
+            const match = htmlContent.match(/<title[^>]*>([^<]+)<\/title>/i);
+            return match ? match[1].trim() : null;
+        }
+
+        function formatSize(bytes) {
+            if (bytes === 0) return 'N/A';
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0 B';
+            const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+            return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+        }
+
+        function setLoading(isLoading, text = "") {
+            const overlay = document.getElementById('loadingOverlay');
+            const empty = document.getElementById('emptyState');
+            const table = document.getElementById('mainTable');
+            const loadingText = document.getElementById('loadingText');
+
+            if (isLoading) {
+                overlay.classList.remove('hidden');
+                loadingText.innerText = text;
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function updateLoadingText(text) {
+            document.getElementById('loadingText').innerText = text;
+        }
+
+        function updateStatus(msg) {
+            const tag = document.getElementById('statusTag');
+            const text = document.getElementById('statusText');
+            tag.classList.remove('hidden');
+            tag.classList.add('flex');
+            text.innerText = msg;
+            document.getElementById('fileCount').innerText = `${globalFiles.length} 檔案`;
+        }
+
+        // ----------------------------------------------------
+        // UI 渲染與互動
+        // ----------------------------------------------------
+        function renderTable() {
+            const tbody = document.getElementById('fileListBody');
+            const table = document.getElementById('mainTable');
+            const empty = document.getElementById('emptyState');
+
+            tbody.innerHTML = '';
+
+            if (globalFiles.length === 0) {
+                table.classList.add('hidden');
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            table.classList.remove('hidden');
+            empty.classList.add('hidden');
+
+            globalFiles.forEach(file => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-50";
+
+                // Title Column
+                const tdTitle = document.createElement('td');
+                tdTitle.className = "p-4 font-medium text-slate-800";
+                tdTitle.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="w-2 h-2 rounded-full ${file.hasTitle ? 'bg-green-500' : 'bg-slate-300'} mr-3"></span>
+                        ${file.title}
+                    </div>
+                `;
+
+                // Filename Column
+                const tdName = document.createElement('td');
+                tdName.className = "p-4 font-mono text-slate-500 text-xs";
+                tdName.innerText = file.filename;
+
+                // Size Column
+                const tdSize = document.createElement('td');
+                tdSize.className = "p-4 text-slate-500 text-xs";
+                tdSize.innerText = formatSize(file.size);
+
+                // Action Column
+                const tdAction = document.createElement('td');
+                tdAction.className = "p-4 text-center";
+
+                tdAction.innerHTML = `
+                    <a href="${file.url}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded hover:bg-blue-600 transition shadow-sm">
+                        <i class="fa-solid fa-external-link-alt"></i> 開啟
+                    </a>
+                `;
+
+                tr.appendChild(tdTitle);
+                tr.appendChild(tdName);
+                tr.appendChild(tdSize);
+                tr.appendChild(tdAction);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterTable() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#fileListBody tr');
+
+            rows.forEach(row => {
+                const title = row.children[0].innerText.toLowerCase();
+                const name = row.children[1].innerText.toLowerCase();
+                if (title.includes(term) || name.includes(term)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+
+        function sortTable(key) {
+            sortDirection *= -1; // Toggle direction
+
+            globalFiles.sort((a, b) => {
+                let valA = a[key];
+                let valB = b[key];
+
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+
+                if (valA < valB) return -1 * sortDirection;
+                if (valA > valB) return 1 * sortDirection;
+                return 0;
+            });
+            renderTable();
+        }
+
+        // ----------------------------------------------------
+        // 初始化：環境偵測與自動啟動
+        // ----------------------------------------------------
+        window.addEventListener('DOMContentLoaded', () => {
+            const envStatus = document.getElementById('envStatus');
+            const btnSmartText = document.getElementById('btnSmartText');
+            const emptyHint = document.getElementById('emptyHintText');
+            const pathHint = document.getElementById('pathHint');
+            const localHint = document.getElementById('localHint');
+
+            // 顯示目前路徑 (輔助資訊)
+            try {
+                const path = window.location.pathname;
+                if (path && path !== '/') {
+                    pathHint.innerText = `目前位置: ${decodeURIComponent(path)}`;
+                    pathHint.classList.remove('hidden');
+                }
+            } catch (e) { }
+
+            if (window.location.protocol.startsWith('http')) {
+                // HTTP 環境：自動執行
+                envStatus.innerHTML = `<span class="text-green-600 font-medium">Web Server 環境</span> (支援自動掃描)`;
+                btnSmartText.innerText = "重新掃描目錄";
+                scanServerIndex();
+            } else {
+                // File 環境：等待手動授權 (無法自動)
+                envStatus.innerHTML = `<span class="text-orange-500 font-medium">本地檔案 (File) 環境</span>`;
+                btnSmartText.innerText = "授權並掃描目錄";
+                emptyHint.innerText = "請點擊「授權並掃描」選擇目前資料夾，或直接將資料夾拖入此處";
+
+                // 顯示專家提示：建議使用拖放
+                localHint.classList.remove('hidden');
+            }
+        });
+
+    </script>
+</body>
+
+</html>
