@@ -78,14 +78,21 @@
                         class="text-xs opacity-50 font-normal border border-slate-600 px-1 rounded ml-1">Pure
                         Frontend</span></h1>
             </div>
-            <div class="text-xs text-slate-400 hidden md:block">
-                <i class="fa-solid fa-shield-halved mr-1"></i> Client-Side Processing
+            <div class="flex items-center gap-4">
+                <button onclick="saveViewer()"
+                    class="text-xs text-slate-300 hover:text-white transition-colors flex items-center gap-1"
+                    title="將目前的列表另存為獨立的網頁檔">
+                    <i class="fa-solid fa-floppy-disk"></i> 另存網頁索引檔
+                </button>
+                <div class="text-xs text-slate-400 hidden md:block border-l border-slate-600 pl-4">
+                    <i class="fa-solid fa-shield-halved mr-1"></i> Client-Side Processing
+                </div>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8 flex-grow max-w-6xl">
+    <main class="container mx-auto px-4 py-8 flex-grow max-w-7xl">
 
         <!-- Controls -->
         <div class="glass-panel rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
@@ -158,7 +165,7 @@
                     <thead class="bg-slate-50 sticky top-0 z-0">
                         <tr
                             class="text-xs font-semibold tracking-wide text-slate-500 uppercase border-b border-slate-200">
-                            <th class="p-4 cursor-pointer hover:bg-slate-100 group w-5/12" onclick="sortTable('title')">
+                            <th class="p-4 cursor-pointer hover:bg-slate-100 group w-4/12" onclick="sortTable('title')">
                                 網頁標題 (Title) <i
                                     class="fa-solid fa-sort ml-1 text-slate-300 group-hover:text-slate-500"></i>
                             </th>
@@ -166,7 +173,10 @@
                                 onclick="sortTable('filename')">
                                 檔名 <i class="fa-solid fa-sort ml-1 text-slate-300 group-hover:text-slate-500"></i>
                             </th>
-                            <th class="p-4 cursor-pointer hover:bg-slate-100 group w-2/12" onclick="sortTable('size')">
+                            <th class="p-4 cursor-pointer hover:bg-slate-100 group w-2/12" onclick="sortTable('mtime')">
+                                修改日期 <i class="fa-solid fa-sort ml-1 text-slate-300 group-hover:text-slate-500"></i>
+                            </th>
+                            <th class="p-4 cursor-pointer hover:bg-slate-100 group w-1/12" onclick="sortTable('size')">
                                 大小 <i class="fa-solid fa-sort ml-1 text-slate-300 group-hover:text-slate-500"></i>
                             </th>
                             <th class="p-4 cursor-pointer hover:bg-slate-100 group w-2/12 text-center">
@@ -183,7 +193,7 @@
 
         <div class="mt-4 flex justify-between items-center text-xs text-slate-400">
             <span id="fileCount">0 檔案</span>
-            <span>Pure Frontend Scanner v1.6 (Fix Server Paths)</span>
+            <span>Pure Frontend Scanner v2.0 (Pure Export)</span>
         </div>
     </main>
 
@@ -191,6 +201,7 @@
         // 全域檔案列表資料
         let globalFiles = [];
         let sortDirection = 1; // 1: asc, -1: desc
+        let isSnapshotMode = false; // 標記是否為快照模式
 
         // ----------------------------------------------------
         // 核心功能: 智慧掃描入口 (Smart Scan)
@@ -255,12 +266,15 @@
                             title: title || entry.name,
                             hasTitle: !!title,
                             size: file.size,
+                            mtime: file.lastModified, // Timestamp
+                            mtimeStr: new Date(file.lastModified).toLocaleString(),
                             url: blobUrl, // 使用 Blob URL
                             isLocal: true,
                             handle: entry
                         });
                     }
                 }
+                isSnapshotMode = false;
                 renderTable();
                 setLoading(false);
                 updateStatus(`已授權並讀取 ${globalFiles.length} 個檔案`);
@@ -395,6 +409,11 @@
                         const fText = await fRes.text();
                         const title = extractTitle(fText);
 
+                        // 嘗試獲取最後修改時間
+                        const lastModifiedHeader = fRes.headers.get('Last-Modified');
+                        const mtime = lastModifiedHeader ? new Date(lastModifiedHeader).getTime() : 0;
+                        const mtimeStr = lastModifiedHeader ? new Date(lastModifiedHeader).toLocaleString() : 'N/A';
+
                         processedCount++;
                         updateLoadingText(`正在分析 ${processedCount}/${htmlLinks.length} 個檔案...`);
 
@@ -403,6 +422,8 @@
                             title: title || decodeURIComponent(filename),
                             hasTitle: !!title,
                             size: 0,
+                            mtime: mtime,
+                            mtimeStr: mtimeStr,
                             url: filename,
                             isLocal: false
                         };
@@ -420,6 +441,7 @@
                     alert("掃描完成，但未找到任何 HTML 檔案。\n\n可能原因：\n1. 伺服器未開啟「目錄列表 (Directory Listing)」功能。\n2. 目錄下存在 index.html 檔案蓋過了列表。\n3. 您所在的目錄確實沒有其他 .html 檔。");
                 }
 
+                isSnapshotMode = false;
                 renderTable();
                 setLoading(false);
                 updateStatus(`已索引 ${globalFiles.length} 個伺服器檔案`);
@@ -448,10 +470,178 @@
             return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
         }
 
+        function saveViewer() {
+            if (globalFiles.length === 0) {
+                alert("目前沒有任何檔案資料，無法匯出。");
+                return;
+            }
+
+            // 1. 詢問標題
+            const userTitle = prompt("請輸入匯出網頁的標題：", "網頁索引檔");
+            if (userTitle === null) return; // 使用者取消
+
+            // 2. 準備資料 (移除 handle, 並將 url 改為相對路徑)
+            const safeFiles = globalFiles.map(f => {
+                const { handle, ...rest } = f;
+                if (rest.isLocal) {
+                    rest.url = rest.filename;
+                }
+                return rest;
+            });
+
+            const exportDate = new Date().toLocaleString();
+
+            // 3. 建構純淨的靜態 HTML (移除 App 邏輯，只保留檢視功能)
+            const staticHTML = `<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${userTitle}</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { brand: '#0f172a', accent: '#3b82f6' } } }
+        }
+    <\/script>
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800"><i class="fa-solid fa-list-ul text-accent mr-2"></i>${userTitle}</h1>
+                <p class="text-slate-500 text-sm mt-1">產生時間：${exportDate} • 共 ${safeFiles.length} 個檔案</p>
+            </div>
+            <div class="relative w-full md:w-64">
+                <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400 text-sm"></i>
+                <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="搜尋標題或檔名..." 
+                    class="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-accent outline-none text-sm">
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500 border-b border-slate-200">
+                        <tr>
+                            <th class="p-4 cursor-pointer hover:bg-slate-100 w-4/12" onclick="sortTable('title')">標題 <i class="fa-solid fa-sort ml-1"></i></th>
+                            <th class="p-4 cursor-pointer hover:bg-slate-100 w-3/12" onclick="sortTable('filename')">檔名 <i class="fa-solid fa-sort ml-1"></i></th>
+                            <th class="p-4 cursor-pointer hover:bg-slate-100 w-2/12" onclick="sortTable('mtime')">修改日期 <i class="fa-solid fa-sort ml-1"></i></th>
+                            <th class="p-4 cursor-pointer hover:bg-slate-100 w-1/12" onclick="sortTable('size')">大小 <i class="fa-solid fa-sort ml-1"></i></th>
+                            <th class="p-4 text-center w-2/12">動作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fileListBody" class="divide-y divide-slate-100 text-sm text-slate-700">
+                    </tbody>
+                </table>
+            </div>
+            <div id="emptyState" class="hidden p-12 text-center text-slate-400">
+                <p>沒有符合搜尋條件的檔案</p>
+            </div>
+        </div>
+        
+        <footer class="mt-8 text-center text-xs text-slate-400">
+            Generated by Pure Frontend Scanner
+        </footer>
+    </div>
+
+    <script>
+        const files = ${JSON.stringify(safeFiles)};
+        let sortDirection = 1;
+
+        function formatSize(bytes) {
+            if (bytes === 0) return 'N/A';
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+            return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+        }
+
+        function renderTable(data = files) {
+            const tbody = document.getElementById('fileListBody');
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('emptyState').classList.add('hidden');
+
+            data.forEach(file => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = \`
+                    <td class="p-4 font-medium text-slate-800">
+                        <div class="flex items-center">
+                            <span class="w-2 h-2 rounded-full \${file.hasTitle ? 'bg-green-500' : 'bg-slate-300'} mr-3 flex-shrink-0"></span>
+                            <a href="\${file.url}" target="_blank" class="hover:text-accent hover:underline block truncate" title="\${file.title}">
+                                \${file.title}
+                            </a>
+                        </div>
+                    </td>
+                    <td class="p-4 font-mono text-slate-500 text-xs">\${file.filename}</td>
+                    <td class="p-4 text-slate-500 text-xs whitespace-nowrap">\${file.mtimeStr}</td>
+                    <td class="p-4 text-slate-500 text-xs whitespace-nowrap">\${formatSize(file.size)}</td>
+                    <td class="p-4 text-center">
+                        <a href="\${file.url}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded hover:bg-blue-600 transition shadow-sm whitespace-nowrap">
+                            <i class="fa-solid fa-external-link-alt"></i> 開啟
+                        </a>
+                    </td>
+                \`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterTable() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = files.filter(f => 
+                f.title.toLowerCase().includes(term) || 
+                f.filename.toLowerCase().includes(term)
+            );
+            renderTable(filtered);
+        }
+
+        function sortTable(key) {
+            sortDirection *= -1;
+            const sorted = [...files].sort((a, b) => {
+                let valA = a[key];
+                let valB = b[key];
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+                if (valA < valB) return -1 * sortDirection;
+                if (valA > valB) return 1 * sortDirection;
+                return 0;
+            });
+            renderTable(sorted);
+        }
+
+        // Init
+        renderTable();
+    <\/script>
+</body>
+</html>`;
+
+            // 4. 下載
+            const blob = new Blob([staticHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `directory_index_${new Date().toISOString().split('T')[0]}.html`;
+            document.body.appendChild(a);
+            a.click();
+
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         function setLoading(isLoading, text = "") {
             const overlay = document.getElementById('loadingOverlay');
-            const empty = document.getElementById('emptyState');
-            const table = document.getElementById('mainTable');
             const loadingText = document.getElementById('loadingText');
 
             if (isLoading) {
@@ -503,8 +693,10 @@
                 tdTitle.className = "p-4 font-medium text-slate-800";
                 tdTitle.innerHTML = `
                     <div class="flex items-center">
-                        <span class="w-2 h-2 rounded-full ${file.hasTitle ? 'bg-green-500' : 'bg-slate-300'} mr-3"></span>
-                        ${file.title}
+                        <span class="w-2 h-2 rounded-full ${file.hasTitle ? 'bg-green-500' : 'bg-slate-300'} mr-3 flex-shrink-0"></span>
+                        <a href="${file.url}" target="_blank" class="hover:text-accent hover:underline transition-colors block truncate" title="${file.title}">
+                            ${file.title}
+                        </a>
                     </div>
                 `;
 
@@ -513,9 +705,14 @@
                 tdName.className = "p-4 font-mono text-slate-500 text-xs";
                 tdName.innerText = file.filename;
 
+                // Date Column
+                const tdDate = document.createElement('td');
+                tdDate.className = "p-4 text-slate-500 text-xs whitespace-nowrap";
+                tdDate.innerText = file.mtimeStr;
+
                 // Size Column
                 const tdSize = document.createElement('td');
-                tdSize.className = "p-4 text-slate-500 text-xs";
+                tdSize.className = "p-4 text-slate-500 text-xs whitespace-nowrap";
                 tdSize.innerText = formatSize(file.size);
 
                 // Action Column
@@ -523,13 +720,14 @@
                 tdAction.className = "p-4 text-center";
 
                 tdAction.innerHTML = `
-                    <a href="${file.url}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded hover:bg-blue-600 transition shadow-sm">
+                    <a href="${file.url}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded hover:bg-blue-600 transition shadow-sm whitespace-nowrap">
                         <i class="fa-solid fa-external-link-alt"></i> 開啟
                     </a>
                 `;
 
                 tr.appendChild(tdTitle);
                 tr.appendChild(tdName);
+                tr.appendChild(tdDate);
                 tr.appendChild(tdSize);
                 tr.appendChild(tdAction);
                 tbody.appendChild(tr);
@@ -541,6 +739,7 @@
             const rows = document.querySelectorAll('#fileListBody tr');
 
             rows.forEach(row => {
+                // Title is now inside an <a> tag, so we might need to adjust extraction if innerText behaves differently, but usually innerText works fine.
                 const title = row.children[0].innerText.toLowerCase();
                 const name = row.children[1].innerText.toLowerCase();
                 if (title.includes(term) || name.includes(term)) {
@@ -577,6 +776,25 @@
             const emptyHint = document.getElementById('emptyHintText');
             const pathHint = document.getElementById('pathHint');
             const localHint = document.getElementById('localHint');
+
+            // 0. 優先檢查是否為「快照還原模式」
+            const snapshotScript = document.getElementById('snapshot-data');
+            if (snapshotScript) {
+                try {
+                    globalFiles = JSON.parse(snapshotScript.textContent);
+                    isSnapshotMode = true; // 標記為快照
+
+                    envStatus.innerHTML = `<span class="text-purple-600 font-medium"><i class="fa-solid fa-floppy-disk"></i> 靜態索引檔模式</span>`;
+                    btnSmartText.innerText = "重新掃描 (清除狀態)";
+                    emptyHint.innerText = "已載入靜態索引資料";
+
+                    renderTable();
+                    updateStatus(`已還原 ${globalFiles.length} 筆資料`);
+                    return; // 成功還原後，直接結束初始化，跳過自動掃描
+                } catch (e) {
+                    console.error("快照還原失敗", e);
+                }
+            }
 
             // 顯示目前路徑 (輔助資訊)
             try {
