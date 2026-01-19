@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>產品簡介 | 台股主動式 ETF 深度分析儀</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 模擬介面動畫 */
+        .mock-bar {
+            animation: grow 1.5s ease-out forwards;
+            transform-origin: bottom;
+        }
+
+        @keyframes grow {
+            from {
+                transform: scaleY(0);
+            }
+
+            to {
+                transform: scaleY(1);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-blue-600 text-xl"></i>
+                <span class="font-bold text-lg tracking-tight">Active ETF Analyzer</span>
+            </div>
+            <div class="flex gap-4">
+                <a href="#philosophy"
+                    class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">設計理念</a>
+                <a href="#features"
+                    class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">核心功能</a>
+                <a href="#usage"
+                    class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">使用說明</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="bg-white pt-20 pb-24 border-b border-slate-100">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <span
+                class="inline-block py-1 px-3 rounded-full bg-blue-50 text-blue-600 text-xs font-bold mb-4 tracking-wide">V3.0
+                智慧升級版</span>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 text-slate-900 leading-tight">
+                透視經理人佈局<br>
+                <span class="gradient-text">台股 ETF 深度戰情室</span>
+            </h1>
+            <p class="text-lg text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed">
+                不僅限於主動式 ETF。這是一個高度客製化的分析工具，讓您自由混搭 5 檔標的，即時計算加權估值，洞察市場共識。
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="https://jrh2025.github.io/kengo/ATA_User.html" target="_blank"
+                    class="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rocket"></i> 立即試用分析儀
+                </a>
+                <a href="https://jrh2025.github.io/kengo/Component_Stock_Image_Recognition.html" target="_blank"
+                    class="px-8 py-3 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-crop-simple"></i> 輔助工具：圖片轉 JSON
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Philosophy -->
+    <section id="philosophy" class="py-20 bg-slate-50">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">設計理念</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto">
+                    在 ETF 百花齊放的時代，選股邏輯不再是黑盒子。我們相信數據的所有權應回歸使用者，透過透明化、可視化的工具，讓投資決策更具邏輯性。
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="p-6 bg-white rounded-xl shadow-sm border border-slate-100 feature-card">
+                    <div
+                        class="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center mb-4 text-indigo-600">
+                        <i class="fa-solid fa-database text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">資料自主與隱私</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">
+                        採用 LocalStorage 本地資料庫技術，所有持股數據皆儲存於您的瀏覽器端。無需擔心資料外洩，且支援離線查看歷史紀錄。
+                    </p>
+                </div>
+                <div class="p-6 bg-white rounded-xl shadow-sm border border-slate-100 feature-card">
+                    <div
+                        class="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center mb-4 text-emerald-600">
+                        <i class="fa-solid fa-magnifying-glass-chart text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">透視法人共識</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">
+                        透過交叉比對多檔 ETF 的持股明細，計算出「經理人共識排行榜」。快速識別市場主流資金正在追逐的標的。
+                    </p>
+                </div>
+                <div class="p-6 bg-white rounded-xl shadow-sm border border-slate-100 feature-card">
+                    <div class="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center mb-4 text-amber-600">
+                        <i class="fa-solid fa-bolt text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">即時基本面整合</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">
+                        系統自動串接證交所 OpenAPI，即時抓取個股本益比 (P/E)，並計算 ETF 整體的加權估值，協助判斷進場位階。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-20 bg-white border-t border-slate-100">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-slate-800 mb-12 text-center">核心功能展示</h2>
+
+            <div class="grid md:grid-cols-2 gap-12 items-start mb-20">
+                <div class="order-2 md:order-1 grid grid-cols-1 gap-6">
+                    <!-- Feature 1 -->
+                    <div class="feature-card p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                        <div class="flex items-center gap-3 mb-3">
+                            <i class="fa-solid fa-sliders text-blue-500"></i>
+                            <h3 class="font-bold text-lg">完全自訂 5 檔組合</h3>
+                        </div>
+                        <p class="text-slate-500 text-sm">
+                            您的戰情室您做主。不論是熱門的高股息 00878、市值型 0050，或是最新的主動式 ETF，皆可自由新增、移除與混搭比較，不再受限於預設清單。
+                        </p>
+                    </div>
+                    <!-- Feature 2 -->
+                    <div class="feature-card p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                        <div class="flex items-center gap-3 mb-3">
+                            <i class="fa-solid fa-calculator text-amber-500"></i>
+                            <h3 class="font-bold text-lg">即時加權本益比分析</h3>
+                        </div>
+                        <p class="text-slate-500 text-sm">
+                            告別盲目追高。系統會根據您輸入的持股明細，自動串接證交所即時 P/E 數據，計算出該檔 ETF 目前的「真實加權本益比」，讓估值高低一目瞭然。
+                        </p>
+                    </div>
+                    <!-- Feature 3 -->
+                    <div class="feature-card p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                        <div class="flex items-center gap-3 mb-3">
+                            <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i>
+                            <h3 class="font-bold text-lg">歷史復盤時間軸</h3>
+                        </div>
+                        <p class="text-slate-500 text-sm">
+                            獨家的時間軸滑桿設計，讓您可以回溯過去 7 天（或更久）的持股變化，觀察經理人的調倉軌跡，掌握籌碼流向。
+                        </p>
+                    </div>
+                    <!-- Feature 4 -->
+                    <div class="feature-card p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                        <div class="flex items-center gap-3 mb-3">
+                            <i class="fa-solid fa-calendar-check text-emerald-500"></i>
+                            <h3 class="font-bold text-lg">智慧日期校正</h3>
+                        </div>
+                        <p class="text-slate-500 text-sm">
+                            系統內建交易日曆邏輯，能自動排除週末與國定假日，精準定位最新的有效交易日資料，並主動提示資料缺漏，確保分析準確性。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="order-1 md:order-2 flex justify-center sticky top-24">
+                    <!-- 擬真介面示意圖 (CSS Mockup) -->
+                    <div
+                        class="w-full max-w-md aspect-[4/3] bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 flex flex-col transform rotate-2 hover:rotate-0 transition-transform duration-500 cursor-default">
+                        <!-- Mock Header -->
+                        <div class="h-8 bg-slate-800 flex items-center px-4 gap-2 border-b border-slate-700">
+                            <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+                            <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                            <div class="ml-auto w-20 h-2 bg-slate-700 rounded-full"></div>
+                        </div>
+                        <!-- Mock Body -->
+                        <div class="flex-1 p-4 bg-slate-50 flex flex-col gap-4">
+                            <!-- Mock Stats Cards -->
+                            <div class="flex gap-3">
+                                <div
+                                    class="flex-1 h-16 bg-white rounded-xl shadow-sm border border-slate-100 p-2 flex flex-col justify-between">
+                                    <div class="w-8 h-2 bg-slate-200 rounded"></div>
+                                    <div class="flex justify-between items-end">
+                                        <div class="w-6 h-4 bg-slate-100 rounded"></div>
+                                        <div class="w-10 h-3 bg-blue-100 rounded"></div>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex-1 h-16 bg-white rounded-xl shadow-sm border border-slate-100 p-2 flex flex-col justify-between">
+                                    <div class="w-8 h-2 bg-slate-200 rounded"></div>
+                                    <div class="flex justify-between items-end">
+                                        <div class="w-6 h-4 bg-slate-100 rounded"></div>
+                                        <div class="w-10 h-3 bg-emerald-100 rounded"></div>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex-1 h-16 bg-white rounded-xl shadow-sm border border-slate-100 p-2 flex flex-col justify-between">
+                                    <div class="w-8 h-2 bg-slate-200 rounded"></div>
+                                    <div class="flex justify-between items-end">
+                                        <div class="w-6 h-4 bg-slate-100 rounded"></div>
+                                        <div class="w-10 h-3 bg-amber-100 rounded"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Mock Content -->
+                            <div class="flex gap-4 flex-1">
+                                <!-- Left Panel: Ranking List -->
+                                <div
+                                    class="w-2/5 bg-white rounded-xl shadow-sm border border-slate-100 p-3 flex flex-col gap-2">
+                                    <div class="w-20 h-2 bg-slate-200 rounded mb-1"></div>
+                                    <div class="flex-1 space-y-2">
+                                        <div
+                                            class="w-full h-7 bg-slate-50 rounded border border-slate-100 flex items-center px-2">
+                                            <div class="w-1/2 h-2 bg-slate-200 rounded"></div>
+                                        </div>
+                                        <div
+                                            class="w-full h-7 bg-slate-50 rounded border border-slate-100 flex items-center px-2">
+                                            <div class="w-2/3 h-2 bg-slate-200 rounded"></div>
+                                        </div>
+                                        <div
+                                            class="w-full h-7 bg-slate-50 rounded border border-slate-100 flex items-center px-2">
+                                            <div class="w-1/3 h-2 bg-slate-200 rounded"></div>
+                                        </div>
+                                        <div
+                                            class="w-full h-7 bg-slate-50 rounded border border-slate-100 flex items-center px-2">
+                                            <div class="w-1/2 h-2 bg-slate-200 rounded"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Right Panel: Chart -->
+                                <div
+                                    class="flex-1 bg-white rounded-xl shadow-sm border border-slate-100 p-3 flex flex-col">
+                                    <div class="w-24 h-2 bg-slate-200 rounded mb-3"></div>
+                                    <div
+                                        class="flex-1 flex items-end justify-around gap-2 pb-1 border-b border-slate-100">
+                                        <div class="w-full bg-blue-500 rounded-t-sm h-[40%] mock-bar"
+                                            style="animation-delay: 0.1s"></div>
+                                        <div class="w-full bg-indigo-400 rounded-t-sm h-[70%] mock-bar"
+                                            style="animation-delay: 0.2s"></div>
+                                        <div class="w-full bg-blue-600 rounded-t-sm h-[50%] mock-bar"
+                                            style="animation-delay: 0.3s"></div>
+                                        <div class="w-full bg-sky-300 rounded-t-sm h-[80%] mock-bar"
+                                            style="animation-delay: 0.4s"></div>
+                                        <div class="w-full bg-blue-500 rounded-t-sm h-[60%] mock-bar"
+                                            style="animation-delay: 0.5s"></div>
+                                    </div>
+                                    <div class="flex justify-between mt-2">
+                                        <div class="w-2 h-2 rounded-full bg-slate-200"></div>
+                                        <div class="w-2 h-2 rounded-full bg-slate-200"></div>
+                                        <div class="w-2 h-2 rounded-full bg-slate-200"></div>
+                                        <div class="w-2 h-2 rounded-full bg-slate-200"></div>
+                                        <div class="w-2 h-2 rounded-full bg-slate-200"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Usage Guide -->
+    <section id="usage" class="py-20 bg-slate-900 text-white">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold mb-12 text-center">如何開始使用？</h2>
+
+            <div class="relative border-l-2 border-slate-700 pl-8 ml-4 space-y-12">
+                <!-- Step 1 -->
+                <div class="relative">
+                    <span
+                        class="absolute -left-[41px] top-0 w-6 h-6 rounded-full bg-blue-500 border-4 border-slate-900"></span>
+                    <h3 class="text-xl font-bold mb-2 text-blue-400">Step 1: 準備資料</h3>
+                    <p class="text-slate-400 mb-4">
+                        您可以在分析儀中自訂想要追蹤的 ETF 代號。接著，前往投信官網或看盤軟體擷取成分股畫面，並使用我們的輔助工具轉換為 JSON 格式。
+                    </p>
+                    <a href="https://jrh2025.github.io/kengo/Component_Stock_Image_Recognition.html" target="_blank"
+                        class="inline-flex items-center gap-2 text-sm bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg transition-colors border border-slate-600">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> 開啟圖片轉 JSON 工具
+                    </a>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="relative">
+                    <span
+                        class="absolute -left-[41px] top-0 w-6 h-6 rounded-full bg-slate-600 border-4 border-slate-900"></span>
+                    <h3 class="text-xl font-bold mb-2">Step 2: 匯入系統</h3>
+                    <p class="text-slate-400">
+                        打開分析儀，將 JSON 檔案拖曳至批次上傳區。系統會自動辨識日期並歸檔至本機資料庫。
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="relative">
+                    <span
+                        class="absolute -left-[41px] top-0 w-6 h-6 rounded-full bg-slate-600 border-4 border-slate-900"></span>
+                    <h3 class="text-xl font-bold mb-2">Step 3: 深度分析</h3>
+                    <p class="text-slate-400">
+                        查看各 ETF 的即時加權 P/E、第一大持股，並透過時間軸回放過去的持股變化，掌握經理人的操作邏輯。
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-16 text-center">
+                <a href="https://jrh2025.github.io/kengo/ATA_User.html" target="_blank"
+                    class="inline-block px-10 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+                    進入分析儀主程式
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white py-8 border-t border-slate-200">
+        <div class="max-w-6xl mx-auto px-4 text-center text-slate-500 text-sm">
+            <p>© 2026 Active ETF Analyzer. Designed for professional investors.</p>
+            <p class="mt-2 text-xs">免責聲明：本工具僅供分析參考，不代表任何投資建議。資料準確性以來源網站為準。</p>
+        </div>
+    </footer>
+
+</body>
+
+</html>
