@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF 持股圖片轉 JSON 工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .drop-zone--over {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 隱藏密碼顯示時的預設眼睛 (某些瀏覽器) */
+        input::-ms-reveal,
+        input::-ms-clear {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+    <div class="max-w-4xl mx-auto py-12 px-4">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">ETF 成分股 OCR 轉檔工具</h1>
+            <p class="text-slate-600 mb-6">上傳 ETF 持股截圖，自動生成結構化 JSON 檔案</p>
+
+            <div class="flex flex-col items-center gap-4">
+                <!-- Dynamic Suggestion Box -->
+                <div
+                    class="inline-flex flex-col sm:flex-row items-center gap-4 bg-white border border-blue-100 shadow-sm px-6 py-4 rounded-2xl text-sm">
+                    <div class="flex items-center gap-2 text-blue-700">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                        <span class="font-semibold">找不到圖片？</span>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200">
+                        <input type="text" id="stockInput" placeholder="輸入 ETF 代號 (如 0050)"
+                            class="bg-transparent px-3 py-1.5 focus:outline-none w-48 text-slate-800 font-medium">
+                        <a id="stockLink" href="https://www.nstock.tw/stock_info?stock_id=0050&status=10"
+                            target="_blank"
+                            class="bg-blue-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center gap-1">
+                            前往 nStock <i data-lucide="external-link" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- API Key Management Section -->
+                <div class="w-full max-w-md bg-slate-100 p-3 rounded-xl border border-slate-200 shadow-inner">
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <span
+                            class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                            <i data-lucide="shield-check" class="w-3 h-3 text-green-500"></i>
+                            Gemini API 管理 (僅儲存於本地)
+                        </span>
+                        <span id="saveStatus"
+                            class="text-[10px] text-blue-500 font-medium opacity-0 transition-opacity">已儲存！</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <input type="password" id="userApiKey" placeholder="在此輸入您的 API Key"
+                                class="w-full bg-white border border-slate-300 rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all">
+                            <button id="toggleVisible"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600">
+                                <i data-lucide="eye" id="eyeIcon" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button id="saveApiKey" title="儲存至瀏覽器"
+                                class="p-2 bg-white border border-slate-300 rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
+                                <i data-lucide="save" class="w-4 h-4"></i>
+                            </button>
+                            <button id="clearApiKey" title="刪除金鑰"
+                                class="p-2 bg-white border border-slate-300 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Interface -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <!-- Upload Area -->
+            <div id="dropZone"
+                class="p-12 border-2 border-dashed border-slate-300 m-6 rounded-xl transition-all flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 group">
+                <input type="file" id="fileInput" class="hidden" accept="image/*">
+                <div class="bg-blue-50 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                    <i data-lucide="image-plus" class="w-8 h-8 text-blue-600"></i>
+                </div>
+                <p class="text-lg font-medium text-slate-700">點擊或拖放圖片至此</p>
+                <p class="text-sm text-slate-500 mt-1">支援 PNG, JPG, JPEG 格式</p>
+            </div>
+
+            <!-- Preview & Status -->
+            <div id="previewContainer" class="hidden px-6 pb-6">
+                <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <img id="imageThumbnail" class="w-16 h-16 object-cover rounded shadow-sm">
+                    <div class="flex-1">
+                        <p id="fileName" class="font-medium text-slate-800 text-sm truncate max-w-[200px]"></p>
+                        <p id="fileSize" class="text-xs text-slate-500"></p>
+                    </div>
+                    <button id="processBtn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+                        <span id="btnText">開始辨識</span>
+                        <div id="btnLoader" class="loader hidden"></div>
+                    </button>
+                    <button id="resetBtn" class="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Result Section -->
+            <div id="resultSection" class="hidden border-t border-slate-100">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="file-json" class="w-5 h-5 text-green-600"></i>
+                            辨識結果預覽
+                        </h3>
+                        <button id="downloadBtn"
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            下載 JSON
+                        </button>
+                    </div>
+                    <div class="bg-slate-900 rounded-lg p-4 max-h-[400px] overflow-auto">
+                        <pre id="jsonContent" class="text-green-400 text-xs font-mono leading-relaxed"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer / Instructions -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="p-4 bg-white rounded-xl border border-slate-100">
+                <p class="text-xs font-bold text-blue-600 uppercase mb-2">Step 1</p>
+                <p class="text-sm text-slate-600">上傳包含成分股表格的截圖，確保文字清晰可見。</p>
+            </div>
+            <div class="p-4 bg-white rounded-xl border border-slate-100">
+                <p class="text-xs font-bold text-blue-600 uppercase mb-2">Step 2</p>
+                <p class="text-sm text-slate-600">AI 將分析圖片並提取持股排名、名稱、代號與權重。</p>
+            </div>
+            <div class="p-4 bg-white rounded-xl border border-slate-100">
+                <p class="text-xs font-bold text-blue-600 uppercase mb-2">Step 3</p>
+                <p class="text-sm text-slate-600">確認預覽資料無誤後，即可點擊下載按鈕儲存 JSON。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const systemApiKey = ""; // Environment provided
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
+        const STORAGE_KEY = "etf_ocr_gemini_key";
+
+        // --- DOM Elements ---
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const imageThumbnail = document.getElementById('imageThumbnail');
+        const fileNameDisp = document.getElementById('fileName');
+        const fileSizeDisp = document.getElementById('fileSize');
+        const processBtn = document.getElementById('processBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultSection = document.getElementById('resultSection');
+        const jsonContent = document.getElementById('jsonContent');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
+        const stockInput = document.getElementById('stockInput');
+        const stockLink = document.getElementById('stockLink');
+        const userApiKeyInput = document.getElementById('userApiKey');
+        const toggleVisibleBtn = document.getElementById('toggleVisible');
+        const eyeIcon = document.getElementById('eyeIcon');
+        const saveApiKeyBtn = document.getElementById('saveApiKey');
+        const clearApiKeyBtn = document.getElementById('clearApiKey');
+        const saveStatus = document.getElementById('saveStatus');
+
+        let currentImageBase64 = null;
+        let resultJson = null;
+
+        // --- Initializers ---
+        lucide.createIcons();
+        loadSavedKey();
+
+        // --- API Key Logic ---
+        function loadSavedKey() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                userApiKeyInput.value = saved;
+            }
+        }
+
+        toggleVisibleBtn.onclick = () => {
+            const isPassword = userApiKeyInput.type === 'password';
+            userApiKeyInput.type = isPassword ? 'text' : 'password';
+            eyeIcon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
+            lucide.createIcons();
+        };
+
+        saveApiKeyBtn.onclick = () => {
+            const val = userApiKeyInput.value.trim();
+            if (val) {
+                localStorage.setItem(STORAGE_KEY, val);
+                showStatus();
+            }
+        };
+
+        clearApiKeyBtn.onclick = () => {
+            userApiKeyInput.value = '';
+            localStorage.removeItem(STORAGE_KEY);
+            userApiKeyInput.type = 'password';
+            eyeIcon.setAttribute('data-lucide', 'eye');
+            lucide.createIcons();
+        };
+
+        function showStatus() {
+            saveStatus.classList.remove('opacity-0');
+            setTimeout(() => saveStatus.classList.add('opacity-0'), 2000);
+        }
+
+        // --- Event Listeners ---
+        stockInput.addEventListener('input', (e) => {
+            const code = e.target.value.trim().toUpperCase();
+            stockLink.href = code ?
+                `https://www.nstock.tw/stock_info?stock_id=${code}&status=10` :
+                `https://www.nstock.tw/stock_info?stock_id=0050&status=10`;
+        });
+
+        dropZone.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => handleFile(e.target.files[0]);
+
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('drop-zone--over'); };
+        dropZone.ondragleave = () => dropZone.classList.remove('drop-zone--over');
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drop-zone--over');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        };
+
+        resetBtn.onclick = () => {
+            currentImageBase64 = null;
+            resultJson = null;
+            fileInput.value = '';
+            previewContainer.classList.add('hidden');
+            resultSection.classList.add('hidden');
+            dropZone.classList.remove('hidden');
+        };
+
+        processBtn.onclick = async () => {
+            if (!currentImageBase64) return;
+            const activeApiKey = userApiKeyInput.value.trim() || systemApiKey;
+            if (!activeApiKey) {
+                alert("請輸入您的 Gemini API Key。");
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const data = await callGeminiAPI(currentImageBase64, activeApiKey);
+                resultJson = data;
+                jsonContent.textContent = JSON.stringify(data, null, 2);
+                resultSection.classList.remove('hidden');
+                setTimeout(() => resultSection.scrollIntoView({ behavior: 'smooth' }), 100);
+            } catch (err) {
+                console.error(err);
+                alert("辨識失敗，請檢查 API Key 或圖片。");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        downloadBtn.onclick = () => {
+            if (!resultJson) return;
+            const ticker = resultJson.fund_info?.ticker || "ETF";
+            const date = resultJson.fund_info?.data_date || new Date().toISOString().split('T')[0];
+            const blob = new Blob([JSON.stringify(resultJson, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${ticker}_${date}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        // --- Functions ---
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentImageBase64 = e.target.result.split(',')[1];
+                imageThumbnail.src = e.target.result;
+                fileNameDisp.textContent = file.name;
+                fileSizeDisp.textContent = (file.size / 1024).toFixed(1) + ' KB';
+                dropZone.classList.add('hidden');
+                previewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function setLoading(isLoading) {
+            btnText.textContent = isLoading ? "處理中..." : "重新辨識";
+            btnLoader.classList.toggle('hidden', !isLoading);
+            processBtn.disabled = isLoading;
+        }
+
+        async function callGeminiAPI(base64Data, activeKey) {
+            const systemPrompt = `你是一個專業的金融數據分析助理。請分析這張 ETF 成分股截圖，將其提取為 JSON 格式。包含基金名稱、代號、日期以及所有成分股的排名、名稱、代號與權重。`;
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: "輸出所有成分股資料為 JSON 格式。日期 YYYY-MM-DD。" },
+                        { inlineData: { mimeType: "image/png", data: base64Data } }
+                    ]
+                }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            fund_info: {
+                                type: "OBJECT",
+                                properties: {
+                                    name: { type: "STRING" },
+                                    ticker: { type: "STRING" },
+                                    data_date: { type: "STRING" }
+                                }
+                            },
+                            holdings: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        rank: { type: "NUMBER" },
+                                        name: { type: "STRING" },
+                                        ticker: { type: "STRING" },
+                                        weight_percent: { type: "NUMBER" }
+                                    }
+                                }
+                            }
+                        },
+                        required: ["fund_info", "holdings"]
+                    }
+                }
+            };
+
+            let retry = 0;
+            while (retry < 3) {
+                try {
+                    const res = await fetch(`${API_URL}?key=${activeKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error("API failed");
+                    const result = await res.json();
+                    return JSON.parse(result.candidates[0].content.parts[0].text);
+                } catch (e) {
+                    if (++retry === 3) throw e;
+                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, retry)));
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
