@@ -10,13 +10,62 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+        :root {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border-ui: #e2e8f0;
+            --accent-soft: #eff6ff;
+        }
+
+        /* 黑夜風格 */
+        .theme-night {
+            --bg-main: #020617;
+            --bg-card: #0f172a;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-ui: #1e293b;
+            --accent-soft: #172554;
+        }
+
+        /* 舒適風格 (護眼) */
+        .theme-comfort {
+            --bg-main: #f4f1ea;
+            --bg-card: #fffcf5;
+            --text-primary: #433422;
+            --text-secondary: #736752;
+            --border-ui: #e3dccb;
+            --accent-soft: #fdf6e3;
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .custom-card {
+            background-color: var(--bg-card);
+            border-color: var(--border-ui);
+        }
+
+        .text-main {
+            color: var(--text-primary);
+        }
+
+        .text-muted {
+            color: var(--text-secondary);
+        }
+
+        .border-main {
+            border-color: var(--border-ui);
         }
 
         .drop-zone--over {
-            border-color: #3b82f6;
-            background-color: #eff6ff;
+            border-color: #3b82f6 !important;
+            background-color: var(--accent-soft) !important;
         }
 
         .loader {
@@ -38,45 +87,68 @@
             }
         }
 
-        /* 隱藏密碼顯示時的預設眼睛 (某些瀏覽器) */
         input::-ms-reveal,
         input::-ms-clear {
             display: none;
         }
+
+        /* 滑順轉場 */
+        * {
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
     </style>
 </head>
 
-<body class="bg-slate-50 min-h-screen">
+<body class="min-h-screen">
     <div class="max-w-4xl mx-auto py-12 px-4">
+
+        <!-- Theme Switcher -->
+        <div class="flex justify-end mb-6">
+            <div
+                class="bg-white/50 backdrop-blur-sm p-1 rounded-xl border border-slate-200 shadow-sm flex gap-1 custom-card">
+                <button onclick="setTheme('day')" id="btn-theme-day"
+                    class="p-2 rounded-lg transition-all hover:bg-slate-100" title="白天模式">
+                    <i data-lucide="sun" class="w-4 h-4 text-orange-500"></i>
+                </button>
+                <button onclick="setTheme('night')" id="btn-theme-night"
+                    class="p-2 rounded-lg transition-all hover:bg-slate-100" title="黑夜模式">
+                    <i data-lucide="moon" class="w-4 h-4 text-blue-400"></i>
+                </button>
+                <button onclick="setTheme('comfort')" id="btn-theme-comfort"
+                    class="p-2 rounded-lg transition-all hover:bg-slate-100" title="舒適模式">
+                    <i data-lucide="coffee" class="w-4 h-4 text-amber-600"></i>
+                </button>
+            </div>
+        </div>
+
         <!-- Header -->
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-slate-900 mb-2">ETF 成分股 OCR 轉檔工具</h1>
-            <p class="text-slate-600 mb-6">上傳 ETF 持股截圖，自動生成結構化 JSON 檔案</p>
+            <h1 class="text-3xl font-bold text-main mb-2">ETF 成分股 OCR 轉檔工具</h1>
+            <p class="text-muted mb-6 text-sm sm:text-base">上傳 ETF 持股截圖，自動生成結構化 JSON 檔案</p>
 
             <div class="flex flex-col items-center gap-4">
                 <!-- Dynamic Suggestion Box -->
                 <div
-                    class="inline-flex flex-col sm:flex-row items-center gap-4 bg-white border border-blue-100 shadow-sm px-6 py-4 rounded-2xl text-sm">
-                    <div class="flex items-center gap-2 text-blue-700">
+                    class="inline-flex flex-col sm:flex-row items-center gap-4 custom-card border shadow-sm px-6 py-4 rounded-2xl text-sm">
+                    <div class="flex items-center gap-2 text-blue-600">
                         <i data-lucide="search" class="w-5 h-5"></i>
                         <span class="font-semibold">找不到圖片？</span>
                     </div>
-                    <div class="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-200">
+                    <div class="flex items-center gap-2 bg-black/5 p-1 rounded-xl border border-main">
                         <input type="text" id="stockInput" placeholder="輸入 ETF 代號 (如 0050)"
-                            class="bg-transparent px-3 py-1.5 focus:outline-none w-48 text-slate-800 font-medium">
+                            class="bg-transparent px-3 py-1.5 focus:outline-none w-40 sm:w-48 text-main font-medium">
                         <a id="stockLink" href="https://www.nstock.tw/stock_info?stock_id=0050&status=10"
                             target="_blank"
                             class="bg-blue-600 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center gap-1">
-                            前往 nStock <i data-lucide="external-link" class="w-4 h-4"></i>
+                            前往 <i data-lucide="external-link" class="w-4 h-4"></i>
                         </a>
                     </div>
                 </div>
 
                 <!-- API Key Management Section -->
-                <div class="w-full max-w-md bg-slate-100 p-3 rounded-xl border border-slate-200 shadow-inner">
+                <div class="w-full max-w-md bg-black/5 p-3 rounded-xl border border-main shadow-inner">
                     <div class="flex items-center justify-between mb-2 px-1">
-                        <span
-                            class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        <span class="text-[10px] font-bold text-muted uppercase tracking-wider flex items-center gap-1">
                             <i data-lucide="shield-check" class="w-3 h-3 text-green-500"></i>
                             Gemini API 管理 (僅儲存於本地)
                         </span>
@@ -86,7 +158,7 @@
                     <div class="flex items-center gap-2">
                         <div class="relative flex-1">
                             <input type="password" id="userApiKey" placeholder="在此輸入您的 API Key"
-                                class="w-full bg-white border border-slate-300 rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all">
+                                class="w-full bg-white border border-main rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all text-slate-800">
                             <button id="toggleVisible"
                                 class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600">
                                 <i data-lucide="eye" id="eyeIcon" class="w-4 h-4"></i>
@@ -94,11 +166,11 @@
                         </div>
                         <div class="flex items-center gap-1">
                             <button id="saveApiKey" title="儲存至瀏覽器"
-                                class="p-2 bg-white border border-slate-300 rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
+                                class="p-2 bg-white border border-main rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">
                                 <i data-lucide="save" class="w-4 h-4"></i>
                             </button>
                             <button id="clearApiKey" title="刪除金鑰"
-                                class="p-2 bg-white border border-slate-300 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
+                                class="p-2 bg-white border border-main rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -108,42 +180,42 @@
         </div>
 
         <!-- Main Interface -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-main overflow-hidden custom-card">
             <!-- Upload Area -->
             <div id="dropZone"
-                class="p-12 border-2 border-dashed border-slate-300 m-6 rounded-xl transition-all flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 group">
+                class="p-12 border-2 border-dashed border-main m-6 rounded-xl transition-all flex flex-col items-center justify-center cursor-pointer hover:bg-black/5 group">
                 <input type="file" id="fileInput" class="hidden" accept="image/*">
-                <div class="bg-blue-50 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                <div class="bg-blue-500/10 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform">
                     <i data-lucide="image-plus" class="w-8 h-8 text-blue-600"></i>
                 </div>
-                <p class="text-lg font-medium text-slate-700">點擊或拖放圖片至此</p>
-                <p class="text-sm text-slate-500 mt-1">支援 PNG, JPG, JPEG 格式</p>
+                <p class="text-lg font-medium text-main">點擊或拖放圖片至此</p>
+                <p class="text-sm text-muted mt-1">支援 PNG, JPG, JPEG 格式</p>
             </div>
 
             <!-- Preview & Status -->
             <div id="previewContainer" class="hidden px-6 pb-6">
-                <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div class="flex items-center gap-4 p-4 bg-black/5 rounded-lg border border-main">
                     <img id="imageThumbnail" class="w-16 h-16 object-cover rounded shadow-sm">
-                    <div class="flex-1">
-                        <p id="fileName" class="font-medium text-slate-800 text-sm truncate max-w-[200px]"></p>
-                        <p id="fileSize" class="text-xs text-slate-500"></p>
+                    <div class="flex-1 overflow-hidden">
+                        <p id="fileName" class="font-medium text-main text-sm truncate"></p>
+                        <p id="fileSize" class="text-xs text-muted"></p>
                     </div>
                     <button id="processBtn"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 whitespace-nowrap">
                         <span id="btnText">開始辨識</span>
                         <div id="btnLoader" class="loader hidden"></div>
                     </button>
-                    <button id="resetBtn" class="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                    <button id="resetBtn" class="p-2 text-muted hover:text-red-500 transition-colors">
                         <i data-lucide="trash-2" class="w-5 h-5"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Result Section -->
-            <div id="resultSection" class="hidden border-t border-slate-100">
+            <div id="resultSection" class="hidden border-t border-main">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-semibold text-slate-900 flex items-center gap-2">
+                        <h3 class="font-semibold text-main flex items-center gap-2">
                             <i data-lucide="file-json" class="w-5 h-5 text-green-600"></i>
                             辨識結果預覽
                         </h3>
@@ -162,26 +234,27 @@
 
         <!-- Footer / Instructions -->
         <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="p-4 bg-white rounded-xl border border-slate-100">
+            <div class="p-4 custom-card rounded-xl border">
                 <p class="text-xs font-bold text-blue-600 uppercase mb-2">Step 1</p>
-                <p class="text-sm text-slate-600">上傳包含成分股表格的截圖，確保文字清晰可見。</p>
+                <p class="text-sm text-muted">上傳包含成分股表格的截圖，確保文字清晰可見。</p>
             </div>
-            <div class="p-4 bg-white rounded-xl border border-slate-100">
+            <div class="p-4 custom-card rounded-xl border">
                 <p class="text-xs font-bold text-blue-600 uppercase mb-2">Step 2</p>
-                <p class="text-sm text-slate-600">AI 將分析圖片並提取持股排名、名稱、代號與權重。</p>
+                <p class="text-sm text-muted">AI 將分析圖片並提取持股排名、名稱、代號與權重。</p>
             </div>
-            <div class="p-4 bg-white rounded-xl border border-slate-100">
+            <div class="p-4 custom-card rounded-xl border">
                 <p class="text-xs font-bold text-blue-600 uppercase mb-2">Step 3</p>
-                <p class="text-sm text-slate-600">確認預覽資料無誤後，即可點擊下載按鈕儲存 JSON。</p>
+                <p class="text-sm text-muted">確認預覽資料無誤後，即可點擊下載按鈕儲存 JSON。</p>
             </div>
         </div>
     </div>
 
     <script>
         // --- Configuration ---
-        const systemApiKey = ""; // Environment provided
+        const systemApiKey = "";
         const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
         const STORAGE_KEY = "etf_ocr_gemini_key";
+        const THEME_KEY = "etf_ocr_theme";
 
         // --- DOM Elements ---
         const dropZone = document.getElementById('dropZone');
@@ -210,15 +283,44 @@
         let resultJson = null;
 
         // --- Initializers ---
-        lucide.createIcons();
-        loadSavedKey();
+        init();
+
+        function init() {
+            lucide.createIcons();
+            loadSavedKey();
+            loadSavedTheme();
+        }
+
+        // --- Theme Logic ---
+        function setTheme(theme) {
+            document.body.classList.remove('theme-night', 'theme-comfort');
+
+            // 移除所有按鈕的啟用樣式
+            document.querySelectorAll('[id^="btn-theme-"]').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                btn.classList.add('hover:bg-slate-100');
+            });
+
+            if (theme === 'night') document.body.classList.add('theme-night');
+            if (theme === 'comfort') document.body.classList.add('theme-comfort');
+
+            // 設定當前按鈕樣式
+            const activeBtn = document.getElementById(`btn-theme-${theme}`);
+            activeBtn.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+            activeBtn.classList.remove('hover:bg-slate-100');
+
+            localStorage.setItem(THEME_KEY, theme);
+        }
+
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem(THEME_KEY) || 'day';
+            setTheme(savedTheme);
+        }
 
         // --- API Key Logic ---
         function loadSavedKey() {
             const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                userApiKeyInput.value = saved;
-            }
+            if (saved) userApiKeyInput.value = saved;
         }
 
         toggleVisibleBtn.onclick = () => {
