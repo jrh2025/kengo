@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台股主動式 ETF 深度分析儀 (自訂清單版)</title>
+
+    <!-- 1. 載入樣式庫 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. 載入 React 核心 -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+
+    <!-- 3. 載入 Recharts 依賴項 -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+
+    <!-- 4. 載入圖表庫 Recharts -->
+    <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
+
+    <!-- 5. 載入 Babel (解析 JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .upload-area {
+            border: 2px dashed;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        .upload-area.active {
+            border-color: #10b981;
+            background-color: #ecfdf5;
+        }
+
+        .upload-area.missing {
+            border-color: #f59e0b;
+            background-color: #fffbeb;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body class="font-sans transition-colors duration-300">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+        const { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = window.Recharts || {};
+
+        // --- SVG 圖標 ---
+        const Icon = ({ path, className, size = 24, color = "currentColor" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>
+        );
+        const Icons = {
+            Upload: (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></>} />,
+            FileJson: (props) => <Icon {...props} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><path d="M10 12a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1" /><path d="M14 12a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1" /></>} />,
+            CheckCircle: (props) => <Icon {...props} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></>} />,
+            Layers: (props) => <Icon {...props} path={<><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></>} />,
+            AlertCircle: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></>} />,
+            Eye: (props) => <Icon {...props} path={<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>} />,
+            Trash: (props) => <Icon {...props} path={<><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></>} />,
+            Search: (props) => <Icon {...props} path={<><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></>} />,
+            RefreshCw: (props) => <Icon {...props} path={<><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></>} />,
+            Clock: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>} />,
+            Calendar: (props) => <Icon {...props} path={<><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></>} />,
+            FolderPlus: (props) => <Icon {...props} path={<><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z" /><line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" /></>} />,
+            Sun: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></>} />,
+            Moon: (props) => <Icon {...props} path={<><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></>} />,
+            Coffee: (props) => <Icon {...props} path={<><path d="M18 8h1a4 4 0 0 1 0 8h-1" /><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" /><line x1="6" y1="1" x2="6" y2="4" /><line x1="10" y1="1" x2="10" y2="4" /><line x1="14" y1="1" x2="14" y2="4" /></>} />,
+            Plus: (props) => <Icon {...props} path={<><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>} />,
+            X: (props) => <Icon {...props} path={<><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>} />
+        };
+
+        // --- 主題設定 ---
+        const THEMES = {
+            light: {
+                bg: "bg-slate-50",
+                text: "text-slate-900",
+                subText: "text-slate-500",
+                cardBg: "bg-white",
+                cardBorder: "border-slate-200",
+                headerBg: "bg-white",
+                accent: "text-blue-600",
+                buttonBg: "bg-slate-100",
+                buttonText: "text-slate-600",
+                sliderTrack: "bg-slate-200",
+                inputBg: "bg-slate-50",
+                tableHover: "hover:bg-slate-50",
+                selectBg: "bg-slate-50"
+            },
+            dark: {
+                bg: "bg-slate-900",
+                text: "text-slate-100",
+                subText: "text-slate-400",
+                cardBg: "bg-slate-800",
+                cardBorder: "border-slate-700",
+                headerBg: "bg-slate-800",
+                accent: "text-blue-400",
+                buttonBg: "bg-slate-700",
+                buttonText: "text-slate-300",
+                sliderTrack: "bg-slate-600",
+                inputBg: "bg-slate-900",
+                tableHover: "hover:bg-slate-700",
+                selectBg: "bg-slate-900"
+            },
+            comfort: {
+                bg: "bg-stone-50",
+                text: "text-stone-800",
+                subText: "text-stone-500",
+                cardBg: "bg-[#fffbf0]",
+                cardBorder: "border-stone-200",
+                headerBg: "bg-[#fffbf0]",
+                accent: "text-amber-700",
+                buttonBg: "bg-stone-200",
+                buttonText: "text-stone-600",
+                sliderTrack: "bg-stone-300",
+                inputBg: "bg-stone-100",
+                tableHover: "hover:bg-amber-50",
+                selectBg: "bg-stone-50"
+            }
+        };
+
+        // --- 預設目標 ETF ---
+        const DEFAULT_TARGET_ETFS = [
+            { id: '00980A', name: '野村臺灣優選' },
+            { id: '00981A', name: '統一台股增長' },
+            { id: '00982A', name: '群益台灣強棒' },
+            { id: '00991A', name: '復華未來50' },
+            { id: '00992A', name: '群益科技創新' }
+        ];
+
+        const STORAGE_KEY = 'etf_history_v3';
+        const CONFIG_KEY = 'etf_config_v1';
+
+        // --- 日期計算工具 ---
+        const getLatestTradingDate = () => {
+            const date = new Date();
+            const day = date.getDay();
+            const hours = date.getHours();
+
+            if (day === 6) date.setDate(date.getDate() - 1);
+            else if (day === 0) date.setDate(date.getDate() - 2);
+            else if (day === 1 && hours < 15) date.setDate(date.getDate() - 3);
+            else if (hours < 15) date.setDate(date.getDate() - 1);
+
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        };
+
+        // --- API: 取得 P/E ---
+        const fetchTwsePE = async () => {
+            const processData = (data) => {
+                const map = {};
+                data.forEach(item => {
+                    const pe = parseFloat(item.PEratio);
+                    map[item.Code] = { pe: !isNaN(pe) ? pe : '-', name: item.Name };
+                });
+                return map;
+            };
+            const targetUrl = 'https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL';
+
+            try {
+                const res = await fetch(targetUrl);
+                if (res.ok) return processData(await res.json());
+            } catch (e) { }
+
+            try {
+                const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`);
+                if (res.ok) return processData(await res.json());
+            } catch (e) { }
+
+            try {
+                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`);
+                if (res.ok) return processData(await res.json());
+            } catch (e) {
+                console.error("PE Fetch Failed", e);
+                return null;
+            }
+        };
+
+        // --- 新增 ETF Modal ---
+        const AddEtfModal = ({ isOpen, onClose, onAdd }) => {
+            const [id, setId] = useState('');
+            const [name, setName] = useState('');
+
+            if (!isOpen) return null;
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (id && name) {
+                    onAdd({ id: id.trim(), name: name.trim() });
+                    setId('');
+                    setName('');
+                    onClose();
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-2xl shadow-xl w-96 animate-fadeIn">
+                        <h3 className="text-lg font-bold mb-4">新增追蹤 ETF</h3>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">股票代號</label>
+                                <input
+                                    type="text"
+                                    value={id}
+                                    onChange={(e) => setId(e.target.value.toUpperCase())}
+                                    className="w-full border p-2 rounded-lg"
+                                    placeholder="例如: 0050"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">ETF 名稱</label>
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full border p-2 rounded-lg"
+                                    placeholder="例如: 元大台灣50"
+                                    required
+                                />
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                                <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200">取消</button>
+                                <button type="submit" className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700">新增</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [theme, setTheme] = useState('light');
+            const currentTheme = THEMES[theme];
+
+            // 狀態
+            const [targetEtfs, setTargetEtfs] = useState(DEFAULT_TARGET_ETFS);
+            const [historyData, setHistoryData] = useState({});
+            const [availableDates, setAvailableDates] = useState([]);
+            const [currentDate, setCurrentDate] = useState('');
+            const [targetDate, setTargetDate] = useState('');
+
+            const [uploadStatus, setUploadStatus] = useState({});
+            const [activeEtfId, setActiveEtfId] = useState('ALL');
+            const [peMap, setPeMap] = useState({});
+            const [statusMessage, setStatusMessage] = useState('系統初始化...');
+            const [isProcessing, setIsProcessing] = useState(false);
+            const [showAddModal, setShowAddModal] = useState(false);
+
+            // 初始化
+            useEffect(() => {
+                const init = async () => {
+                    const latest = getLatestTradingDate();
+                    setTargetDate(latest);
+
+                    // 1. 載入自訂清單
+                    try {
+                        const savedConfig = localStorage.getItem(CONFIG_KEY);
+                        if (savedConfig) {
+                            setTargetEtfs(JSON.parse(savedConfig));
+                        }
+                    } catch (e) { console.error("Load config error", e); }
+
+                    // 2. 載入歷史數據
+                    try {
+                        const saved = localStorage.getItem(STORAGE_KEY);
+                        if (saved) {
+                            const parsed = JSON.parse(saved);
+                            setHistoryData(parsed);
+                            const dates = Object.keys(parsed).sort();
+                            setAvailableDates(dates);
+
+                            if (parsed[latest] && Object.keys(parsed[latest]).length > 0) {
+                                setCurrentDate(latest);
+                                setStatusMessage(`已自動載入 ${latest} 資料`);
+                            } else if (dates.length > 0) {
+                                setCurrentDate(dates[dates.length - 1]);
+                                setStatusMessage(`缺漏 ${latest} 資料，顯示 ${dates[dates.length - 1]}`);
+                            } else {
+                                setCurrentDate(latest);
+                                setStatusMessage(`請上傳 ${latest} 資料`);
+                            }
+                        } else {
+                            setCurrentDate(latest);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        localStorage.removeItem(STORAGE_KEY);
+                    }
+
+                    const peData = await fetchTwsePE();
+                    if (peData) setPeMap(peData);
+                };
+                init();
+            }, []);
+
+            // 設置 body 背景
+            useEffect(() => {
+                document.body.className = `${currentTheme.bg} ${currentTheme.text} font-sans transition-colors duration-300`;
+            }, [theme]);
+
+            // 管理 ETF 清單
+            const handleAddEtf = (newEtf) => {
+                if (targetEtfs.some(e => e.id === newEtf.id)) {
+                    alert("此代號已存在");
+                    return;
+                }
+                const newList = [...targetEtfs, newEtf];
+                setTargetEtfs(newList);
+                localStorage.setItem(CONFIG_KEY, JSON.stringify(newList));
+                setStatusMessage(`已新增 ${newEtf.id}`);
+            };
+
+            const handleRemoveEtf = (id) => {
+                if (confirm(`確定移除 ${id} 嗎？(歷史資料仍會保留)`)) {
+                    const newList = targetEtfs.filter(e => e.id !== id);
+                    setTargetEtfs(newList);
+                    localStorage.setItem(CONFIG_KEY, JSON.stringify(newList));
+                    setStatusMessage(`已移除 ${id}`);
+                }
+            };
+
+            const currentHoldings = useMemo(() => {
+                if (!currentDate || !historyData[currentDate]) return {};
+                return historyData[currentDate];
+            }, [currentDate, historyData]);
+
+            const etfStats = useMemo(() => {
+                const stats = {};
+                // 只計算 targetEtfs 內的 ETF
+                targetEtfs.forEach(etf => {
+                    const data = currentHoldings[etf.id] || [];
+                    let totalWPE = 0, totalW = 0;
+                    data.forEach(h => {
+                        const pe = peMap[h.stock_id]?.pe;
+                        if (typeof pe === 'number' && pe > 0) {
+                            totalWPE += h.holding_percentage * pe;
+                            totalW += h.holding_percentage;
+                        }
+                    });
+                    const avgPE = totalW > 0 ? (totalWPE / totalW) : 0;
+                    stats[etf.id] = {
+                        weightedPE: avgPE > 0 ? avgPE.toFixed(1) : '-',
+                        count: data.length,
+                        topHolding: data[0]?.stock_name || '-'
+                    };
+                });
+                return stats;
+            }, [currentHoldings, peMap, targetEtfs]);
+
+            const missingEtfs = useMemo(() => {
+                if (currentDate !== targetDate) return [];
+                const existing = Object.keys(historyData[targetDate] || {});
+                return targetEtfs.filter(t => !existing.includes(t.id));
+            }, [currentDate, targetDate, historyData, targetEtfs]);
+
+            const handleFiles = async (files) => {
+                if (!files || files.length === 0) return;
+                setIsProcessing(true);
+                setStatusMessage("正在解析...");
+
+                const fileArray = Array.from(files);
+                const readPromises = fileArray.map(file => new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        try {
+                            const text = e.target.result.replace(/^\uFEFF/, '');
+                            const json = JSON.parse(text);
+                            if (json.fund_info?.ticker && json.holdings) resolve(json);
+                            else resolve(null);
+                        } catch (err) { resolve(null); }
+                    };
+                    reader.readAsText(file);
+                }));
+
+                const validJsons = (await Promise.all(readPromises)).filter(j => j !== null);
+
+                if (validJsons.length === 0) {
+                    setStatusMessage("無效檔案");
+                    setIsProcessing(false);
+                    return;
+                }
+
+                setHistoryData(prev => {
+                    const nextHistory = { ...prev };
+                    const newStatus = {};
+                    let latestUploadDate = '';
+
+                    validJsons.forEach(json => {
+                        const etfId = json.fund_info.ticker.trim();
+                        const date = json.fund_info.data_date;
+                        if (!latestUploadDate || date > latestUploadDate) latestUploadDate = date;
+
+                        const holdings = json.holdings.map(h => ({
+                            rank: h.rank,
+                            stock_id: h.ticker,
+                            stock_name: h.name,
+                            holding_percentage: parseFloat(h.weight_percent),
+                            pe: peMap[h.ticker]?.pe || '-'
+                        }));
+
+                        nextHistory[date] = { ...(nextHistory[date] || {}), [etfId]: holdings };
+                        newStatus[etfId] = 'success';
+                    });
+
+                    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(nextHistory)); } catch (e) { alert("儲存空間不足"); }
+
+                    setAvailableDates(prevDates => {
+                        const allDates = new Set([...prevDates, ...validJsons.map(j => j.fund_info.data_date)]);
+                        return Array.from(allDates).sort();
+                    });
+
+                    setUploadStatus(prevS => ({ ...prevS, ...newStatus }));
+                    setTimeout(() => setUploadStatus({}), 3000);
+
+                    if (validJsons.some(j => j.fund_info.data_date === targetDate)) setCurrentDate(targetDate);
+                    else if (latestUploadDate) setCurrentDate(latestUploadDate);
+
+                    setStatusMessage(`已匯入 ${validJsons.length} 檔`);
+                    return nextHistory;
+                });
+
+                setIsProcessing(false);
+            };
+
+            const handleClearHistory = () => {
+                if (confirm("清除所有歷史資料？(自訂清單將保留)")) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    setHistoryData({});
+                    setAvailableDates([]);
+                    setCurrentDate(targetDate);
+                    setStatusMessage("歷史已清空");
+                }
+            };
+
+            const consensusList = useMemo(() => {
+                const agg = {};
+                // 只計算有資料且在清單內的 ETF
+                const etfs = targetEtfs.map(e => e.id).filter(id => currentHoldings[id]);
+                const count = etfs.length || 1;
+
+                etfs.forEach(etfId => {
+                    currentHoldings[etfId].forEach(stock => {
+                        const key = stock.stock_id;
+                        if (!agg[key]) {
+                            agg[key] = {
+                                id: stock.stock_id,
+                                name: stock.stock_name,
+                                totalWeight: 0,
+                                count: 0,
+                                etfs: [],
+                                pe: peMap[stock.stock_id]?.pe || '-'
+                            };
+                        }
+                        agg[key].totalWeight += stock.holding_percentage;
+                        agg[key].count += 1;
+                        agg[key].etfs.push(etfId);
+                    });
+                });
+
+                return Object.values(agg)
+                    .map(i => ({ ...i, avgWeight: (i.totalWeight / count).toFixed(2) }))
+                    .filter(i => i.totalWeight > 0)
+                    .sort((a, b) => b.totalWeight - a.totalWeight);
+            }, [currentHoldings, peMap, targetEtfs]);
+
+            return (
+                <div className={`min-h-screen pb-12 transition-colors duration-300 ${currentTheme.bg} ${currentTheme.text}`}>
+                    <AddEtfModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onAdd={handleAddEtf} />
+
+                    {/* Header */}
+                    <div className={`${currentTheme.headerBg} border-b ${currentTheme.cardBorder} sticky top-0 z-50 shadow-sm transition-colors duration-300`}>
+                        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                            <h1 className="text-xl font-bold flex items-center gap-2">
+                                <Icons.Layers className={currentTheme.accent} />
+                                台股主動式 ETF 分析儀
+                                <span className={`text-xs px-2 py-0.5 rounded-full border ${theme === 'dark' ? 'bg-blue-900 text-blue-200 border-blue-800' : 'bg-emerald-100 text-emerald-700 border-emerald-200'}`}>
+                                    自訂清單版
+                                </span>
+                            </h1>
+                            <div className="flex items-center gap-4">
+                                {/* 主題切換 */}
+                                <div className={`flex items-center gap-1 p-1 rounded-lg border ${currentTheme.cardBorder} ${currentTheme.buttonBg}`}>
+                                    <button onClick={() => setTheme('light')} className={`p-1.5 rounded-md transition-colors ${theme === 'light' ? 'bg-white shadow-sm text-amber-500' : 'text-slate-400 hover:text-slate-500'}`} title="白天"><Icons.Sun size={16} /></button>
+                                    <button onClick={() => setTheme('dark')} className={`p-1.5 rounded-md transition-colors ${theme === 'dark' ? 'bg-slate-600 shadow-sm text-indigo-300' : 'text-slate-400 hover:text-slate-500'}`} title="黑夜"><Icons.Moon size={16} /></button>
+                                    <button onClick={() => setTheme('comfort')} className={`p-1.5 rounded-md transition-colors ${theme === 'comfort' ? 'bg-[#fffbf0] shadow-sm text-amber-700' : 'text-slate-400 hover:text-slate-500'}`} title="舒適"><Icons.Coffee size={16} /></button>
+                                </div>
+
+                                <div className={`hidden md:flex text-sm font-bold px-3 py-1 rounded items-center gap-2 border ${currentTheme.buttonBg} ${currentTheme.cardBorder} ${currentTheme.subText}`}>
+                                    <Icons.Clock size={14} />
+                                    <span>{currentDate} {currentDate === targetDate && "(最新)"}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+
+                        {/* 1. 缺漏提示 */}
+                        {currentDate === targetDate && missingEtfs.length > 0 && (
+                            <div className={`border rounded-2xl p-4 flex items-start gap-3 animate-fadeIn ${theme === 'dark' ? 'bg-amber-900/20 border-amber-800/50' : 'bg-amber-50 border-amber-200'}`}>
+                                <Icons.AlertCircle className="text-amber-500 mt-0.5" size={20} />
+                                <div className="flex-1">
+                                    <h3 className={`font-bold ${theme === 'dark' ? 'text-amber-400' : 'text-amber-800'}`}>資料缺漏提醒 ({targetDate})</h3>
+                                    <p className={`text-sm mt-1 mb-2 ${theme === 'dark' ? 'text-amber-200/80' : 'text-amber-700'}`}>
+                                        尚有 <b>{missingEtfs.length}</b> 檔監控中的 ETF 未匯入。缺漏：{missingEtfs.map(t => t.id).join(', ')}
+                                    </p>
+                                    <label className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-colors ${theme === 'dark' ? 'bg-amber-800 text-amber-100 hover:bg-amber-700' : 'bg-amber-100 hover:bg-amber-200 text-amber-800'}`}>
+                                        <Icons.Upload size={14} /> 補傳資料
+                                        <input type="file" multiple accept=".json,application/json" className="hidden" onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }} />
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 2. 上傳區域 */}
+                        <div className={`${currentTheme.cardBg} rounded-2xl shadow-sm border ${currentTheme.cardBorder} p-6 transition-colors duration-300`}>
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                    <Icons.FolderPlus size={20} className={currentTheme.accent} /> 資料管理 ({targetEtfs.length}/5)
+                                </h2>
+                                <div className="flex gap-2">
+                                    <label className={`cursor-pointer ${theme === 'dark' ? 'bg-blue-700 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'} text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm ${isProcessing ? 'opacity-50' : ''}`}>
+                                        {isProcessing ? <Icons.RefreshCw className="animate-spin" size={16} /> : <Icons.Upload size={16} />}
+                                        批次上傳
+                                        <input type="file" multiple accept=".json" className="hidden" onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }} disabled={isProcessing} />
+                                    </label>
+                                    <button onClick={handleClearHistory} className={`px-3 py-2 ${currentTheme.subText} hover:text-red-500 ${currentTheme.buttonBg} rounded-lg`} title="清空"><Icons.Trash size={18} /></button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                {targetEtfs.map(etf => {
+                                    const hasData = !!currentHoldings[etf.id];
+                                    const status = uploadStatus[etf.id];
+                                    const isMissing = currentDate === targetDate && !hasData;
+
+                                    return (
+                                        <div key={etf.id} className="relative group">
+                                            {/* 刪除按鈕 (移出 label，獨立點擊) */}
+                                            <button
+                                                onClick={() => handleRemoveEtf(etf.id)}
+                                                className="absolute top-1 right-1 p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full z-20 transition-colors"
+                                                title="移除此監控項目"
+                                            >
+                                                <Icons.X size={14} />
+                                            </button>
+
+                                            <input type="file" accept=".json" className="hidden" id={`file-${etf.id}`} onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }} />
+                                            <label
+                                                htmlFor={`file-${etf.id}`}
+                                                className={`
+                                                    h-24 rounded-xl flex flex-col items-center justify-center p-2 text-center cursor-pointer border-2 transition-all relative overflow-hidden
+                                                    ${hasData
+                                                        ? (theme === 'dark' ? 'border-emerald-800 bg-emerald-900/20' : 'border-emerald-200 bg-emerald-50/50')
+                                                        : ''}
+                                                    ${isMissing
+                                                        ? (theme === 'dark' ? 'border-amber-700 bg-amber-900/20 animate-pulse' : 'border-amber-300 bg-amber-50 animate-pulse')
+                                                        : (!hasData ? `border-dashed ${currentTheme.cardBorder} ${currentTheme.buttonBg}` : '')}
+                                                    ${status === 'success' ? 'scale-105 border-emerald-500 shadow-md ring-2 ring-emerald-100' : ''}
+                                                `}
+                                            >
+                                                {hasData ? (
+                                                    <div className={theme === 'dark' ? 'text-emerald-400' : 'text-emerald-700'}>
+                                                        <div className="flex items-center justify-center gap-1 mb-1">
+                                                            <Icons.CheckCircle size={16} />
+                                                            <span className="font-bold text-sm">{etf.id}</span>
+                                                        </div>
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded ${theme === 'dark' ? 'bg-emerald-900/50' : 'bg-white/50'}`}>{etfStats[etf.id]?.count} 檔持股</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className={currentTheme.subText}>
+                                                        <span className="font-bold text-sm block mb-1">{etf.id}</span>
+                                                        <span className="text-[10px]">{isMissing ? '點擊補件' : '無資料'}</span>
+                                                    </div>
+                                                )}
+                                            </label>
+                                        </div>
+                                    );
+                                })}
+
+                                {/* 新增按鈕 */}
+                                {targetEtfs.length < 5 && (
+                                    <button
+                                        onClick={() => setShowAddModal(true)}
+                                        className={`h-24 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-all ${currentTheme.cardBorder} hover:border-blue-400 hover:bg-blue-50/50 text-slate-400 hover:text-blue-500`}
+                                    >
+                                        <Icons.Plus size={24} className="mb-1" />
+                                        <span className="text-xs font-bold">新增追蹤</span>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 3. 分析圖表區 */}
+                        {availableDates.length > 0 ? (
+                            <>
+                                {/* 核心指標卡片 */}
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                                    {targetEtfs.map(etf => {
+                                        const stats = etfStats[etf.id];
+                                        const hasData = !!stats && currentHoldings[etf.id];
+
+                                        return (
+                                            <div key={etf.id} className={`${currentTheme.cardBg} p-4 rounded-xl shadow-sm border ${currentTheme.cardBorder} transition-all ${hasData ? 'hover:shadow-md' : 'opacity-60'}`}>
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <span className={`text-xs font-bold ${currentTheme.subText}`}>{etf.id}</span>
+                                                    {hasData && <span className={`text-[10px] px-1.5 py-0.5 rounded ${theme === 'dark' ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-50 text-blue-600'}`}>{stats.count} 檔</span>}
+                                                </div>
+
+                                                {hasData ? (
+                                                    <div>
+                                                        <div className="mb-2">
+                                                            <div className={`text-[10px] ${currentTheme.subText}`}>加權本益比</div>
+                                                            <div className="text-xl font-bold">{stats.weightedPE}</div>
+                                                        </div>
+                                                        <div className={`pt-2 border-t ${theme === 'dark' ? 'border-slate-700' : 'border-slate-50'}`}>
+                                                            <div className={`text-[10px] ${currentTheme.subText}`}>第一大持股</div>
+                                                            <div className={`text-sm font-medium truncate ${currentTheme.accent}`} title={stats.topHolding}>
+                                                                {stats.topHolding}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className={`h-16 flex items-center justify-center text-xs ${currentTheme.subText}`}>暫無數據</div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                    {/* 左：共識排行 */}
+                                    <div className={`lg:col-span-2 ${currentTheme.cardBg} rounded-2xl shadow-sm border ${currentTheme.cardBorder} flex flex-col h-[700px] transition-colors duration-300`}>
+                                        <div className={`p-5 border-b ${theme === 'dark' ? 'border-slate-700' : 'border-slate-100'}`}>
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                                    <Icons.Layers size={20} className={currentTheme.accent} /> 經理人共識排行榜
+                                                </h2>
+                                                <span className={`text-xs px-2 py-1 rounded ${currentTheme.buttonBg} ${currentTheme.subText}`}>紀錄點: {availableDates.length}</span>
+                                            </div>
+                                            {/* 時間軸 */}
+                                            <div className={`p-3 rounded-xl border ${theme === 'dark' ? 'bg-slate-700/50 border-slate-600' : 'bg-slate-50 border-slate-200'}`}>
+                                                <div className={`flex justify-between text-xs mb-2 ${currentTheme.subText}`}>
+                                                    <span className={`font-bold ${currentTheme.accent}`}>歷史復盤</span>
+                                                    <span className="font-mono font-bold">{currentDate}</span>
+                                                </div>
+                                                <input
+                                                    type="range" min="0" max={Math.max(0, availableDates.length - 1)}
+                                                    value={availableDates.indexOf(currentDate)}
+                                                    onChange={(e) => setCurrentDate(availableDates[parseInt(e.target.value)])}
+                                                    disabled={availableDates.length < 2}
+                                                    className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${currentTheme.sliderTrack}`}
+                                                />
+                                                <div className={`flex justify-between text-[10px] mt-1 ${currentTheme.subText}`}>
+                                                    <span>{availableDates[0]}</span>
+                                                    <span>{availableDates[availableDates.length - 1]}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 overflow-auto custom-scrollbar p-2">
+                                            <table className="w-full text-left text-sm">
+                                                <thead className={`sticky top-0 z-10 shadow-sm ${currentTheme.cardBg} ${currentTheme.subText}`}>
+                                                    <tr>
+                                                        <th className="py-3 pl-4">股票名稱</th>
+                                                        <th className="py-3">P/E</th>
+                                                        <th className="py-3">平均權重</th>
+                                                        <th className="py-3 text-center">持有數</th>
+                                                        <th className="py-3">持有 ETF</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100/10">
+                                                    {consensusList.map((item, idx) => (
+                                                        <tr key={idx} className={`${currentTheme.tableHover} transition-colors border-b ${theme === 'dark' ? 'border-slate-700' : 'border-slate-50'}`}>
+                                                            <td className="py-3 pl-4">
+                                                                <div className="font-bold">{item.name}</div>
+                                                                <div className={`text-[10px] ${currentTheme.subText}`}>{item.id}</div>
+                                                            </td>
+                                                            <td className={`py-3 ${currentTheme.subText}`}>{item.pe}</td>
+                                                            <td className="py-3">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`font-bold w-12 text-right ${currentTheme.accent}`}>{item.avgWeight}%</span>
+                                                                    <div className={`w-16 h-1.5 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                                                                        <div className={`${theme === 'dark' ? 'bg-blue-500' : 'bg-blue-600'} h-full`} style={{ width: `${Math.min(100, item.avgWeight * 5)}%` }}></div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-3 text-center font-bold">{item.count}</td>
+                                                            <td className="py-3">
+                                                                <div className="flex gap-1 flex-wrap max-w-[120px]">
+                                                                    {item.etfs.map(eid => <span key={eid} className={`px-1.5 py-0.5 text-[10px] rounded border ${theme === 'dark' ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-slate-200 text-slate-500'}`}>{eid}</span>)}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    {/* 右：明細 */}
+                                    <div className={`${currentTheme.cardBg} rounded-2xl shadow-sm border ${currentTheme.cardBorder} flex flex-col h-[700px] transition-colors duration-300`}>
+                                        <div className={`p-5 border-b ${theme === 'dark' ? 'border-slate-700' : 'border-slate-100'} space-y-3`}>
+                                            <div className="flex justify-between items-center">
+                                                <h2 className="text-lg font-bold flex items-center gap-2"><Icons.Eye size={20} className={currentTheme.accent} /> 明細檢視</h2>
+                                            </div>
+                                            <select
+                                                value={activeEtfId} onChange={(e) => setActiveEtfId(e.target.value)}
+                                                className={`w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none ${currentTheme.inputBg} ${currentTheme.cardBorder}`}
+                                            >
+                                                <option value="ALL">請選擇 ETF...</option>
+                                                {targetEtfs.map(etf => <option key={etf.id} value={etf.id}>{etf.id} {etf.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="flex-1 overflow-auto custom-scrollbar p-2">
+                                            {activeEtfId !== 'ALL' && currentHoldings[activeEtfId] ? (
+                                                <div className="space-y-2">
+                                                    {currentHoldings[activeEtfId].map((stock, idx) => (
+                                                        <div key={idx} className={`flex justify-between p-3 rounded-lg border transition-all ${currentTheme.tableHover} ${theme === 'dark' ? 'border-transparent hover:border-slate-600' : 'border-transparent hover:border-slate-100'}`}>
+                                                            <div className="flex gap-3 items-center">
+                                                                <span className={`text-xs w-4 ${currentTheme.subText}`}>{stock.rank || idx + 1}</span>
+                                                                <div>
+                                                                    <div className="text-sm font-bold">{stock.stock_name}</div>
+                                                                    <div className={`text-[10px] ${currentTheme.subText}`}>{stock.stock_id}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className={`text-sm font-bold ${currentTheme.accent}`}>{stock.holding_percentage}%</div>
+                                                                <div className={`text-[10px] ${currentTheme.subText}`}>PE: {stock.pe}</div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className={`h-full flex flex-col items-center justify-center ${currentTheme.subText}`}>
+                                                    <Icons.Search size={48} className="mb-3 opacity-20" />
+                                                    <p className="text-sm">{activeEtfId === 'ALL' ? '請選擇 ETF' : '無資料'}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className={`py-20 flex flex-col items-center justify-center ${currentTheme.subText} ${currentTheme.buttonBg} rounded-3xl border-2 border-dashed ${currentTheme.cardBorder}`}>
+                                <Icons.FileJson size={64} className="mb-4 opacity-20" />
+                                <h3 className="text-lg font-bold">尚未匯入資料</h3>
+                                <p className="text-sm mt-2">請點擊上方按鈕上傳 JSON 檔案</p>
+                            </div>
+                        )}
+                    </main>
+                    <div className={`fixed bottom-0 w-full text-xs px-4 py-1 flex justify-between opacity-90 ${theme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-slate-900 text-white'}`}>
+                        <span>{statusMessage}</span>
+                        <span>系統版本: v3.0 (Themed)</span>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
