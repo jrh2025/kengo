@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全頁截圖大師 - 工具簡介與安裝指南</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 antialiased">
+
+    <!-- Header Section -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 16 16">
+                    <path
+                        d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a5 5 0 1 1 10 0v6zM5 7a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm5 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
+                </svg>
+                <h1 class="text-xl font-bold text-slate-800">全頁截圖大師 <span
+                        class="text-sm font-normal text-slate-500 ml-2">Full Page Cap</span></h1>
+            </div>
+            <a href="https://drive.google.com/drive/folders/1YlI6p7v7xHu1E5ILERGdK4A4KGOZ-1c-?usp=sharing"
+                target="_blank"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition shadow-md flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                立即下載
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero / Intro -->
+    <section class="max-w-4xl mx-auto px-6 py-12">
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+            <h2 class="text-3xl font-bold mb-4 text-slate-900">突破視窗限制，捕捉完整視野</h2>
+            <p class="text-lg text-slate-600 mb-6 leading-relaxed">
+                一般的截圖工具只能擷取螢幕上看到的範圍，而「全頁截圖大師」透過自動化滾動與智慧拼接技術，能將冗長的網頁內容完整擷取並合併為單張高解析度 PNG 圖片。解決了長文章、數據報表或設計稿無法一次保存的痛點。
+            </p>
+            <div class="grid md:grid-cols-3 gap-6 mt-8">
+                <div class="p-4 bg-blue-50 rounded-xl">
+                    <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-slate-800 mb-1">智慧自動滾動</h3>
+                    <p class="text-sm text-slate-600">自動模擬滾動行為，確保動態載入 (Lazy Load) 的內容也能被完整擷取。</p>
+                </div>
+                <div class="p-4 bg-purple-50 rounded-xl">
+                    <div
+                        class="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-slate-800 mb-1">像素級拼接</h3>
+                    <p class="text-sm text-slate-600">使用 Canvas 技術精確拼接，無接縫還原網頁原貌，支援高解析度螢幕。</p>
+                </div>
+                <div class="p-4 bg-green-50 rounded-xl">
+                    <div class="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center mb-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-slate-800 mb-1">隱私安全</h3>
+                    <p class="text-sm text-slate-600">所有處理皆在您的瀏覽器本地端完成，截圖數據不會上傳至任何伺服器。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Steps -->
+    <section class="max-w-4xl mx-auto px-6 pb-20">
+        <h2 class="text-2xl font-bold mb-8 text-slate-800 pl-2 border-l-4 border-blue-600">安裝教學 (Developer Mode)</h2>
+
+        <div
+            class="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
+
+            <!-- Step 1 -->
+            <div
+                class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                <div
+                    class="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-100 group-[.is-active]:bg-blue-600 group-[.is-active]:text-white text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 font-bold">
+                    1</div>
+                <div
+                    class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-lg mb-2">下載並解壓縮</h3>
+                    <p class="text-slate-600 text-sm mb-3">
+                        點擊上方的下載按鈕取得擴充功能檔案，並將其解壓縮到一個您方便管理的資料夾中（例如：<code>chrome-fullpage-capture</code>）。</p>
+                    <a href="https://drive.google.com/drive/folders/1YlI6p7v7xHu1E5ILERGdK4A4KGOZ-1c-?usp=sharing"
+                        target="_blank"
+                        class="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center">前往下載位置
+                        &rarr;</a>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div
+                class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                <div
+                    class="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-100 group-[.is-active]:bg-blue-600 group-[.is-active]:text-white text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 font-bold">
+                    2</div>
+                <div
+                    class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-lg mb-2">開啟擴充功能管理頁面</h3>
+                    <p class="text-slate-600 text-sm">在 Chrome 瀏覽器的網址列輸入以下網址並按下 Enter：</p>
+                    <code
+                        class="block mt-2 bg-slate-100 p-2 rounded text-xs font-mono text-slate-700">chrome://extensions/</code>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div
+                class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                <div
+                    class="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-100 group-[.is-active]:bg-blue-600 group-[.is-active]:text-white text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 font-bold">
+                    3</div>
+                <div
+                    class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-lg mb-2">開啟開發人員模式</h3>
+                    <p class="text-slate-600 text-sm">在頁面的右上角，找到 <span class="font-semibold text-slate-800">「開發人員模式」
+                            (Developer mode)</span> 開關，並將其切換為 <span class="text-green-600 font-bold">開啟</span> 狀態。</p>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div
+                class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                <div
+                    class="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-100 group-[.is-active]:bg-blue-600 group-[.is-active]:text-white text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 font-bold">
+                    4</div>
+                <div
+                    class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-lg mb-2">載入未封裝項目</h3>
+                    <p class="text-slate-600 text-sm mb-2">點擊左上角出現的 <span class="font-semibold text-slate-800">「載入未封裝項目」
+                            (Load unpacked)</span> 按鈕。</p>
+                    <p class="text-slate-600 text-sm">接著在彈出的視窗中，選擇您在<span class="font-semibold">步驟 1</span> 解壓縮的資料夾。</p>
+                </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div
+                class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                <div
+                    class="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-100 group-[.is-active]:bg-green-600 group-[.is-active]:text-white text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 font-bold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <div
+                    class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-6 rounded-xl shadow-sm border border-gray-100 ring-2 ring-green-100">
+                    <h3 class="font-bold text-lg mb-2 text-green-700">安裝完成！</h3>
+                    <p class="text-slate-600 text-sm">現在您可以在 Chrome 瀏覽器右上角的擴充功能選單（拼圖圖示）中找到這個工具了。建議將其釘選以便快速使用。</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-8">
+        <div class="max-w-4xl mx-auto px-6 text-center text-slate-500 text-sm">
+            <p>&copy; 2026 Full Page Cap Project. 開源且免費使用。</p>
+        </div>
+    </footer>
+
+</body>
+
+</html>
