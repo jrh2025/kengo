@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>速率互動實驗室 | 互動數學實驗室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .module-content {
+            display: none;
+        }
+
+        .module-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .formula-triangle polygon {
+            transition: all 0.3s ease;
+        }
+
+        .btn-nav.active {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        input[type=range] {
+            accent-color: #2563eb;
+        }
+
+        .finish-tape {
+            background: repeating-linear-gradient(45deg,
+                    #ef4444,
+                    #ef4444 10px,
+                    #ffffff 10px,
+                    #ffffff 20px);
+        }
+
+        .step-node.active {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+            color: #1e40af;
+            transform: scale(1.1);
+        }
+
+        .step-node.completed {
+            background-color: #22c55e;
+            color: white;
+            border-color: #16a34a;
+        }
+
+        .trace-item {
+            animation: slideInRight 0.3s ease-out;
+            border-left: 3px solid #3b82f6;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .mnemonic-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .math-box {
+            font-family: 'Courier New', Courier, monospace;
+            background: #f1f5f9;
+            padding: 8px;
+            border-radius: 6px;
+            display: inline-block;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .skill-card {
+            transition: all 0.2s ease;
+        }
+
+        .skill-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-formula {
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 1px;
+        }
+
+        .water-line {
+            animation: waterSlide linear infinite;
+        }
+
+        @keyframes waterSlide {
+            from {
+                transform: translateX(-50%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .challenge-step-row,
+        .lit-step-row {
+            animation: slideInRight 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-900 flex flex-col md:flex-row">
+
+    <!-- Sidebar Navigation -->
+    <nav class="w-full md:w-64 bg-white border-b md:border-r border-slate-200 p-4 flex flex-col gap-2 shrink-0">
+        <div class="flex items-center gap-2 px-2 py-4 mb-4 border-b border-slate-100">
+            <i data-lucide="fast-forward" class="w-8 h-8 text-blue-600"></i>
+            <h1 class="text-xl font-bold text-slate-800">速率實驗室</h1>
+        </div>
+
+        <button onclick="switchModule('welcome')" id="nav-welcome"
+            class="btn-nav flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-100">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="font-medium">歡迎首頁</span>
+        </button>
+        <button onclick="switchModule('formula')" id="nav-formula"
+            class="btn-nav flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-100">
+            <i data-lucide="book-open" class="w-5 h-5"></i>
+            <span class="font-medium">核心公式與單位</span>
+        </button>
+        <button onclick="switchModule('comparison')" id="nav-comparison"
+            class="btn-nav flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-100">
+            <i data-lucide="play" class="w-5 h-5"></i>
+            <span class="font-medium">認識快慢</span>
+        </button>
+        <button onclick="switchModule('conversion')" id="nav-conversion"
+            class="btn-nav flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-100">
+            <i data-lucide="arrow-right-left" class="w-5 h-5"></i>
+            <span class="font-medium">單位換算挑戰</span>
+        </button>
+        <button onclick="switchModule('scenarios')" id="nav-scenarios"
+            class="btn-nav flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-100">
+            <i data-lucide="compass" class="w-5 h-5"></i>
+            <span class="font-medium">應用題型實戰</span>
+        </button>
+        <button onclick="switchModule('life')" id="nav-life"
+            class="btn-nav flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-100">
+            <i data-lucide="users" class="w-5 h-5"></i>
+            <span class="font-medium">生活素養挑戰</span>
+        </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-auto p-4 md:p-8">
+        <div class="max-w-6xl mx-auto">
+
+            <!-- Module: Welcome -->
+            <section id="module-welcome" class="module-content active">
+                <div class="flex flex-col items-center justify-center py-20 text-center">
+                    <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                        <i data-lucide="fast-forward" class="w-12 h-12 text-blue-600"></i>
+                    </div>
+                    <h1 class="text-4xl font-extrabold text-slate-800 mb-4">掌握速率的奧秘</h1>
+                    <p class="text-lg text-slate-600 mb-8 max-w-lg leading-relaxed">
+                        速率是物理世界的節奏。透過本實驗室，你將學會如何定義速率、換算單位，並解決真實生活中的追趕、流水與回聲問題。
+                    </p>
+                    <button onclick="switchModule('formula')"
+                        class="px-8 py-4 bg-blue-600 text-white rounded-full font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center gap-2">
+                        開始探索 <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Module: Formula -->
+            <section id="module-formula" class="module-content">
+                <h2 class="text-3xl font-bold mb-6 flex items-center gap-2">核心概念與單位意義</h2>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 mb-8">
+                    <div class="flex flex-col items-center justify-center gap-8 md:flex-row">
+                        <div class="relative w-64 h-56 flex items-center justify-center shrink-0">
+                            <svg viewBox="0 0 100 87" class="w-full h-full drop-shadow-md formula-triangle">
+                                <polygon points="50,5 95,82 5,82" fill="#eff6ff" stroke="#bfdbfe" stroke-width="2" />
+                                <line x1="25" y1="45" x2="75" y2="45" stroke="#bfdbfe" stroke-width="2" />
+                                <line x1="50" y1="45" x2="50" y2="82" stroke="#bfdbfe" stroke-width="2" />
+                            </svg>
+                            <button onclick="updateFormula('distance')"
+                                class="absolute top-[20%] font-bold text-slate-400 hover:text-blue-600 transition-all hover:scale-110">距離</button>
+                            <button onclick="updateFormula('speed')"
+                                class="absolute bottom-[15%] left-[20%] font-bold text-slate-400 hover:text-blue-600 transition-all hover:scale-110">速率</button>
+                            <button onclick="updateFormula('time')"
+                                class="absolute bottom-[15%] right-[20%] font-bold text-slate-400 hover:text-blue-600 transition-all hover:scale-110">時間</button>
+                        </div>
+                        <div id="formula-display"
+                            class="flex-1 bg-blue-50 p-6 rounded-xl border border-blue-100 min-h-[160px] flex flex-col justify-center">
+                            <span
+                                class="text-blue-600 font-bold text-sm uppercase tracking-wider mb-1">點選三角形來查看公式</span>
+                            <h3 id="formula-title" class="text-2xl font-bold">速率 = 距離 ÷ 時間</h3>
+                            <p id="formula-desc" class="text-slate-600 mt-2">物體在單位時間內移動的距離。</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-6 mb-10">
+                    <h3 class="text-xl font-bold text-slate-700 flex items-center gap-2"><i data-lucide="info"
+                            class="w-5 h-5 text-blue-500"></i> 不同單位的使用時機</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                            <div class="flex items-center gap-2 mb-3"><i data-lucide="car"
+                                    class="w-5 h-5 text-blue-600"></i>
+                                <h4 class="font-bold text-blue-600">時速 (km/h)</h4>
+                            </div>
+                            <p class="text-sm text-slate-500 mb-2 font-medium underline">一小時移動幾公里</p>
+                            <p class="text-sm text-slate-600 leading-relaxed">用於長距離交通，如：開車、高鐵、飛機。</p>
+                        </div>
+                        <div class="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                            <div class="flex items-center gap-2 mb-3"><i data-lucide="play"
+                                    class="w-5 h-5 text-orange-600"></i>
+                                <h4 class="font-bold text-orange-600">分速 (m/min)</h4>
+                            </div>
+                            <p class="text-sm text-slate-500 mb-2 font-medium underline">一分鐘移動幾公尺</p>
+                            <p class="text-sm text-slate-600 leading-relaxed">用於日常活動，如：散步、慢跑。</p>
+                        </div>
+                        <div class="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                            <div class="flex items-center gap-2 mb-3"><i data-lucide="timer"
+                                    class="w-5 h-5 text-green-600"></i>
+                                <h4 class="font-bold text-green-600">秒速 (m/s)</h4>
+                            </div>
+                            <p class="text-sm text-slate-500 mb-2 font-medium underline">一秒鐘移動幾公尺</p>
+                            <p class="text-sm text-slate-600 leading-relaxed">用於短時間衝刺或科學現象，如：風速、聲速。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module: Comparison -->
+            <section id="module-comparison" class="module-content">
+                <h2 class="text-3xl font-bold mb-4">認識快慢：實戰模擬</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <div class="lg:col-span-1 space-y-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2 border-b pb-2 mb-4"><i
+                                data-lucide="settings" class="w-4 h-4 text-blue-600"></i> 參數設定</h3>
+                        <div class="flex gap-2 mb-4">
+                            <button onclick="setRaceMode('distanceFixed')" id="btn-dist-fixed"
+                                class="flex-1 py-2 text-xs rounded-lg font-medium transition-colors">距離一定</button>
+                            <button onclick="setRaceMode('timeFixed')" id="btn-time-fixed"
+                                class="flex-1 py-2 text-xs rounded-lg font-medium transition-colors">時間一定</button>
+                        </div>
+                        <div id="distance-slider-group">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">賽道總長：<span
+                                    id="label-dist">100</span> 公尺</label>
+                            <input id="input-dist" type="range" min="50" max="300" step="10" value="100"
+                                oninput="syncRaceParams()"
+                                class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div id="time-slider-group" class="hidden">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">比賽時間：<span
+                                    id="label-time">10</span> 秒鐘</label>
+                            <input id="input-time" type="range" min="5" max="30" step="1" value="10"
+                                oninput="syncRaceParams()"
+                                class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div class="pt-4 border-t">
+                            <label class="block text-xs font-bold text-blue-600 mb-1">車子 A 速率：<span
+                                    id="label-speed-a">5</span> m/s</label>
+                            <input id="input-speed-a" type="range" min="2" max="20" step="1" value="5"
+                                oninput="syncRaceParams()"
+                                class="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div class="pt-2">
+                            <label class="block text-xs font-bold text-orange-600 mb-1">車子 B 速率：<span
+                                    id="label-speed-b">8</span> m/s</label>
+                            <input id="input-speed-b" type="range" min="2" max="20" step="1" value="8"
+                                oninput="syncRaceParams()"
+                                class="w-full h-2 bg-orange-100 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div class="mt-4 flex flex-col gap-2">
+                            <button id="start-race" onclick="startRace()"
+                                class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold transition-all"><i
+                                    data-lucide="play" class="w-4 h-4 fill-current"></i> 開始比賽</button>
+                            <button onclick="resetRace()"
+                                class="w-full flex items-center justify-center gap-2 px-6 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 text-sm"><i
+                                    data-lucide="rotate-ccw" class="w-4 h-4"></i> 全部重設</button>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 flex flex-col gap-4">
+                        <div
+                            class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 flex-1 relative overflow-hidden flex flex-col justify-center">
+                            <div class="space-y-16 py-8">
+                                <div class="relative h-12 border-b-2 border-slate-100 bg-slate-50/50">
+                                    <div id="car-a" class="absolute left-0 z-10" style="left: 0%;">
+                                        <div class="flex flex-col items-center -ml-5"><i data-lucide="car"
+                                                class="text-blue-500 w-10 h-10 drop-shadow-sm"></i><span
+                                                id="car-a-status"
+                                                class="text-[10px] font-bold bg-blue-50 text-blue-600 px-1 rounded mt-1">0m</span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="finish-line-a absolute right-[10%] top-0 h-full w-2 finish-tape z-0 opacity-80">
+                                    </div>
+                                </div>
+                                <div class="relative h-12 border-b-2 border-slate-100 bg-slate-50/50">
+                                    <div id="car-b" class="absolute left-0 z-10" style="left: 0%;">
+                                        <div class="flex flex-col items-center -ml-5"><i data-lucide="car"
+                                                class="text-orange-500 w-10 h-10 drop-shadow-sm"></i><span
+                                                id="car-b-status"
+                                                class="text-[10px] font-bold bg-orange-50 text-orange-600 px-1 rounded mt-1">0m</span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="finish-line-b absolute right-[10%] top-0 h-full w-2 finish-tape z-0 opacity-80">
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                class="absolute top-4 right-6 bg-slate-800 text-white font-mono px-4 py-1 rounded-full text-sm shadow-inner">
+                                <span id="race-timer-display">00.00</span>s
+                            </div>
+                        </div>
+                        <div id="race-results" class="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                            <h4 class="text-sm font-bold text-blue-800 mb-2 flex items-center gap-2"><i
+                                    data-lucide="lightbulb" class="w-4 h-4"></i> 實驗結果分析</h4>
+                            <div id="observation-box" class="text-sm text-blue-700 leading-relaxed">
+                                請設定左側參數，並按下「開始比賽」來觀察現象。</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module: Conversion -->
+            <section id="module-conversion" class="module-content">
+                <h2 class="text-3xl font-bold mb-4 flex items-center gap-2">單位換算：引導式實驗室</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div class="skill-card bg-white p-4 rounded-2xl border-b-4 border-blue-500 shadow-sm">
+                        <h4 class="font-bold text-blue-600 mb-2 flex items-center gap-2 text-sm"><i data-lucide="ruler"
+                                class="w-4 h-4"></i> 長度換算指導</h4>
+                        <ul class="text-xs space-y-1.5 text-slate-600 font-medium">
+                            <li class="flex justify-between"><span>公里 (km) → 公尺 (m)</span> <span class="text-blue-500">×
+                                    1000</span></li>
+                            <li class="flex justify-between"><span>公尺 (m) → 公分 (cm)</span> <span class="text-blue-500">×
+                                    100</span></li>
+                        </ul>
+                    </div>
+                    <div class="skill-card bg-white p-4 rounded-2xl border-b-4 border-orange-500 shadow-sm">
+                        <h4 class="font-bold text-orange-600 mb-2 flex items-center gap-2 text-sm"><i
+                                data-lucide="clock" class="w-4 h-4"></i> 時間換算指導</h4>
+                        <ul class="text-xs space-y-1.5 text-slate-600 font-medium">
+                            <li class="flex justify-between"><span>小時 (hr) → 分鐘 (min)</span> <span
+                                    class="text-orange-500">× 60</span></li>
+                            <li class="flex justify-between"><span>分鐘 (min) → 秒鐘 (sec)</span> <span
+                                    class="text-orange-500">× 60</span></li>
+                        </ul>
+                    </div>
+                    <div class="skill-card bg-white p-4 rounded-2xl border-b-4 border-indigo-500 shadow-sm">
+                        <h4 class="font-bold text-indigo-600 mb-2 flex items-center gap-2 text-sm"><i data-lucide="zap"
+                                class="w-4 h-4"></i> 速率直達秘訣</h4>
+                        <div class="bg-indigo-50 p-2 rounded-lg text-[10px] text-indigo-700 leading-relaxed">
+                            <p class="font-bold">✨ 萬用 3.6 法則：</p>
+                            <p>• <b>時速 (km/h)</b> 變 <b>秒速 (m/s)</b>：直接 <span class="underline">除以 3.6</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="layers"
+                            class="w-5 h-5 text-indigo-500"></i> 第一步：選擇換算情境</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <button onclick="loadConversionScenario('plane')"
+                            class="scenario-btn p-3 border rounded-xl hover:bg-slate-50 text-left transition-all focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <div class="flex items-center gap-2 mb-1"><i data-lucide="plane" class="w-4 h-4"></i> <span
+                                    class="text-xs font-bold">民航客機</span></div>
+                        </button>
+                        <button onclick="loadConversionScenario('sprinter')"
+                            class="scenario-btn p-3 border rounded-xl hover:bg-slate-50 text-left transition-all focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <div class="flex items-center gap-2 mb-1"><i data-lucide="user" class="w-4 h-4"></i> <span
+                                    class="text-xs font-bold">運動員</span></div>
+                        </button>
+                        <button onclick="loadConversionScenario('snail')"
+                            class="scenario-btn p-3 border rounded-xl hover:bg-slate-50 text-left transition-all focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <div class="flex items-center gap-2 mb-1"><i data-lucide="bug" class="w-4 h-4"></i> <span
+                                    class="text-xs font-bold">蝸牛</span></div>
+                        </button>
+                        <button onclick="loadConversionScenario('typhoon')"
+                            class="scenario-btn p-3 border rounded-xl hover:bg-slate-50 text-left transition-all focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <div class="flex items-center gap-2 mb-1"><i data-lucide="wind" class="w-4 h-4"></i> <span
+                                    class="text-xs font-bold">強烈颱風</span></div>
+                        </button>
+                    </div>
+                    <div id="scenario-intro"
+                        class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-8 hidden animate-in fade-in">
+                        <p id="scenario-text" class="text-indigo-800 text-sm font-medium"></p>
+                    </div>
+                    <div id="conversion-workspace"
+                        class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in">
+                        <div class="space-y-6">
+                            <div id="step-tracker" class="flex items-center justify-between px-4 relative">
+                                <div class="absolute left-0 right-0 h-0.5 bg-slate-100 top-1/2 -translate-y-1/2 z-0">
+                                </div>
+                                <div id="node-1"
+                                    class="step-node active w-10 h-10 rounded-full border-2 bg-white z-10 flex items-center justify-center font-bold">
+                                    1</div>
+                                <div id="node-2"
+                                    class="step-node w-10 h-10 rounded-full border-2 bg-white z-10 flex items-center justify-center font-bold">
+                                    2</div>
+                                <div id="node-3"
+                                    class="step-node w-10 h-10 rounded-full border-2 bg-white z-10 flex items-center justify-center font-bold">
+                                    3</div>
+                            </div>
+                            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 min-h-[200px]">
+                                <div id="step-1" class="step-pane">
+                                    <h4 class="font-bold text-lg mb-2 flex items-center gap-2"><i data-lucide="maximize"
+                                            class="w-5 h-5 text-blue-500"></i> 步驟一</h4>
+                                    <p id="step-1-q" class="text-sm text-slate-500 mb-4"></p>
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex items-center gap-3"><input type="number" id="ans-1"
+                                                onkeyup="if(event.key==='Enter') handleStepCheck(1)"
+                                                placeholder="輸入數值後 Enter"
+                                                class="flex-1 px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 font-mono"><button
+                                                onclick="handleStepCheck(1)"
+                                                class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold transition-all">核對</button>
+                                        </div>
+                                        <p id="hint-1" class="text-[11px] text-slate-400"></p>
+                                    </div>
+                                </div>
+                                <div id="step-2" class="step-pane hidden">
+                                    <h4 class="font-bold text-lg mb-2 flex items-center gap-2 text-indigo-800"><i
+                                            data-lucide="clock" class="w-5 h-5"></i> 步驟二</h4>
+                                    <p id="step-2-q" class="text-sm text-slate-500 mb-4"></p>
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex items-center gap-3"><input type="number" id="ans-2"
+                                                onkeyup="if(event.key==='Enter') handleStepCheck(2)"
+                                                placeholder="輸入數值後 Enter"
+                                                class="flex-1 px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 font-mono"><button
+                                                onclick="handleStepCheck(2)"
+                                                class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold transition-all">核對</button>
+                                        </div>
+                                        <p id="hint-2" class="text-[11px] text-slate-400"></p>
+                                    </div>
+                                </div>
+                                <div id="step-3" class="step-pane hidden">
+                                    <h4 class="font-bold text-lg mb-2 flex items-center gap-2 text-indigo-800"><i
+                                            data-lucide="target" class="w-5 h-5"></i> 步驟三</h4>
+                                    <p id="step-3-q" class="text-sm text-slate-500 mb-4"></p>
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex items-center gap-3"><input type="number" id="ans-3"
+                                                onkeyup="if(event.key==='Enter') handleStepCheck(3)"
+                                                placeholder="最終數值後 Enter"
+                                                class="flex-1 px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 font-mono"><button
+                                                onclick="handleStepCheck(3)"
+                                                class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold transition-all">完成</button>
+                                        </div>
+                                        <p id="hint-3" class="text-[11px] text-slate-400"></p>
+                                    </div>
+                                </div>
+                                <div id="step-success" class="step-pane hidden text-center py-6">
+                                    <div
+                                        class="inline-flex items-center justify-center w-16 h-16 bg-green-100 text-green-600 rounded-full mb-4">
+                                        <i data-lucide="check-circle" class="w-8 h-8"></i>
+                                    </div>
+                                    <h4 class="font-bold text-xl text-green-700 mb-2">成功達成目標！</h4>
+                                    <p id="final-insight" class="text-sm text-slate-500 mb-4"></p><button
+                                        onclick="resetConversionLab()"
+                                        class="px-6 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 text-xs font-bold transition-all">挑戰其他情境</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col text-white">
+                            <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-2"><i
+                                    data-lucide="history" class="w-4 h-4 text-slate-400"></i> 推導軌跡與整合呈現</h4>
+                            <div id="formula-trace-container" class="flex-1 space-y-6">
+                                <div
+                                    class="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center">
+                                    <p class="text-slate-400 text-sm">請選擇左側情境開始...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module: Scenarios -->
+            <section id="module-scenarios" class="module-content">
+                <h2 class="text-3xl font-bold mb-6 flex items-center gap-2">應用題型：深度解題與列式實驗室</h2>
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <!-- Left Menu -->
+                    <div class="w-full lg:w-1/3 space-y-4">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                            <h3 class="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2"><i
+                                    data-lucide="book-open" class="w-4 h-4 text-blue-600"></i> 選題解題練習</h3>
+                            <div class="space-y-2">
+                                <button onclick="loadScenarioProblem('distFixed')"
+                                    class="problem-btn w-full p-4 rounded-xl border text-left hover:bg-slate-50 transition-all outline-none">
+                                    <div class="font-bold text-blue-700 text-sm">類型 A：距離一定</div>
+                                    <div class="text-[10px] text-slate-500 mt-1">練習「時間 = 距離 ÷ 速率」</div>
+                                </button>
+                                <button onclick="loadScenarioProblem('timeFixed')"
+                                    class="problem-btn w-full p-4 rounded-xl border text-left hover:bg-slate-50 transition-all outline-none">
+                                    <div class="font-bold text-orange-700 text-sm">類型 B：時間一定</div>
+                                    <div class="text-[10px] text-slate-500 mt-1">練習「距離 = 速率 × 時間」</div>
+                                </button>
+                                <button onclick="loadScenarioProblem('speedFixed')"
+                                    class="problem-btn w-full p-4 rounded-xl border text-left hover:bg-slate-50 transition-all outline-none">
+                                    <div class="font-bold text-green-700 text-sm">類型 C：速率一定</div>
+                                    <div class="text-[10px] text-slate-500 mt-1">練習「時間與距離的比例」</div>
+                                </button>
+                            </div>
+                            <button onclick="startMixedChallenge()"
+                                class="w-full mt-6 py-4 bg-slate-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 shadow-lg transition-all"><i
+                                    data-lucide="trophy" class="w-5 h-5 text-yellow-400"></i> 綜合實力挑戰</button>
+                        </div>
+                        <div id="scen-feedback-panel"
+                            class="bg-blue-900 text-white p-6 rounded-2xl shadow-lg hidden animate-in fade-in">
+                            <h4 class="font-bold mb-2 flex items-center gap-2 text-yellow-400"><i
+                                    data-lucide="message-circle" class="w-4 h-4"></i> 老師的小提醒</h4>
+                            <p id="scen-feedback-text" class="text-sm leading-relaxed opacity-90"></p>
+                        </div>
+                    </div>
+                    <!-- Right Workspace -->
+                    <div class="w-full lg:w-2/3">
+                        <div id="scenario-workspace"
+                            class="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm min-h-[500px] flex flex-col">
+                            <div id="scenario-empty-state"
+                                class="flex-1 flex flex-col items-center justify-center text-slate-400"><i
+                                    data-lucide="terminal" class="w-12 h-12 mb-4 opacity-20"></i>
+                                <p>請從左側選擇一個題型開始...</p>
+                            </div>
+                            <div id="scenario-active-content" class="hidden animate-in fade-in space-y-8">
+                                <div class="bg-blue-50 p-6 rounded-xl border border-blue-100"><span
+                                        id="scenario-type-badge"
+                                        class="px-2 py-1 bg-blue-600 text-white text-[10px] rounded font-bold uppercase tracking-wider">題型解析</span>
+                                    <h3 id="scenario-problem-text"
+                                        class="text-lg font-bold text-blue-900 mt-3 leading-relaxed"></h3>
+                                </div>
+                                <div id="scenario-step-pane" class="space-y-8"></div>
+                                <div id="scenario-success-box"
+                                    class="hidden bg-green-50 p-6 rounded-xl border border-green-200 text-center animate-bounce">
+                                    <i data-lucide="check-circle" class="w-10 h-10 text-green-500 mx-auto mb-2"></i>
+                                    <h4 class="font-bold text-green-800 text-lg">解題完成！</h4>
+                                    <p id="scenario-conclusion" class="text-sm text-green-700 mt-1"></p>
+                                </div>
+                            </div>
+                            <div id="scenario-challenge-content" class="hidden space-y-8 h-full flex flex-col">
+                                <div class="flex justify-between items-center border-b pb-4">
+                                    <h3 class="font-bold text-xl flex items-center gap-2 text-slate-800"><i
+                                            data-lucide="zap" class="text-yellow-500"></i> 綜合列式挑戰</h3>
+                                    <div class="text-sm font-bold bg-slate-100 px-3 py-1 rounded-full text-slate-600">
+                                        分數：<span id="challenge-score">0</span></div>
+                                </div>
+                                <div class="flex-1 py-10">
+                                    <div
+                                        class="bg-slate-800 text-white p-8 rounded-2xl shadow-xl relative overflow-hidden">
+                                        <p id="challenge-q-text"
+                                            class="text-xl font-medium leading-relaxed mb-6 text-white"></p>
+                                        <div id="challenge-steps-container"
+                                            class="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar"></div>
+                                        <div class="flex gap-2 mt-6"><button onclick="addChallengeStep()"
+                                                class="px-4 py-3 bg-slate-600 hover:bg-slate-500 rounded-xl font-bold text-white transition-all text-sm flex items-center gap-2"><i
+                                                    data-lucide="plus" class="w-4 h-4"></i> 新增算式</button><button
+                                                onclick="submitChallenge()"
+                                                class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-white transition-all text-lg shadow-lg flex items-center justify-center gap-2">提交答案</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="challenge-feedback" class="text-center h-16 transition-all font-bold text-lg">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module: Life Literacy Challenge -->
+            <section id="module-life" class="module-content">
+                <h2 class="text-3xl font-bold mb-6 flex items-center gap-2">生活應用：素養導向解題</h2>
+
+                <!-- NEW: Strategy Cards Section (EXPANDED TO 7) -->
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
+                    <div
+                        class="bg-white p-3 rounded-xl border-t-4 border-indigo-500 shadow-sm hover:shadow-md transition-shadow cursor-help group relative">
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="p-1.5 bg-indigo-100 rounded-lg text-indigo-600"><i data-lucide="footprints"
+                                    class="w-4 h-4"></i></div>
+                            <h4 class="font-bold text-slate-800 text-sm">追趕策略</h4>
+                        </div>
+                        <p class="text-[10px] text-slate-500 leading-tight">同向出發，快追慢。<br><span
+                                class="text-indigo-600 font-bold block mt-1">時間 = 距離差 ÷ 速率差</span></p>
+                        <div
+                            class="absolute opacity-0 group-hover:opacity-100 bg-slate-800 text-white text-xs p-2 rounded-lg -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-48 z-20 pointer-events-none transition-opacity">
+                            關鍵：計算每單位時間「縮短」了多少距離。</div>
+                    </div>
+                    <div
+                        class="bg-white p-3 rounded-xl border-t-4 border-blue-500 shadow-sm hover:shadow-md transition-shadow cursor-help group relative">
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="p-1.5 bg-blue-100 rounded-lg text-blue-600"><i data-lucide="users"
+                                    class="w-4 h-4"></i></div>
+                            <h4 class="font-bold text-slate-800 text-sm">相遇策略</h4>
+                        </div>
+                        <p class="text-[10px] text-slate-500 leading-tight">相向而行，面對面。<br><span
+                                class="text-blue-600 font-bold block mt-1">時間 = 距離 ÷ 速率和</span></p>
+                        <div
+                            class="absolute opacity-0 group-hover:opacity-100 bg-slate-800 text-white text-xs p-2 rounded-lg -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-48 z-20 pointer-events-none transition-opacity">
+                            關鍵：兩人合力縮短距離，效率是相加的。</div>
+                    </div>
+                    <div
+                        class="bg-white p-3 rounded-xl border-t-4 border-orange-500 shadow-sm hover:shadow-md transition-shadow cursor-help group relative">
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="p-1.5 bg-orange-100 rounded-lg text-orange-600"><i data-lucide="mountain"
+                                    class="w-4 h-4"></i></div>
+                            <h4 class="font-bold text-slate-800 text-sm">平均策略</h4>
+                        </div>
+                        <p class="text-[10px] text-slate-500 leading-tight">全程表現，非算數平均。<br><span
+                                class="text-orange-600 font-bold block mt-1">平均 = 總距離 ÷ 總時間</span></p>
+                        <div
+                            class="absolute opacity-0 group-hover:opacity-100 bg-slate-800 text-white text-xs p-2 rounded-lg -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-48 z-20 pointer-events-none transition-opacity">
+                            陷阱：千萬不能直接把兩個速率相加除以二！</div>
+                    </div>
+                    <div
+                        class="bg-white p-3 rounded-xl border-t-4 border-green-500 shadow-sm hover:shadow-md transition-shadow cursor-help group relative">
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="p-1.5 bg-green-100 rounded-lg text-green-600"><i data-lucide="train"
+                                    class="w-4 h-4"></i></div>
+                            <h4 class="font-bold text-slate-800 text-sm">通過策略</h4>
+                        </div>
+                        <p class="text-[10px] text-slate-500 leading-tight">物體有長，距離要加。<br><span
+                                class="text-green-600 font-bold block mt-1">總距 = 隧道長 + 車長</span></p>
+                        <div
+                            class="absolute opacity-0 group-hover:opacity-100 bg-slate-800 text-white text-xs p-2 rounded-lg -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-48 z-20 pointer-events-none transition-opacity">
+                            關鍵：從車頭進洞算到車尾出洞，必須加上車身長度。</div>
+                    </div>
+                    <div
+                        class="bg-white p-3 rounded-xl border-t-4 border-red-500 shadow-sm hover:shadow-md transition-shadow cursor-help group relative">
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="p-1.5 bg-red-100 rounded-lg text-red-600"><i data-lucide="waves"
+                                    class="w-4 h-4"></i></div>
+                            <h4 class="font-bold text-slate-800 text-sm">流水策略</h4>
+                        </div>
+                        <p class="text-[10px] text-slate-500 leading-tight">水幫你推，或水在擋。<br><span
+                                class="text-red-600 font-bold block mt-1">順=速+水，逆=速-水</span></p>
+                        <div
+                            class="absolute opacity-0 group-hover:opacity-100 bg-slate-800 text-white text-xs p-2 rounded-lg -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-48 z-20 pointer-events-none transition-opacity">
+                            關鍵：水流速率是順流時的助力，逆流時的阻力。</div>
+                    </div>
+                    <div
+                        class="bg-white p-3 rounded-xl border-t-4 border-purple-500 shadow-sm hover:shadow-md transition-shadow cursor-help group relative">
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="p-1.5 bg-purple-100 rounded-lg text-purple-600"><i data-lucide="volume-2"
+                                    class="w-4 h-4"></i></div>
+                            <h4 class="font-bold text-slate-800 text-sm">回聲策略</h4>
+                        </div>
+                        <p class="text-[10px] text-slate-500 leading-tight">聲音來回，距離雙倍。<br><span
+                                class="text-purple-600 font-bold block mt-1">單程距離 = (速×時)÷2</span></p>
+                        <div
+                            class="absolute opacity-0 group-hover:opacity-100 bg-slate-800 text-white text-xs p-2 rounded-lg -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-48 z-20 pointer-events-none transition-opacity">
+                            關鍵：聲音走的是「來回」兩趟，所以計算距離時記得除以 2。</div>
+                    </div>
+                    <div
+                        class="bg-white p-3 rounded-xl border-t-4 border-slate-500 shadow-sm hover:shadow-md transition-shadow cursor-help group relative">
+                        <div class="flex items-center gap-2 mb-1">
+                            <div class="p-1.5 bg-slate-100 rounded-lg text-slate-600"><i data-lucide="scale"
+                                    class="w-4 h-4"></i></div>
+                            <h4 class="font-bold text-slate-800 text-sm">單位策略</h4>
+                        </div>
+                        <p class="text-[10px] text-slate-500 leading-tight">看清單位，換算優先。<br><span
+                                class="text-slate-600 font-bold block mt-1">1時=60分=3600秒</span></p>
+                        <div
+                            class="absolute opacity-0 group-hover:opacity-100 bg-slate-800 text-white text-xs p-2 rounded-lg -bottom-2 left-1/2 -translate-x-1/2 translate-y-full w-48 z-20 pointer-events-none transition-opacity">
+                            提醒：計算前先檢查單位是否統一。時速配小時，分速配分鐘。</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <!-- Left Menu -->
+                    <div class="w-full lg:w-1/3 space-y-3">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                            <h3 class="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2">
+                                <i data-lucide="map" class="w-4 h-4 text-indigo-600"></i> 素養情境選擇
+                            </h3>
+                            <button onclick="loadLiteracyUnit('back_to_back')"
+                                class="lit-btn w-full p-4 rounded-xl border text-left hover:bg-indigo-50 transition-all mb-2 flex items-center gap-3 outline-none">
+                                <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i data-lucide="footprints"
+                                        class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="font-bold text-slate-800 text-sm">背向而行</div>
+                                    <div class="text-[10px] text-slate-500">公園散步情境</div>
+                                </div>
+                            </button>
+                            <button onclick="loadLiteracyUnit('circle_chase')"
+                                class="lit-btn w-full p-4 rounded-xl border text-left hover:bg-blue-50 transition-all mb-2 flex items-center gap-3 outline-none">
+                                <div class="bg-blue-100 p-2 rounded-lg text-blue-600"><i data-lucide="refresh-cw"
+                                        class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="font-bold text-slate-800 text-sm">繞圈追趕</div>
+                                    <div class="text-[10px] text-slate-500">操場競賽 (同向)</div>
+                                </div>
+                            </button>
+                            <button onclick="loadLiteracyUnit('circle_meet')"
+                                class="lit-btn w-full p-4 rounded-xl border text-left hover:bg-orange-50 transition-all mb-2 flex items-center gap-3 outline-none">
+                                <div class="bg-orange-100 p-2 rounded-lg text-orange-600"><i data-lucide="refresh-ccw"
+                                        class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="font-bold text-slate-800 text-sm">繞圈相遇</div>
+                                    <div class="text-[10px] text-slate-500">操場熱身 (反向)</div>
+                                </div>
+                            </button>
+                            <button onclick="loadLiteracyUnit('chase')"
+                                class="lit-btn w-full p-4 rounded-xl border text-left hover:bg-indigo-50 transition-all mb-2 flex items-center gap-3 outline-none">
+                                <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i data-lucide="siren"
+                                        class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="font-bold text-slate-800 text-sm">警匪追逐戰</div>
+                                    <div class="text-[10px] text-slate-500">直線追趕問題</div>
+                                </div>
+                            </button>
+                            <button onclick="loadLiteracyUnit('meet')"
+                                class="lit-btn w-full p-4 rounded-xl border text-left hover:bg-blue-50 transition-all mb-2 flex items-center gap-3 outline-none">
+                                <div class="bg-blue-100 p-2 rounded-lg text-blue-600"><i data-lucide="users"
+                                        class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="font-bold text-slate-800 text-sm">圖書館相遇</div>
+                                    <div class="text-[10px] text-slate-500">直線相遇問題</div>
+                                </div>
+                            </button>
+                            <button onclick="loadLiteracyUnit('avg')"
+                                class="lit-btn w-full p-4 rounded-xl border text-left hover:bg-orange-50 transition-all mb-2 flex items-center gap-3 outline-none">
+                                <div class="bg-orange-100 p-2 rounded-lg text-orange-600"><i data-lucide="mountain"
+                                        class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="font-bold text-slate-800 text-sm">登山健行計畫</div>
+                                    <div class="text-[10px] text-slate-500">平均速率的陷阱</div>
+                                </div>
+                            </button>
+                            <button onclick="loadLiteracyUnit('train')"
+                                class="lit-btn w-full p-4 rounded-xl border text-left hover:bg-green-50 transition-all mb-2 flex items-center gap-3 outline-none">
+                                <div class="bg-green-100 p-2 rounded-lg text-green-600"><i data-lucide="train"
+                                        class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="font-bold text-slate-800 text-sm">火車過山洞</div>
+                                    <div class="text-[10px] text-slate-500">物體長度與距離</div>
+                                </div>
+                            </button>
+                            <button onclick="loadLiteracyUnit('earthquake')"
+                                class="lit-btn w-full p-4 rounded-xl border text-left hover:bg-red-50 transition-all mb-2 flex items-center gap-3 outline-none">
+                                <div class="bg-red-100 p-2 rounded-lg text-red-600"><i data-lucide="activity"
+                                        class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="font-bold text-slate-800 text-sm">地震預警</div>
+                                    <div class="text-[10px] text-slate-500">P波與S波的時間差</div>
+                                </div>
+                            </button>
+                            <button onclick="loadLiteracyUnit('stream')"
+                                class="lit-btn w-full p-4 rounded-xl border text-left hover:bg-cyan-50 transition-all mb-2 flex items-center gap-3 outline-none">
+                                <div class="bg-cyan-100 p-2 rounded-lg text-cyan-600"><i data-lucide="waves"
+                                        class="w-5 h-5"></i></div>
+                                <div>
+                                    <div class="font-bold text-slate-800 text-sm">泛舟順逆流</div>
+                                    <div class="text-[10px] text-slate-500">水流速率的影響</div>
+                                </div>
+                            </button>
+
+                            <button onclick="startLiteracyChallenge()"
+                                class="w-full mt-4 py-3 bg-slate-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 shadow-lg transition-all text-sm">
+                                <i data-lucide="swords" class="w-4 h-4 text-yellow-400"></i> 素養大挑戰 (長篇隨機)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Workspace -->
+                    <div class="w-full lg:w-2/3">
+                        <div id="lit-workspace"
+                            class="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm min-h-[500px] flex flex-col relative overflow-hidden">
+                            <div class="absolute top-0 right-0 p-10 opacity-5 pointer-events-none"><i
+                                    data-lucide="compass" class="w-64 h-64 text-slate-900"></i></div>
+                            <div id="lit-empty-state"
+                                class="flex-1 flex flex-col items-center justify-center text-slate-400 z-10"><i
+                                    data-lucide="book-open-check" class="w-16 h-16 mb-4 opacity-20"></i>
+                                <p>請選擇一個生活情境開始探索...</p>
+                            </div>
+
+                            <!-- Interactive Story Mode -->
+                            <div id="lit-active-content" class="hidden animate-in fade-in space-y-6 z-10">
+                                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                                    <div class="flex items-center gap-2 mb-3"><span
+                                            class="px-2 py-1 bg-indigo-600 text-white text-[10px] rounded font-bold uppercase tracking-wider">情境閱讀</span>
+                                    </div>
+                                    <p id="lit-story-text" class="text-slate-800 leading-relaxed font-medium text-lg">
+                                    </p>
+                                </div>
+                                <div id="lit-steps-container" class="space-y-4"></div>
+                                <div id="lit-success-msg"
+                                    class="hidden bg-green-50 p-6 rounded-xl border border-green-200 text-center animate-bounce">
+                                    <h4 class="font-bold text-green-800 text-lg flex items-center justify-center gap-2">
+                                        <i data-lucide="party-popper" class="w-5 h-5"></i> 挑戰成功！
+                                    </h4>
+                                    <p id="lit-conclusion" class="text-sm text-green-700 mt-2"></p>
+                                </div>
+                            </div>
+
+                            <!-- Challenge Mode -->
+                            <div id="lit-challenge-content" class="hidden animate-in fade-in z-10 flex flex-col h-full">
+                                <div class="flex justify-between items-center border-b pb-4 mb-4">
+                                    <h3 class="font-bold text-xl text-slate-800 flex items-center gap-2"><i
+                                            data-lucide="brain-circuit" class="text-purple-600"></i> 素養思維挑戰</h3>
+                                </div>
+                                <div
+                                    class="flex-1 bg-slate-50 rounded-2xl p-6 border border-slate-200 flex flex-col gap-6">
+                                    <p id="lit-challenge-q" class="text-lg font-bold text-slate-800 leading-relaxed">
+                                    </p>
+                                    <div id="lit-challenge-steps"
+                                        class="space-y-2 flex-1 overflow-y-auto custom-scrollbar pr-2"></div>
+                                    <div class="flex gap-2">
+                                        <button onclick="addLitChallengeStep()"
+                                            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold transition-all text-sm flex items-center gap-2"><i
+                                                data-lucide="plus" class="w-4 h-4"></i> 新增算式</button>
+                                        <button onclick="submitLitChallenge()"
+                                            class="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all shadow-lg">提交答案</button>
+                                    </div>
+                                </div>
+                                <div id="lit-challenge-feedback"
+                                    class="text-center h-12 mt-4 font-bold text-lg transition-all"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // --- Helper: Evaluate Math Expression ---
+        function safeEval(str) {
+            try {
+                const sanitized = str.replace(/[^-()\d/*+.]/g, '');
+                if (!sanitized) return null;
+                let res = Function(`'use strict'; return (${sanitized})`)();
+                return Math.round(res * 100) / 100;
+            } catch (e) { return null; }
+        }
+
+        // --- Random Utils ---
+        function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function randomFloat(min, max, fixed = 1) { return parseFloat((Math.random() * (max - min) + min).toFixed(fixed)); }
+
+        function switchModule(moduleId) {
+            document.querySelectorAll('.module-content').forEach(el => el.classList.remove('active'));
+            document.getElementById('module-' + moduleId).classList.add('active');
+            document.querySelectorAll('.btn-nav').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('nav-' + moduleId).classList.add('active');
+            if (moduleId === 'scenarios') resetScenarioUI();
+            if (moduleId === 'life') resetLiteracyUI();
+        }
+
+        function updateFormula(type) {
+            const formulas = {
+                speed: { title: '速率 = 距離 ÷ 時間', desc: '物體在單位時間內移動的距離。' },
+                distance: { title: '距離 = 速率 × 時間', desc: '物體以特定快慢移動一段時間後的總路程。' },
+                time: { title: '時間 = 距離 ÷ 速率', desc: '物體移動特定路段所花費的時間長短。' }
+            };
+            document.getElementById('formula-title').innerText = formulas[type].title;
+            document.getElementById('formula-desc').innerText = formulas[type].desc;
+        }
+
+        // --- Scenarios Deep Logic (RANDOMIZED) ---
+        let currentScenProblem = null;
+        let currentScenSteps = [];
+
+        function generateScenarioData(type) {
+            let data = {};
+            if (type === 'distFixed') {
+                const dist = randomInt(2, 8) * 50;
+                const v1 = randomInt(6, 10);
+                const v2 = randomInt(2, 5);
+                const t1 = dist / v1;
+                const t2 = dist / v2;
+                data = {
+                    title: "類型 A：距離一定",
+                    problem: `一場 ${dist} 公尺賽跑中，小明秒速 ${v1} 公尺，小華秒速 ${v2} 公尺。請問小明比小華快幾秒抵達終點？`,
+                    steps: [
+                        { q: `步驟一：先列式算出小明花的時間 (${dist} ÷ ${v1})`, ans: parseFloat(t1.toFixed(2)), type: 'divide', nums: [dist, v1] },
+                        { q: `步驟二：再列式算出小華花的時間 (${dist} ÷ ${v2})`, ans: parseFloat(t2.toFixed(2)), type: 'divide', nums: [dist, v2] },
+                        { q: "步驟三：列式計算兩人的時間差", ans: parseFloat(Math.abs(t2 - t1).toFixed(2)), type: 'minus' }
+                    ],
+                    conclusion: "距離一定時，速率越快，花費時間越少。公式：時間 = 距離 ÷ 速率。"
+                };
+            } else if (type === 'timeFixed') {
+                const time = randomInt(2, 5);
+                const v1 = randomInt(40, 60);
+                const v2 = randomInt(65, 90);
+                const d1 = v1 * time;
+                const d2 = v2 * time;
+                data = {
+                    title: "類型 B：時間一定",
+                    problem: `阿輝騎車 ${time} 小時，時速 ${v1} 公里；阿成騎車 ${time} 小時，時速 ${v2} 公里。請問阿成比阿輝多跑了幾公里？`,
+                    steps: [
+                        { q: `步驟一：列式算出阿輝跑的距離 (${v1} × ${time})`, ans: d1, type: 'multiply', nums: [v1, time] },
+                        { q: `步驟二：列式算出阿成跑的距離 (${v2} × ${time})`, ans: d2, type: 'multiply', nums: [v2, time] },
+                        { q: "步驟三：列式計算兩人距離的差", ans: Math.abs(d2 - d1), type: 'minus' }
+                    ],
+                    conclusion: "時間一定時，速率越快，移動距離越遠。公式：距離 = 速率 × 時間。"
+                };
+            } else {
+                const speed = randomInt(6, 12) * 10;
+                const dist = speed * randomFloat(1.5, 4.0, 1);
+                const timeHr = dist / speed;
+                data = {
+                    title: "類型 C：速率一定",
+                    problem: `某高鐵列車時速固定為 ${speed} km/h。從 A 地到 B 地距離約 ${dist.toFixed(1)} 公里，請問要花多少分鐘？`,
+                    steps: [
+                        { q: `步驟一：先列式算出需要多少「小時」 (${dist.toFixed(1)} ÷ ${speed})`, ans: parseFloat(timeHr.toFixed(2)), type: 'divide', nums: [dist.toFixed(1), speed] },
+                        { q: "步驟二：列式將小時換算成分鐘 (提示: 一小時 60 分)", ans: parseFloat((timeHr * 60).toFixed(1)), type: 'multiply', nums: [60] }
+                    ],
+                    conclusion: "速率一定時，時間與距離成正比。記得注意單位換算喔！"
+                };
+            }
+            return data;
+        }
+
+        function resetScenarioUI() {
+            document.getElementById('scenario-empty-state').classList.remove('hidden');
+            document.getElementById('scenario-active-content').classList.add('hidden');
+            document.getElementById('scenario-challenge-content').classList.add('hidden');
+            document.getElementById('scen-feedback-panel').classList.add('hidden');
+            document.querySelectorAll('.problem-btn').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-50'));
+        }
+
+        function loadScenarioProblem(type) {
+            currentScenProblem = generateScenarioData(type);
+            currentScenSteps = currentScenProblem.steps;
+
+            document.getElementById('scenario-empty-state').classList.add('hidden');
+            document.getElementById('scenario-challenge-content').classList.add('hidden');
+            document.getElementById('scenario-active-content').classList.remove('hidden');
+            document.getElementById('scen-feedback-panel').classList.remove('hidden');
+
+            document.getElementById('scenario-problem-text').innerText = currentScenProblem.problem;
+            document.getElementById('scenario-success-box').classList.add('hidden');
+            document.getElementById('scen-feedback-text').innerText = "點擊題目後，請在下方輸入運算過程（列式），不要只寫答案。例如：100 / 5";
+
+            const pane = document.getElementById('scenario-step-pane');
+            pane.innerHTML = '';
+
+            currentScenSteps.forEach((step, index) => {
+                const stepNum = index + 1;
+                const hiddenClass = index === 0 ? '' : 'hidden opacity-0 transition-all duration-500';
+                const nodeClass = index === 0
+                    ? "w-8 h-8 rounded-full border-2 border-blue-600 flex items-center justify-center font-bold text-blue-600 mt-1 shrink-0"
+                    : "w-8 h-8 rounded-full border-2 border-slate-200 flex items-center justify-center font-bold text-slate-300 mt-1 shrink-0";
+
+                const html = `
+                    <div id="scen-step-${stepNum}-container" class="${hiddenClass}">
+                        <div class="flex items-start gap-4">
+                            <div id="scen-node-${stepNum}" class="${nodeClass}">${stepNum}</div>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-slate-700 mb-3">${step.q}</p>
+                                <div class="relative">
+                                    <input type="text" id="scen-formula-${stepNum}" onkeyup="if(event.key==='Enter') checkScenarioFormula(${stepNum})" class="w-full input-formula px-4 py-3 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-lg" placeholder="請輸入列式" ${index !== 0 ? 'disabled' : ''}>
+                                    <div id="scen-calc-${stepNum}" class="mt-2 text-xs font-mono text-slate-400"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                pane.innerHTML += html;
+            });
+
+            setTimeout(() => document.getElementById('scen-formula-1').focus(), 100);
+
+            document.querySelectorAll('.problem-btn').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-50'));
+            event.currentTarget.classList.add('border-blue-500', 'bg-blue-50');
+        }
+
+        function checkScenarioFormula(step) {
+            const input = document.getElementById('scen-formula-' + step);
+            const rawValue = input.value.trim();
+            const result = safeEval(rawValue);
+            const stepData = currentScenSteps[step - 1];
+            const feedbackText = document.getElementById('scen-feedback-text');
+
+            if (!isNaN(rawValue) && rawValue !== "") {
+                feedbackText.innerText = "⚠️ 發現你直接輸入答案！請寫出「計算過程（列式）」，讓老師知道你是怎麼算的。";
+                input.classList.add('ring-4', 'ring-yellow-300');
+                setTimeout(() => input.classList.remove('ring-4', 'ring-yellow-300'), 2000);
+                return;
+            }
+
+            if (result === null) {
+                feedbackText.innerText = "❌ 列式格式似乎有誤，請確認是否包含數字與運算符號 (+, -, *, /)。";
+                return;
+            }
+
+            const isCorrectValue = Math.abs(result - stepData.ans) < 0.1;
+
+            if (isCorrectValue) {
+                document.getElementById('scen-calc-' + step).innerText = "✅ 計算結果：" + result;
+                document.getElementById('scen-node-' + step).classList.replace('border-blue-600', 'bg-green-500');
+                document.getElementById('scen-node-' + step).classList.replace('text-blue-600', 'text-white');
+                document.getElementById('scen-node-' + step).innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
+                lucide.createIcons();
+                input.disabled = true;
+                feedbackText.innerText = "✨ 太棒了！列式與結果都正確。";
+
+                if (step < currentScenSteps.length) {
+                    const next = step + 1;
+                    const nextCont = document.getElementById('scen-step-' + next + '-container');
+                    nextCont.classList.remove('hidden');
+                    setTimeout(() => nextCont.classList.remove('opacity-0'), 50);
+                    const nextInput = document.getElementById('scen-formula-' + next);
+                    nextInput.disabled = false;
+                    nextInput.focus();
+                    document.getElementById('scen-node-' + next).className = "w-8 h-8 rounded-full border-2 border-blue-600 flex items-center justify-center font-bold text-blue-600 mt-1 shrink-0";
+                } else {
+                    document.getElementById('scenario-success-box').classList.remove('hidden');
+                    document.getElementById('scenario-conclusion').innerText = currentScenProblem.conclusion;
+                }
+            } else {
+                input.classList.add('ring-4', 'ring-red-300');
+                setTimeout(() => input.classList.remove('ring-4', 'ring-red-300'), 1000);
+
+                let hint = "❌ 計算結果不正確。";
+                if (stepData.type === 'divide') hint += " 提示：速率公式中，常涉及「除法」運算。";
+                if (stepData.type === 'multiply') hint += " 提示：求距離通常需要用「乘法」。";
+                if (stepData.type === 'minus') hint += " 提示：比較差距需要用「減法」。";
+                feedbackText.innerText = hint;
+            }
+        }
+
+        // --- Challenge Mode Generator (MULTI-STEP) ---
+        let currentChallenge = null;
+        let challengeScore = 0;
+
+        function generateChallengeQuestion() {
+            const types = ['basic', 'chase', 'meet', 'echo', 'avg', 'train', 'stream', 'delay_chase'];
+            const type = types[randomInt(0, types.length - 1)];
+            let q, ans, formulaHint;
+
+            if (type === 'basic') {
+                const s = randomInt(60, 100);
+                const t_min = randomInt(15, 45);
+                q = `爸爸開車時速 ${s} 公里，開了 ${t_min} 分鐘，請問走了幾公里？`;
+                ans = s * (t_min / 60);
+                formulaHint = `需先將分鐘換算成小時：${s} * (${t_min}/60)`;
+            } else if (type === 'chase') {
+                const vFast = randomInt(12, 18);
+                const vSlow = randomInt(5, 10);
+                const t_catch = randomInt(10, 30);
+                const dist = (vFast - vSlow) * t_catch;
+                q = `警察秒速 ${vFast} m，小偷秒速 ${vSlow} m。若警察在 ${t_catch} 秒後追上小偷，請問原本兩人相距多遠？`;
+                ans = dist;
+                formulaHint = `先算速率差 (${vFast} - ${vSlow})，再乘以時間 ${t_catch}`;
+            } else if (type === 'meet') {
+                const v1 = randomInt(40, 60);
+                const v2 = randomInt(50, 70);
+                const dist = randomInt(100, 300);
+                q = `甲乙兩地相距 ${dist} 公里。A車時速 ${v1} km，B車時速 ${v2} km，兩人同時相向出發，幾小時後相遇？`;
+                ans = dist / (v1 + v2);
+                formulaHint = `先算速率和 (${v1} + ${v2})，再用總距離 ${dist} 除以它`;
+            } else if (type === 'echo') {
+                const v = 340;
+                const dist = randomInt(3, 8) * 170;
+                q = `對著山壁大喊，聽到回聲時聲音走了 ${dist * 2} 公尺。已知聲速 340 m/s，請問是幾秒後聽到？`;
+                ans = (dist * 2) / v;
+                formulaHint = `總距離 ${dist * 2} 除以聲速 340`;
+            } else if (type === 'avg') {
+                const t1 = randomInt(2, 5);
+                const t2 = randomInt(3, 6);
+                const v1 = randomInt(10, 20);
+                const v2 = randomInt(20, 30);
+                const totalD = (v1 * t1) + (v2 * t2);
+                q = `小明跑步，前 ${t1} 秒秒速 ${v1} m，後 ${t2} 秒秒速 ${v2} m。請問全程平均速率 (m/s)？`;
+                ans = totalD / (t1 + t2);
+                formulaHint = `總距離 (${v1}*${t1} + ${v2}*${t2}) 除以 總時間 (${t1}+${t2})`;
+            } else if (type === 'train') {
+                const lenTrain = randomInt(100, 200);
+                const lenTunnel = randomInt(300, 800);
+                const v = randomInt(15, 25);
+                q = `一列火車長 ${lenTrain} 公尺，以秒速 ${v} 公尺通過長 ${lenTunnel} 公尺的隧道。從車頭進洞到車尾離開，共需幾秒？`;
+                ans = (lenTrain + lenTunnel) / v;
+                formulaHint = `總距離是 (車長+隧道長) = ${lenTrain + lenTunnel}，再除以速率 ${v}`;
+            } else if (type === 'stream') {
+                const vBoat = randomInt(20, 30);
+                const vWater = randomInt(2, 5);
+                const dist = (vBoat + vWater) * randomInt(2, 4);
+                q = `船在靜水時速 ${vBoat} km，水流時速 ${vWater} km。船順流而下行駛 ${dist} 公里，需要幾小時？`;
+                ans = dist / (vBoat + vWater);
+                formulaHint = `順流速率是 (船速+水速) = ${vBoat + vWater}，再用距離除以它`;
+            } else if (type === 'delay_chase') {
+                const v1 = randomInt(60, 80);
+                const v2 = randomInt(90, 120);
+                const delay = randomInt(1, 3);
+                q = `甲車時速 ${v1} km 先出發，${delay} 小時後乙車以時速 ${v2} km 從同地追趕。乙車出發幾小時後追上甲車？`;
+                ans = (v1 * delay) / (v2 - v1);
+                formulaHint = `先算甲先走的距離 (${v1}*${delay})，再除以速率差 (${v2}-${v1})`;
+            }
+            return { q, ans, hint: formulaHint };
+        }
+
+        function startMixedChallenge() {
+            challengeScore = 0;
+            document.getElementById('scenario-empty-state').classList.add('hidden');
+            document.getElementById('scenario-active-content').classList.add('hidden');
+            document.getElementById('scenario-challenge-content').classList.remove('hidden');
+            document.getElementById('scen-feedback-panel').classList.remove('hidden');
+            document.getElementById('scen-feedback-text').innerText = "挑戰開始！請使用多個算式來解決問題，系統會自動核對最後一個算式的結果。";
+            document.getElementById('challenge-score').innerText = "0";
+            loadNextChallenge();
+        }
+
+        function loadNextChallenge() {
+            currentChallenge = generateChallengeQuestion();
+            document.getElementById('challenge-q-text').innerText = currentChallenge.q;
+            document.getElementById('challenge-feedback').innerText = "";
+            document.getElementById('challenge-feedback').className = "text-center h-16 transition-all font-bold text-lg";
+
+            const container = document.getElementById('challenge-steps-container');
+            container.innerHTML = '';
+            addChallengeStep(); // Add first step
+        }
+
+        function addChallengeStep() {
+            const container = document.getElementById('challenge-steps-container');
+            const stepCount = container.children.length + 1;
+
+            const div = document.createElement('div');
+            div.className = "challenge-step-row relative flex items-center gap-2 group mb-2";
+            div.innerHTML = `
+                <div class="step-index w-6 h-6 rounded-full bg-slate-700 text-slate-400 flex items-center justify-center text-xs font-bold shrink-0">${stepCount}</div>
+                <div class="flex-1 relative">
+                    <input type="text" class="challenge-step-input w-full input-formula bg-slate-700 border-none rounded-xl px-4 py-3 text-lg font-bold focus:ring-2 focus:ring-blue-400 outline-none text-white" placeholder="輸入算式..." onkeyup="handleInputKeyup(event, this)">
+                    <div class="calc-result absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-sm"></div>
+                </div>
+                <button onclick="removeChallengeStep(this)" class="p-2 text-slate-500 hover:text-red-400 transition-colors" title="刪除此行"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+            `;
+            container.appendChild(div);
+            div.querySelector('input').focus();
+            lucide.createIcons();
+        }
+
+        function removeChallengeStep(btn) {
+            const row = btn.closest('.challenge-step-row');
+            row.remove();
+            // Re-index steps
+            const rows = document.querySelectorAll('.challenge-step-row');
+            rows.forEach((r, idx) => {
+                r.querySelector('.step-index').innerText = idx + 1;
+            });
+        }
+
+        function handleInputKeyup(event, input) {
+            if (event.key === 'Enter') {
+                calculateSingleStep(input);
+            }
+        }
+
+        function calculateSingleStep(input) {
+            const val = input.value.trim();
+            const resDiv = input.parentElement.querySelector('.calc-result');
+            if (!val) {
+                resDiv.innerText = '';
+                return;
+            }
+            const result = safeEval(val);
+            if (result !== null) {
+                resDiv.innerText = "= " + result;
+                resDiv.className = "calc-result absolute right-4 top-1/2 -translate-y-1/2 text-green-400 font-mono text-sm font-bold";
+            } else {
+                resDiv.innerText = "格式錯誤";
+                resDiv.className = "calc-result absolute right-4 top-1/2 -translate-y-1/2 text-red-400 font-mono text-sm";
+            }
+        }
+
+        function submitChallenge() {
+            const rows = document.querySelectorAll('.challenge-step-row');
+            if (rows.length === 0) return;
+
+            let lastResult = null;
+            // Recalculate all to ensure state is fresh
+            rows.forEach(row => {
+                const input = row.querySelector('input');
+                calculateSingleStep(input);
+                const val = safeEval(input.value.trim());
+                if (val !== null) lastResult = val;
+            });
+
+            const feedback = document.getElementById('challenge-feedback');
+
+            if (lastResult === null) {
+                feedback.innerHTML = `<span class="text-yellow-400 font-bold">⚠️ 請輸入有效的算式並按下 Enter 計算後再提交。</span>`;
+                return;
+            }
+
+            if (Math.abs(lastResult - currentChallenge.ans) < 0.5) {
+                challengeScore += 10;
+                document.getElementById('challenge-score').innerText = challengeScore;
+                feedback.innerHTML = `<span class="text-green-400 text-xl font-bold animate-bounce">✅ 正確！答案是 ${lastResult}</span>`;
+                document.querySelectorAll('.challenge-step-input').forEach(i => i.disabled = true);
+                setTimeout(loadNextChallenge, 2000);
+            } else {
+                feedback.innerHTML = `<span class="text-red-400 font-bold">❌ 答案不正確。提示：${currentChallenge.hint}</span>`;
+            }
+        }
+
+        // --- NEW: Dynamic Life Literacy Logic ---
+        let currentLitUnit = null;
+        let currentLitChallenge = null;
+
+        function generateLiteracyData(type) {
+            let data = {};
+            if (type === 'back_to_back') {
+                const vA = randomInt(60, 80); // m/min
+                const vB = randomInt(40, 60); // m/min
+                const time = randomInt(5, 15); // min
+                const dist = (vA + vB) * time;
+                data = {
+                    story: `小明和小華在公園溜冰。兩人在同一地點，同時背向而行。小明分速 ${vA} 公尺，小華分速 ${vB} 公尺。請問 ${time} 分鐘後，兩人相距多遠？`,
+                    steps: [
+                        { q: "步驟一：兩人是背向而行，每分鐘兩人的距離會拉大多少？（速率和）", ans: vA + vB, hint: `速率和 = ${vA} + ${vB}` },
+                        { q: `步驟二：小明 ${time} 分鐘走了多遠？`, ans: vA * time, hint: `距離 = 小明速率 (${vA}) × 時間 (${time})` },
+                        { q: `步驟三：小華 ${time} 分鐘走了多遠？`, ans: vB * time, hint: `距離 = 小華速率 (${vB}) × 時間 (${time})` }
+                    ],
+                    conclusion: `答對了！總距離為 ${dist} 公尺。你可以把兩人的距離加起來，或者直接用 (速率和 × 時間) 算出來喔！`
+                };
+            } else if (type === 'circle_chase') {
+                const vFast = randomInt(6, 8); // m/s
+                const vSlow = randomInt(3, 5); // m/s
+                const trackLen = 400; // m
+                const vDiff = vFast - vSlow;
+                const time = parseFloat((trackLen / vDiff).toFixed(1));
+                data = {
+                    story: `甲乙兩人在 400 公尺的圓形操場練跑。甲秒速 ${vFast} m，乙秒速 ${vSlow} m。兩人同時同地同向出發，請問甲多久後會追上乙一圈？`,
+                    steps: [
+                        { q: "步驟一：同向跑步，每秒鐘甲會領先乙多少公尺？（速率差）", ans: vDiff, hint: `速率差 = 快 (${vFast}) - 慢 (${vSlow})` },
+                        { q: "步驟二：甲要追上乙一圈，代表甲要多跑多少距離？", ans: trackLen, hint: `追上一圈就是多跑操場一圈的長度` },
+                        { q: "步驟三：列式求解。需要幾秒鐘才能拉開這 400 公尺的差距？", ans: time, hint: `時間 = 領先距離 (${trackLen}) ÷ 速率差 (${vDiff})` }
+                    ],
+                    conclusion: `正確！${time}秒後追上。繞圈追趕問題的關鍵在於：追上一圈 = 多跑一圈的距離。`
+                };
+            } else if (type === 'circle_meet') {
+                const vA = randomInt(4, 6); // m/s
+                const vB = randomInt(3, 5); // m/s
+                const trackLen = 400; // m
+                const vSum = vA + vB;
+                const time = parseFloat((trackLen / vSum).toFixed(1));
+                data = {
+                    story: `兩人在 400 公尺操場熱身。兩人同時同地「反向」而跑。A 秒速 ${vA} m，B 秒速 ${vB} m。請問多久後兩人會第一次相遇？`,
+                    steps: [
+                        { q: "步驟一：反向跑步，每秒鐘兩人合力縮短多少距離？（速率和）", ans: vSum, hint: `速率和 = ${vA} + ${vB}` },
+                        { q: "步驟二：兩人相遇時，代表兩人合力跑了多遠？", ans: trackLen, hint: `相遇代表合力跑完一圈` },
+                        { q: "步驟三：列式求解。需要幾秒鐘？", ans: time, hint: `時間 = 總距離 (${trackLen}) ÷ 速率和 (${vSum})` }
+                    ],
+                    conclusion: `沒錯！${time}秒後相遇。繞圈相遇問題其實就等於直線相遇問題，總距離就是跑道長度！`
+                };
+            } else if (type === 'chase') {
+                const vThief = randomInt(10, 15);
+                const vPolice = randomInt(18, 25);
+                const tLead = randomInt(5, 20);
+                const distLead = vThief * tLead;
+                const vDiff = vPolice - vThief;
+                const tCatch = distLead / vDiff;
+                data = {
+                    story: `一名大盜騎摩托車以秒速 ${vThief} 公尺逃逸。${tLead} 秒後，巡邏警車以秒速 ${vPolice} 公尺開始追捕。這是一場時間的競賽，警官需要計算出多久能追上。`,
+                    steps: [
+                        { q: `步驟一：在大盜獨自逃跑的 ${tLead} 秒內，他領先了多少公尺？`, ans: distLead, hint: `距離 = 速率 (${vThief}) × 時間 (${tLead})` },
+                        { q: "步驟二：警車每秒鐘比大盜多跑多少公尺？（速率差）", ans: vDiff, hint: `速率差 = 快 (${vPolice}) - 慢 (${vThief})` },
+                        { q: `步驟三：要追上這 ${distLead} 公尺的差距，警車需要幾秒鐘？`, ans: tCatch, hint: `追及時間 = 領先距離 (${distLead}) ÷ 速率差 (${vDiff})` }
+                    ],
+                    conclusion: `分析正確！${tCatch}秒後警車就能追上。追趕問題的核心在於利用「速率差」來消化「領先距離」。`
+                };
+            } else if (type === 'meet') {
+                const vA = randomInt(50, 80);
+                const vB = randomInt(40, 70);
+                const tMeet = randomInt(10, 30);
+                const totalDist = (vA + vB) * tMeet;
+                data = {
+                    story: `小明和小華約好在圖書館見面。兩人同時從相距 ${totalDist} 公尺的家中出發，相向而行。小明分速 ${vA} 公尺，小華分速 ${vB} 公尺。他們多久會相遇？`,
+                    steps: [
+                        { q: "步驟一：兩人相向而行，每分鐘彼此的距離會縮短多少？（速率和）", ans: vA + vB, hint: `速率和 = ${vA} + ${vB}` },
+                        { q: `步驟二：總距離 ${totalDist} 公尺，幾分鐘後會縮短為 0（相遇）？`, ans: tMeet, hint: `相遇時間 = 總距離 (${totalDist}) ÷ 速率和 (${vA + vB})` },
+                        { q: "步驟三：相遇時，小明走了多少公尺？", ans: vA * tMeet, hint: `距離 = 小明速率 (${vA}) × 相遇時間 (${tMeet})` }
+                    ],
+                    conclusion: `太棒了！${tMeet}分鐘後相遇。相向問題的關鍵是兩人共同縮短距離，所以速率要相加喔！`
+                };
+            } else if (type === 'avg') {
+                const tUp = randomInt(2, 5);
+                const tDown = randomInt(1, tUp - 1);
+                const oneWayDist = randomInt(3, 12); // km
+                const totalDist = oneWayDist * 2;
+                const totalTime = tUp + tDown;
+                const avgSpeed = parseFloat((totalDist / totalTime).toFixed(2));
+                data = {
+                    story: `全家去登山，上山路程 ${oneWayDist} 公里，走了 ${tUp} 小時；原路下山比較快，只花了 ${tDown} 小時。請問這趟登山行程的平均速率是多少？`,
+                    steps: [
+                        { q: `步驟一：計算總距離。上山 ${oneWayDist} 公里，原路下山也是 ${oneWayDist} 公里，全程幾公里？`, ans: totalDist, hint: `總距離 = 上山 + 下山` },
+                        { q: `步驟二：計算總時間。上山 ${tUp} 小時，下山 ${tDown} 小時，總共花了幾小時？`, ans: totalTime, hint: `總時間 = 上山時間 + 下山時間` },
+                        { q: "步驟三：平均速率 = 總距離 ÷ 總時間。", ans: avgSpeed, hint: `${totalDist} ÷ ${totalTime}` }
+                    ],
+                    conclusion: `正確！平均速率是 ${avgSpeed} km/h。記得喔，平均速率絕對不是直接將速率相加除以二！`
+                };
+            } else if (type === 'train') {
+                const lenTrain = randomInt(100, 200);
+                const lenTunnel = randomInt(400, 800);
+                const v = randomInt(20, 30);
+                const totalDist = lenTrain + lenTunnel;
+                const time = totalDist / v;
+                data = {
+                    story: `一列長 ${lenTrain} 公尺的火車，以秒速 ${v} 公尺的速率通過長 ${lenTunnel} 公尺的隧道。請問從車頭進洞到車尾完全離開，需要幾秒鐘？`,
+                    steps: [
+                        { q: "步驟一：火車要完全通過隧道，實際走的距離是「隧道長」加上什麼？", ans: totalDist, hint: `總距離 = 隧道長 (${lenTunnel}) + 車長 (${lenTrain})` },
+                        { q: `步驟二：有了總距離，速率是 ${v} m/s，需要幾秒鐘？`, ans: time, hint: `時間 = 總距離 (${totalDist}) ÷ 速率 (${v})` },
+                        { q: "步驟三：(進階) 如果只算車頭進洞到車頭出洞，距離是多少？", ans: lenTunnel, hint: `車頭對車頭，距離就是隧道長度喔！` }
+                    ],
+                    conclusion: `完全正確！${time}秒。火車過山洞這類題目，千萬別忘了加上火車本身的長度喔！`
+                };
+            } else if (type === 'earthquake') {
+                const vP = 6; // km/s
+                const vS = 4; // km/s
+                const dist = randomInt(10, 50) * 12; // distance
+                const tDiff = dist / vS - dist / vP;
+                data = {
+                    story: `地震發生時會產生 P 波 (秒速 6 km) 和 S 波 (秒速 4 km)。某觀測站偵測到 P 波後，過了 ${tDiff} 秒才偵測到 S 波。請問震央距離該站多遠？`,
+                    steps: [
+                        { q: "步驟一：計算每過一秒，P 波會領先 S 波幾公里？（速率差）", ans: 2, hint: `速率差 = 6 - 4` },
+                        { q: `步驟二：總共領先了 ${tDiff} 秒的距離，若換算成距離差是多少？(思考一下)`, ans: -1, hint: `這裡的邏輯比較複雜，我們換個方式：時間差 = 距離/慢速 - 距離/快速。` },
+                        { q: `修正引導：讓我們直接列式。設距離為 D。D/4 - D/6 = ${tDiff}。算出 D 是多少？`, ans: dist, hint: `通分計算：(3D - 2D)/12 = ${tDiff}，所以 D = 12 × ${tDiff}` }
+                    ],
+                    conclusion: `答對了！震央距離 ${dist} 公里。這就是利用波速差異來進行地震預警的原理！`
+                };
+            } else if (type === 'stream') {
+                const vBoat = randomInt(20, 30);
+                const vWater = randomInt(2, 5);
+                const dist = (vBoat + vWater) * randomInt(2, 4);
+                const tDown = dist / (vBoat + vWater);
+                const tUp = parseFloat((dist / (vBoat - vWater)).toFixed(2));
+                data = {
+                    story: `一艘觀光船在河中行駛。靜水時速 ${vBoat} km/h，水流時速 ${vWater} km/h。船長要計畫從上游碼頭開到下游 ${dist} 公里處的景點，再原路返回。順流去程和逆流回程各需要多久？`,
+                    steps: [
+                        { q: "步驟一：計算順流速率。", ans: vBoat + vWater, hint: `順流速率 = 船速 (${vBoat}) + 水速 (${vWater})` },
+                        { q: "步驟二：計算去程（順流）需要幾小時？", ans: tDown, hint: `時間 = 距離 (${dist}) ÷ 順流速率` },
+                        { q: "步驟三：計算回程（逆流）需要幾小時？(提示：逆流速率 = 船速 - 水速)", ans: tUp, hint: `逆流速率 = ${vBoat - vWater}。時間 = ${dist} ÷ ${vBoat - vWater}` }
+                    ],
+                    conclusion: `答對了！順流需 ${tDown} 小時，逆流需 ${tUp} 小時。水流在順流時是助力，逆流時是阻力。`
+                };
+            }
+            return data;
+        }
+
+        function resetLiteracyUI() {
+            document.getElementById('lit-empty-state').classList.remove('hidden');
+            document.getElementById('lit-active-content').classList.add('hidden');
+            document.getElementById('lit-challenge-content').classList.add('hidden');
+            document.querySelectorAll('.lit-btn').forEach(b => b.classList.remove('bg-slate-100', 'border-slate-400'));
+        }
+
+        function loadLiteracyUnit(id) {
+            currentLitUnit = generateLiteracyData(id);
+
+            document.getElementById('lit-empty-state').classList.add('hidden');
+            document.getElementById('lit-challenge-content').classList.add('hidden');
+            document.getElementById('lit-active-content').classList.remove('hidden');
+
+            document.getElementById('lit-story-text').innerText = currentLitUnit.story;
+            document.getElementById('lit-success-msg').classList.add('hidden');
+
+            const container = document.getElementById('lit-steps-container');
+            container.innerHTML = '';
+
+            currentLitUnit.steps.forEach((step, idx) => {
+                const num = idx + 1;
+                const div = document.createElement('div');
+                div.className = idx === 0 ? "step-block opacity-100" : "step-block opacity-50 pointer-events-none";
+                div.id = `lit-step-block-${num}`;
+                div.innerHTML = `
+                    <div class="flex gap-4 items-start lit-step-row">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 font-bold flex items-center justify-center shrink-0 step-idx">${num}</div>
+                        <div class="flex-1 space-y-2">
+                            <p class="font-bold text-slate-700 text-sm">${step.q}</p>
+                            <div class="relative">
+                                <input type="text" id="lit-ans-${num}" class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 font-mono input-formula" placeholder="輸入列式..." onkeyup="if(event.key==='Enter') checkLiteracyFormula(${num})">
+                                <div class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400 lit-calc-res" id="lit-calc-${num}"></div>
+                            </div>
+                            <div class="flex justify-end">
+                                <button onclick="checkLiteracyFormula(${num})" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold hover:bg-slate-700">確認</button>
+                            </div>
+                            <p id="lit-hint-${num}" class="text-xs text-red-500 hidden font-bold"></p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            document.querySelectorAll('.lit-btn').forEach(b => b.classList.remove('bg-slate-100', 'border-slate-400'));
+            const btnMap = { 'back_to_back': 0, 'circle_chase': 1, 'circle_meet': 2, 'chase': 3, 'meet': 4, 'avg': 5, 'train': 6, 'earthquake': 7, 'stream': 8 };
+            if (btnMap[id] !== undefined) document.querySelectorAll('.lit-btn')[btnMap[id]].classList.add('bg-slate-100', 'border-slate-400');
+        }
+
+        function checkLiteracyFormula(stepNum) {
+            const input = document.getElementById(`lit-ans-${stepNum}`);
+            const rawVal = input.value.trim();
+            const resDiv = document.getElementById(`lit-calc-${stepNum}`);
+            const hintEl = document.getElementById(`lit-hint-${stepNum}`);
+            const stepData = currentLitUnit.steps[stepNum - 1];
+
+            // Validate math expression
+            const calcVal = safeEval(rawVal);
+
+            if (calcVal === null) {
+                resDiv.innerText = "格式錯誤";
+                resDiv.className = "absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-red-500 font-bold";
+                return;
+            }
+
+            resDiv.innerText = "= " + calcVal;
+            resDiv.className = "absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-green-600 font-bold";
+
+            if (stepData.ans === -1 || Math.abs(calcVal - stepData.ans) < 0.1) {
+                // Correct or logic step
+                input.classList.add('border-green-500', 'bg-green-50');
+                input.disabled = true;
+                hintEl.classList.add('hidden');
+
+                const block = document.getElementById(`lit-step-block-${stepNum}`);
+                block.querySelector('.step-idx').classList.replace('bg-slate-200', 'bg-green-500');
+                block.querySelector('.step-idx').classList.replace('text-slate-500', 'text-white');
+                block.querySelector('.step-idx').innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>';
+                lucide.createIcons();
+
+                if (stepNum < currentLitUnit.steps.length) {
+                    const nextBlock = document.getElementById(`lit-step-block-${stepNum + 1}`);
+                    nextBlock.classList.remove('opacity-50', 'pointer-events-none');
+                    nextBlock.querySelector('input').focus();
+                } else {
+                    document.getElementById('lit-success-msg').classList.remove('hidden');
+                    document.getElementById('lit-conclusion').innerText = currentLitUnit.conclusion;
+                }
+            } else {
+                // Wrong
+                input.classList.add('ring-2', 'ring-red-400');
+                setTimeout(() => input.classList.remove('ring-2', 'ring-red-400'), 1000);
+                hintEl.innerText = `💡 提示：${stepData.hint}`;
+                hintEl.classList.remove('hidden');
+            }
+        }
+
+        // --- Life Challenge Logic (ENHANCED COMPLEXITY) ---
+        function startLiteracyChallenge() {
+            document.getElementById('lit-empty-state').classList.add('hidden');
+            document.getElementById('lit-active-content').classList.add('hidden');
+            document.getElementById('lit-challenge-content').classList.remove('hidden');
+            loadLitChallengeQuestion();
+        }
+
+        function generateComplexChallenge() {
+            const scenarioType = randomInt(1, 14); // Expanded to 14 types
+            let q, ans, hint;
+
+            if (scenarioType === 1) { // Complex Trip (Average Speed with stops/delays)
+                const dist1 = randomInt(3, 6) * 10;
+                const speed1 = randomInt(4, 8) * 5;
+                const time1 = dist1 / speed1;
+
+                const breakTimeMin = randomInt(1, 3) * 10;
+                const breakTimeHr = breakTimeMin / 60;
+
+                const dist2 = randomInt(4, 8) * 10;
+                const totalDist = dist1 + dist2;
+                const targetTotalTime = Math.ceil(time1 + breakTimeHr + (dist2 / 60)) + 1;
+
+                const remainingTime = targetTotalTime - time1 - breakTimeHr;
+                const requiredSpeed = parseFloat((dist2 / remainingTime).toFixed(2));
+
+                q = `王先生開車回鄉探親，全程 ${totalDist} 公里。前段路程 ${dist1} 公里因為塞車，平均時速只有 ${speed1} km/h。接著他在休息站停了 ${breakTimeMin} 分鐘。後段 ${dist2} 公里的路程，他希望總共在 ${targetTotalTime} 小時內抵達目的地。請問剩下的路程，平均時速至少要多少 (km/h)？`;
+                ans = requiredSpeed;
+                hint = `先算第一段花的時間 (${time1}h) 和休息時間 (${breakTimeHr.toFixed(2)}h)。剩下時間 = ${targetTotalTime} - 已用時間。速率 = 剩餘距離 / 剩餘時間`;
+            }
+            else if (scenarioType === 2) { // Sound/Light Distance (Thunder)
+                const soundSpeed = 340;
+                const timeGap = randomFloat(2.5, 6.0, 1);
+                const dist = Math.round(soundSpeed * timeGap);
+
+                q = `在雷雨天，小明看到閃電後，經過 ${timeGap} 秒才聽到雷聲。已知當時氣溫下的聲速約為 340 m/s (光速極快可忽略不計)。請問打雷的地方距離小明大約幾公尺？`;
+                ans = dist;
+                hint = `距離 = 聲速 (340) × 時間差 (${timeGap})`;
+            }
+            else if (scenarioType === 3) { // Relay Race (Team Avg)
+                const legDist = 100;
+                const t1 = randomFloat(12, 15, 1);
+                const t2 = randomFloat(11, 14, 1);
+                const t3 = randomFloat(12, 16, 1);
+                const t4 = randomFloat(10, 13, 1);
+                const totalTime = t1 + t2 + t3 + t4;
+                const avgSpeed = parseFloat((400 / totalTime).toFixed(2));
+
+                q = `學校 400 公尺大隊接力 (每棒 100m)。第一棒跑 ${t1} 秒，第二棒 ${t2} 秒，第三棒 ${t3} 秒，第四棒飛毛腿只跑了 ${t4} 秒。請問這支隊伍的「全程平均秒速」是多少 (m/s)？`;
+                ans = avgSpeed;
+                hint = `平均速率 = 總距離 (400) ÷ 總時間 (${totalTime.toFixed(1)})`;
+            }
+            else if (scenarioType === 4) { // Meeting with Delay
+                const vA = 60;
+                const vB = 80;
+                const delayMin = 30;
+                const delayHr = 0.5;
+                const meetTime = randomInt(2, 4);
+                const totalDist = (vA * (meetTime + delayHr)) + (vB * meetTime);
+
+                q = `甲乙兩車從相距 ${totalDist} 公里的兩地相向而行。甲車時速 ${vA} km 先出發，${delayMin} 分鐘後，乙車以時速 ${vB} km 出發。請問乙車出發幾小時後兩車相遇？`;
+                ans = meetTime;
+                hint = `設乙出發 T 小時。甲走了 (T+0.5) 小時。總距離 = 甲走距離 + 乙走距離。${totalDist} = ${vA}×(T+0.5) + ${vB}×T`;
+            }
+            else if (scenarioType === 5) { // 隊伍過橋 (Procession)
+                const bridgeLen = randomInt(100, 300);
+                const teamLen = randomInt(20, 50);
+                const speed = randomInt(1, 3); // m/s
+                const totalDist = bridgeLen + teamLen;
+                const time = Math.round((totalDist / speed) * 100) / 100;
+
+                q = `一支長 ${teamLen} 公尺的隊伍，以秒速 ${speed} m/s 的速率通過一座長 ${bridgeLen} 公尺的橋。請問從第一個人上橋到最後一個人離開橋，共需要幾秒？`;
+                ans = time;
+                hint = `總距離 = 橋長 (${bridgeLen}) + 隊伍長 (${teamLen})。時間 = 總距離 ÷ 速率 (${speed})`;
+            }
+            else if (scenarioType === 6) { // 網路下載 (File Download)
+                const fileSizeGB = randomInt(2, 10);
+                const speedMB = randomInt(10, 50); // MB/s
+                const fileSizeMB = fileSizeGB * 1024;
+                const time = Math.round(fileSizeMB / speedMB);
+
+                q = `小明要下載一個 ${fileSizeGB} GB 的遊戲檔案。已知網路下載速率穩定維持在 ${speedMB} MB/s。請問大約需要幾秒鐘才能下載完成？(1 GB = 1024 MB)`;
+                ans = time;
+                hint = `先換算檔案大小：${fileSizeGB} × 1024 = ${fileSizeMB} MB。時間 = 總量 (${fileSizeMB}) ÷ 速率 (${speedMB})`;
+            }
+            else if (scenarioType === 7) { // 手扶梯 (Escalator)
+                const escSpeed = randomInt(30, 50); // cm/s
+                const walkSpeed = randomInt(40, 80); // cm/s
+                const len = randomInt(1000, 2000); // cm
+                const totalSpeed = escSpeed + walkSpeed; // 順向
+                const time = Math.round((len / totalSpeed) * 100) / 100;
+
+                q = `百貨公司的手扶梯長 ${len} 公分，以秒速 ${escSpeed} cm 向上移動。小明急著上樓，在手扶梯上以秒速 ${walkSpeed} cm 向上快走。請問小華從踏上手扶梯到抵達上層，總共只需要花幾秒鐘？`;
+                ans = time;
+                hint = `這是順向加成。人相對於地面的速率 = 手扶梯速率 (${escSpeed}) + 人的速率 (${walkSpeed})。時間 = 距離 ÷ 總速率`;
+            }
+            else if (scenarioType === 8) { // Echo (Sound) - Variation
+                const v = 340;
+                const t = randomFloat(1.5, 4.0, 1);
+                const dist = Math.round((v * t) / 2);
+                q = `探險隊來到一個巨大的峽谷，隊長對著遠處的山壁大喊一聲。經過 ${t} 秒後，全隊聽到了清晰的回聲。已知當時氣溫下的聲速約為 340 m/s。請問探險隊距離對面的山壁大約有多遠？`;
+                ans = dist;
+                hint = `聲音走的總距離是 ${v} × ${t}。因為是回聲(來回)，所以山谷寬度 = 總距離 ÷ 2`;
+            }
+            else if (scenarioType === 9) { // Back to Back (Park)
+                const vA = randomInt(60, 80); // m/min
+                const vB = randomInt(40, 60); // m/min
+                const time = randomInt(5, 15); // min
+                const dist = (vA + vB) * time;
+                q = `小明和小美在一個巨大的河濱公園溜冰。兩人背對背站在起點，同時出發。小明以分速 ${vA} 公尺向東溜，小美以分速 ${vB} 公尺向西溜。過了 ${time} 分鐘後，兩人停下來休息並用手機聯絡。請問此時兩人相距多遠？`;
+                ans = dist;
+                hint = `背向而行，距離會拉大。總距離 = (小明速率 + 小美速率) × 時間`;
+            }
+            else if (scenarioType === 10) { // Circle Chase (Track)
+                const vFast = randomInt(6, 8); // m/s
+                const vSlow = randomInt(3, 5); // m/s
+                const trackLen = 400; // m
+                const vDiff = vFast - vSlow;
+                const time = parseFloat((trackLen / vDiff).toFixed(1));
+                q = `校慶運動會上，甲乙兩位選手在 400 公尺的圓形跑道上練習長跑。甲選手狀況很好，秒速維持在 ${vFast} 公尺；乙選手稍微落後，秒速 ${vSlow} 公尺。若兩人同時同地出發，甲選手需要跑多久才能從背後「套圈」追上乙選手？`;
+                ans = time;
+                hint = `追上一圈代表多跑了 400 公尺。時間 = 400 ÷ 速率差 (${vFast} - ${vSlow})`;
+            }
+            else if (scenarioType === 11) { // Circle Meet (Track) - type 11
+                const vA = randomInt(4, 6); // m/s
+                const vB = randomInt(3, 5); // m/s
+                const trackLen = 200; // m
+                const vSum = vA + vB;
+                const time = parseFloat((trackLen / vSum).toFixed(1));
+                q = `體育課熱身時，老師要求兩位同學在 200 公尺的圓形跑道上，背對背同時出發慢跑。同學 A 秒速 ${vA} m，同學 B 秒速 ${vB} m。請問從出發到兩人第一次在跑道另一側相遇，大約需要幾秒鐘？`;
+                ans = time;
+                hint = `背向繞圈相遇，代表兩人合力跑完一圈。時間 = 200 ÷ 速率和 (${vA} + ${vB})`;
+            } else if (scenarioType === 12) { // Stream - Round Trip
+                const vBoat = randomInt(20, 30);
+                const vWater = randomInt(2, 5);
+                const dist = (vBoat + vWater) * randomInt(2, 4);
+                const tDown = dist / (vBoat + vWater);
+                const tUp = dist / (vBoat - vWater);
+                const totalTime = parseFloat((tDown + tUp).toFixed(2));
+                q = `陳船長駕駛觀光遊艇在河流上航行，已知遊艇在靜水中的速率是每小時 ${vBoat} 公里，而河水的流速是每小時 ${vWater} 公里。今天的行程是要從碼頭順流而下開到 ${dist} 公里外的渡假村，稍作停留後，再原路逆流返回碼頭。請問這艘遊艇在水上航行的「總行駛時間」是多少小時？`;
+                ans = totalTime;
+                hint = `分段計算：去程時間 = 距離 ÷ (船速+水速)；回程時間 = 距離 ÷ (船速-水速)。最後相加。`;
+            } else if (scenarioType === 13) { // Stream - Find Current
+                const vBoat = randomInt(20, 25);
+                const vWater = randomInt(2, 8);
+                const t = randomInt(2, 5);
+                const dist = (vBoat + vWater) * t;
+                q = `救難隊接獲通報，需要駕駛快艇前往下游 ${dist} 公里處的沙洲救援受困民眾。快艇順流而下，只花了 ${t} 小時就抵達目的地。已知快艇在靜水中的速率是每小時 ${vBoat} 公里。請問這條河川當下的「水流速率」是每小時幾公里？`;
+                ans = vWater;
+                hint = `先算出順流的實際速率 (距離 ÷ 時間)，再減去船本身的速率，剩下的就是水流幫忙的速率囉！`;
+            } else { // Stream - Meeting
+                const vA = randomInt(20, 30); // Still water
+                const vB = randomInt(20, 30); // Still water
+                const vW = randomInt(2, 5);
+                const t = randomInt(2, 5);
+                const dist = (vA + vW + vB - vW) * t; // (Va+Vw) + (Vb-Vw) = Va+Vb
+                q = `甲港口與乙港口相距 ${dist} 公里。A 貨輪從上游的甲港出發順流而下，靜水時速 ${vA} km；B 貨輪同時從下游的乙港出發逆流而上，靜水時速 ${vB} km。已知河水流速為 ${vW} km/h。請問兩艘船出發後幾小時會在途中相遇？`;
+                ans = t;
+                hint = `相遇時間 = 總距離 ÷ 速率和。注意喔！在河流中相遇，水流速度對一艘是加分，對另一艘是扣分，相加後剛好抵消，直接用兩船靜水速率相加即可！`;
+            }
+
+            return { q, ans, hint };
+        }
+
+        function loadLitChallengeQuestion() {
+            currentLitChallenge = generateComplexChallenge();
+            document.getElementById('lit-challenge-q').innerText = currentLitChallenge.q;
+            document.getElementById('lit-challenge-feedback').innerText = "";
+            document.getElementById('lit-challenge-steps').innerHTML = "";
+            addLitChallengeStep();
+        }
+
+        function addLitChallengeStep() {
+            const container = document.getElementById('lit-challenge-steps');
+            const idx = container.children.length + 1;
+            const div = document.createElement('div');
+            div.className = "flex items-center gap-2 mb-2 lit-step-row";
+            div.innerHTML = `
+                <div class="w-6 h-6 rounded-full bg-slate-200 text-slate-500 font-bold flex items-center justify-center shrink-0 text-xs">${idx}</div>
+                <div class="flex-1 relative">
+                    <input type="text" class="lit-challenge-input w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm" placeholder="輸入算式..." onkeyup="if(event.key==='Enter') calcLitStep(this)">
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400 calc-res"></div>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            `;
+            container.appendChild(div);
+            div.querySelector('input').focus();
+            lucide.createIcons();
+        }
+
+        function calcLitStep(input) {
+            const val = input.value.trim();
+            const resDiv = input.parentElement.querySelector('.calc-res');
+            if (!val) { resDiv.innerText = ""; return; }
+            const res = safeEval(val);
+            if (res !== null) {
+                resDiv.innerText = "= " + res;
+                resDiv.classList.add('text-green-600', 'font-bold');
+            } else {
+                resDiv.innerText = "格式錯誤";
+                resDiv.classList.add('text-red-500');
+            }
+        }
+
+        function submitLitChallenge() {
+            const inputs = document.querySelectorAll('.lit-challenge-input');
+            if (inputs.length === 0) return;
+
+            // Re-calc all to be safe
+            let lastVal = null;
+            inputs.forEach(input => {
+                calcLitStep(input);
+                lastVal = safeEval(input.value.trim());
+            });
+
+            const feedback = document.getElementById('lit-challenge-feedback');
+
+            if (lastVal !== null && Math.abs(lastVal - currentLitChallenge.ans) < 0.5) { // Relaxed precision for float
+                feedback.innerText = "🎉 正確答案！太厲害了！";
+                feedback.className = "text-center h-12 mt-4 font-bold text-lg text-green-600 animate-bounce";
+                setTimeout(loadLitChallengeQuestion, 2000);
+            } else {
+                feedback.innerText = `❌ 答案不對喔... ${currentLitChallenge.hint}`;
+                feedback.className = "text-center h-12 mt-4 font-bold text-sm text-red-500";
+            }
+        }
+
+        // --- Other Utilities ---
+        function liveConvert(source) {
+            const kmh = document.getElementById('live-kmh'), mmin = document.getElementById('live-mmin'), ms = document.getElementById('live-ms');
+            let val = parseFloat(event?.target?.value || 0);
+            if (source === 'kmh') { mmin.value = Math.round(val * 1000 / 60); ms.value = (val * 1000 / 3600).toFixed(2); }
+            else if (source === 'mmin') { kmh.value = (val * 60 / 1000).toFixed(2); ms.value = (val / 60).toFixed(2); }
+            else { kmh.value = (val * 3.6).toFixed(2); mmin.value = Math.round(val * 60); }
+        }
+
+        function showLifeApp(type) {
+            const apps = {
+                chase: { title: '追趕問題', color: 'indigo', content: '追上時間 = 距離差 ÷ 速率差', desc: '快者每一單位時間內能縮短的距離。' },
+                meet: { title: '相遇問題', color: 'blue', content: '相遇時間 = 總距離 ÷ 速率和', desc: '雙方共同縮短距離的效率。' },
+                avg: { title: '全程平均速率', color: 'red', content: '平均速率 = 總路程 ÷ 總時間', desc: '⚠️ 注意：不可直接將兩個速率相加除以二！' }
+            };
+            const app = apps[type];
+            document.querySelectorAll('.btn-app').forEach(btn => btn.className = 'btn-app px-4 py-2 rounded-lg bg-white border');
+            event.currentTarget.className = `btn-app px-4 py-2 rounded-lg bg-${app.color}-600 text-white shadow-md`;
+            document.getElementById('life-app-content').innerHTML = `<div class="animate-in fade-in space-y-4"><h3 class="text-xl font-bold text-${app.color}-800">${app.title}</h3><div class="bg-${app.color}-50 p-6 rounded-xl border border-${app.color}-100"><p class="text-2xl font-mono text-${app.color}-900">${app.content}</p><p class="text-sm opacity-80 mt-2 text-slate-600">${app.desc}</p></div></div>`;
+        }
+
+        function updateRiver() {
+            const boat = parseInt(document.getElementById('boat-speed-input').value);
+            const water = parseInt(document.getElementById('water-speed-input').value);
+            document.getElementById('boat-speed-val').innerText = boat + ' km/h';
+            document.getElementById('water-speed-val').innerText = water + ' km/h';
+            document.getElementById('res-downstream').innerText = boat + water;
+            document.getElementById('res-upstream').innerText = boat - water;
+            document.querySelectorAll('.water-line').forEach(line => line.style.animationDuration = Math.max(0.5, 5 - (water / 3)) + 's');
+        }
+
+        // --- Race Logic (Keep Previous) ---
+        let raceMode = 'distanceFixed'; let isRacing = false; let raceTimer = null;
+        let currentRaceParams = { dist: 100, timeLimit: 10, speedA: 5, speedB: 8 };
+        function setRaceMode(mode) {
+            raceMode = mode; resetRace();
+            document.getElementById('btn-dist-fixed').className = mode === 'distanceFixed' ? 'flex-1 py-2 text-xs rounded-lg font-medium bg-blue-600 text-white shadow' : 'flex-1 py-2 text-xs rounded-lg font-medium bg-slate-100 text-slate-600';
+            document.getElementById('btn-time-fixed').className = mode === 'timeFixed' ? 'flex-1 py-2 text-xs rounded-lg font-medium bg-blue-600 text-white shadow' : 'flex-1 py-2 text-xs rounded-lg font-medium bg-slate-100 text-slate-600';
+            document.getElementById('distance-slider-group').classList.toggle('hidden', mode !== 'distanceFixed');
+            document.getElementById('time-slider-group').classList.toggle('hidden', mode !== 'timeFixed');
+            syncRaceParams();
+        }
+        function syncRaceParams() {
+            const dist = parseInt(document.getElementById('input-dist').value);
+            const timeLimit = parseInt(document.getElementById('input-time').value);
+            const speedA = parseInt(document.getElementById('input-speed-a').value);
+            const speedB = parseInt(document.getElementById('input-speed-b').value);
+            currentRaceParams = { dist, timeLimit, speedA, speedB };
+            document.getElementById('label-dist').innerText = dist;
+            document.getElementById('label-time').innerText = timeLimit;
+            document.getElementById('label-speed-a').innerText = speedA;
+            document.getElementById('label-speed-b').innerText = speedB;
+            if (!isRacing) {
+                const obs = document.getElementById('observation-box');
+                if (raceMode === 'distanceFixed') obs.innerHTML = `🏁 距離 ${dist}m。A 需 ${(dist / speedA).toFixed(1)}s，B 需 ${(dist / speedB).toFixed(1)}s。`;
+                else obs.innerHTML = `⏳ 比賽 ${timeLimit}s。A 會跑 ${timeLimit * speedA}m，B 會跑 ${timeLimit * speedB}m。`;
+            }
+        }
+        function startRace() {
+            if (isRacing) return; isRacing = true;
+            const startTime = Date.now();
+            const base = raceMode === 'distanceFixed' ? currentRaceParams.dist : 400;
+            raceTimer = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                document.getElementById('race-timer-display').innerText = elapsed.toFixed(2);
+                let dA = elapsed * currentRaceParams.speedA, dB = elapsed * currentRaceParams.speedB;
+                if (raceMode === 'distanceFixed') {
+                    if (dA >= currentRaceParams.dist) dA = currentRaceParams.dist;
+                    if (dB >= currentRaceParams.dist) dB = currentRaceParams.dist;
+                    if (dA === currentRaceParams.dist && dB === currentRaceParams.dist) { clearInterval(raceTimer); isRacing = false; }
+                } else if (elapsed >= currentRaceParams.timeLimit) {
+                    dA = currentRaceParams.timeLimit * currentRaceParams.speedA;
+                    dB = currentRaceParams.timeLimit * currentRaceParams.speedB;
+                    clearInterval(raceTimer); isRacing = false;
+                }
+                document.getElementById('car-a').style.left = Math.min((dA / base) * 80, 95) + '%';
+                document.getElementById('car-b').style.left = Math.min((dB / base) * 80, 95) + '%';
+                document.getElementById('car-a-status').innerText = Math.round(dA) + 'm';
+                document.getElementById('car-b-status').innerText = Math.round(dB) + 'm';
+            }, 30);
+        }
+        function resetRace() {
+            clearInterval(raceTimer); isRacing = false;
+            document.getElementById('race-timer-display').innerText = '00.00';
+            document.getElementById('car-a').style.left = document.getElementById('car-b').style.left = '0%';
+            document.getElementById('car-a-status').innerText = '0m';
+            document.getElementById('car-b-status').innerText = '0m';
+            syncRaceParams();
+        }
+
+        // --- Conversion Logic (Same as before) ---
+        let currentScenario = null; let completedSteps = {};
+        const convScenarios = {
+            plane: { name: "民航客機", startVal: "900 km/h", unit: "m/s", text: "民航機巡航速率為 900 km/h。請將其換算為科學上常用的「秒速 (m/s)」。", finalMsg: "飛機每秒移動 250 公尺！", steps: [{ id: 1, q: "步驟一：將 900 公里換算成公尺。", ans: 900000, hint: "900 × 1000 = ?", label: "距離換算" }, { id: 2, q: "步驟二：一小時等於多少秒？", ans: 3600, hint: "60分 × 60秒 = ?", label: "時間換算" }, { id: 3, q: "步驟三：算出飛機每秒移動幾公尺？", ans: 250, hint: "900000 ÷ 3600 = ?", label: "最終速率" }] },
+            sprinter: { name: "專業運動員", startVal: "300 m/min", unit: "km/h", text: "馬拉松選手分速為 300 m/min。他的「時速 (km/h)」是多少呢？", finalMsg: "該選手時速為 18 km/h。", steps: [{ id: 1, q: "步驟一：一小時 (60分鐘) 內能跑多少公尺？", ans: 18000, hint: "300 × 60 = ?", label: "一小時路程" }, { id: 2, q: "步驟二：將公尺換算成公里。", ans: 18, hint: "18000 ÷ 1000 = ?", label: "換算公里" }, { id: 3, q: "步驟三：填入時速數字。", ans: 18, hint: "填入剛剛算出的公里數。", label: "最終速率" }] },
+            snail: { name: "蝸牛", startVal: "0.01 m/s", unit: "cm/min", text: "蝸牛秒速 0.01 m/s。請問牠的一分鐘「分速 (cm/min)」是多少？", finalMsg: "蝸牛分速為 60 cm/min。", steps: [{ id: 1, q: "步驟一：算出 60 秒 (一分鐘) 內能爬幾公尺。", ans: 0.6, hint: "0.01 × 60 = ?", label: "一分鐘路程" }, { id: 2, q: "步驟二：將公尺換算成公分。", ans: 60, hint: "0.6 × 100 = ?", label: "換算公分" }, { id: 3, q: "步驟三：填入分速數字。", ans: 60, hint: "填入剛剛算出的公分數。", label: "最終速率" }] },
+            typhoon: { name: "強烈颱風", startVal: "51 m/s", unit: "km/h", text: "強烈颱風風速 51 m/s。請將此風速換算成「時速 (km/h)」。", finalMsg: "風速高達 183.6 km/h！", steps: [{ id: 1, q: "步驟一：算出一小時 (3600秒) 內風吹的公尺數。", ans: 183600, hint: "51 × 3600 = ?", label: "一小時路程" }, { id: 2, q: "步驟二：將公尺換算成公里。", ans: 183.6, hint: "183600 ÷ 1000 = ?", label: "換算公里" }, { id: 3, q: "步驟三：填入時速數字。", ans: 183.6, hint: "填入剛剛算出的公里數。", label: "最終速率" }] }
+        };
+        function loadConversionScenario(id) {
+            currentScenario = convScenarios[id]; completedSteps = {};
+            document.getElementById('scenario-intro').classList.remove('hidden');
+            document.getElementById('scenario-text').innerText = currentScenario.text;
+            document.getElementById('conversion-workspace').classList.remove('hidden');
+            updateStepUI(1);
+            document.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('bg-indigo-50', 'border-indigo-500', 'shadow-sm'));
+            event.currentTarget.classList.add('bg-indigo-50', 'border-indigo-500', 'shadow-sm');
+        }
+        function updateStepUI(stepId) {
+            document.querySelectorAll('.step-pane').forEach(p => p.classList.add('hidden'));
+            document.getElementById('step-' + stepId).classList.remove('hidden');
+            document.getElementById('step-' + stepId + '-q').innerText = currentScenario.steps[stepId - 1].q;
+            document.getElementById('hint-' + stepId).innerText = "💡 秘訣：" + currentScenario.steps[stepId - 1].hint;
+            document.querySelectorAll('.step-node').forEach((node, idx) => {
+                node.classList.remove('active', 'completed');
+                if (idx + 1 < stepId) node.classList.add('completed');
+                if (idx + 1 === stepId) node.classList.add('active');
+            });
+            setTimeout(() => document.getElementById('ans-' + stepId).focus(), 100);
+        }
+        function handleStepCheck(stepId) {
+            const val = parseFloat(document.getElementById('ans-' + stepId).value);
+            if (Math.abs(val - currentScenario.steps[stepId - 1].ans) < 0.01) {
+                completedSteps[stepId] = val;
+                if (stepId < 3) updateStepUI(stepId + 1);
+                else {
+                    document.getElementById('step-3').classList.add('hidden');
+                    document.getElementById('step-success').classList.remove('hidden');
+                    document.getElementById('final-insight').innerText = currentScenario.finalMsg;
+                    document.getElementById('node-3').classList.add('completed');
+                }
+            } else {
+                document.getElementById('ans-' + stepId).classList.add('ring-4', 'ring-red-300');
+                setTimeout(() => document.getElementById('ans-' + stepId).classList.remove('ring-4', 'ring-red-300'), 1000);
+            }
+        }
+        function resetConversionLab() {
+            currentScenario = null; completedSteps = {};
+            document.getElementById('conversion-workspace').classList.add('hidden');
+            document.getElementById('scenario-intro').classList.add('hidden');
+            document.getElementById('step-success').classList.add('hidden');
+            [1, 2, 3].forEach(i => document.getElementById('ans-' + i).value = '');
+            document.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('bg-indigo-50', 'border-indigo-500', 'shadow-sm'));
+        }
+
+        switchModule('welcome');
+    </script>
+</body>
+
+</html>
