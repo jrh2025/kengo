@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>繁簡轉換 | 支援 SRT/LRC 匯出</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Noto+Sans+TC:wght@300;400;700&display=swap');
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background: #f1f5f9;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: scale(1.01);
+        }
+
+        textarea {
+            resize: none;
+        }
+
+        .btn-action {
+            @apply flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded transition;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen py-6 px-4 pb-24"> <!-- 減少頂部填充至 py-6 -->
+    <div class="max-w-6xl mx-auto">
+        <header class="text-center mb-6"> <!-- 減少標題下邊距至 mb-6 -->
+            <h1 class="text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">繁簡轉換(支援剪映 capcut JSON 深度解析模式)</h1>
+            <p class="text-slate-500 text-base">支援拖曳上傳、JSON 解析及 SRT/LRC 字幕轉換</p>
+        </header>
+
+        <div id="dropZone" class="drop-zone glass rounded-3xl p-6 mb-6 text-center cursor-pointer group relative z-10">
+            <!-- 減少內距至 p-6 與下邊距 mb-6 -->
+            <input type="file" id="fileInput" class="hidden" accept=".json,.txt,.srt,.vtt,.lrc">
+            <div class="flex flex-col items-center justify-center space-y-2">
+                <div class="p-3 bg-blue-50 text-blue-600 rounded-full group-hover:bg-blue-100 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-base font-semibold text-slate-700">點擊或拖曳檔案至此</p>
+                    <p class="text-xs text-slate-500">修正時間軸算法，支援精確 SRT / LRC 導出</p>
+                </div>
+            </div>
+        </div>
+
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10"> <!-- 減少網格間距至 gap-6 -->
+            <div class="flex flex-col gap-3">
+                <div class="flex justify-between items-center px-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">原始內容</label>
+                    <button onclick="clearAll()"
+                        class="text-xs font-medium text-red-400 hover:text-red-500 transition">清空</button>
+                </div>
+                <!-- 縮短高度至 h-[300px] -->
+                <textarea id="inputArea"
+                    class="h-[300px] w-full p-4 rounded-2xl shadow-sm glass text-slate-700 focus:ring-2 focus:ring-blue-500 transition focus:outline-none text-sm"
+                    placeholder="在此輸入文字或貼上內容..."></textarea>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <div class="flex justify-between items-center px-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">轉換結果</label>
+                    <div id="outputActions" class="flex flex-wrap gap-2 hidden">
+                        <button onclick="copyOutput()" class="btn-action text-blue-600 hover:bg-blue-50">複製文字</button>
+                        <button onclick="downloadOutput()"
+                            class="btn-action text-green-600 hover:bg-green-50">下載原格式</button>
+                        <button id="btnSrt" onclick="exportSrt()"
+                            class="btn-action text-orange-600 hover:bg-orange-50 hidden">匯出為 .SRT</button>
+                        <button id="btnLrc" onclick="exportLrc()"
+                            class="btn-action text-purple-600 hover:bg-purple-50 hidden">匯出為 .LRC</button>
+                    </div>
+                </div>
+                <!-- 縮短高度至 h-[300px] -->
+                <textarea id="outputArea" readonly
+                    class="h-[300px] w-full p-4 rounded-2xl shadow-sm bg-white/50 text-slate-700 focus:outline-none text-sm"
+                    placeholder="結果將在此顯示..."></textarea>
+            </div>
+        </main>
+
+        <div class="mt-8 flex flex-col items-center gap-5 relative z-20"> <!-- 減少頂部邊距至 mt-8 -->
+            <div class="flex items-center gap-3 bg-white px-5 py-2 rounded-xl shadow-sm border border-slate-200">
+                <input type="checkbox" id="jsonMode" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
+                <label for="jsonMode" class="text-slate-600 text-sm font-medium cursor-pointer select-none">開啟剪映 JSON
+                    深度解析模式</label>
+            </div>
+
+            <button id="convertBtn" onclick="startConversion()"
+                class="group px-10 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                開始進行繁簡轉換
+            </button>
+        </div>
+
+        <div id="toast"
+            class="fixed bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 bg-slate-800 text-white rounded-2xl opacity-0 pointer-events-none transition-all duration-300 transform translate-y-10 z-50 shadow-2xl">
+            通知訊息
+        </div>
+    </div>
+
+    <script>
+        const converter = OpenCC.Converter({ from: 'cn', to: 'tw' });
+        const inputArea = document.getElementById('inputArea');
+        const outputArea = document.getElementById('outputArea');
+        const outputActions = document.getElementById('outputActions');
+        const jsonMode = document.getElementById('jsonMode');
+        let currentFileName = "";
+        let extractedSubtitles = [];
+
+        // --- 檔案處理 ---
+        document.getElementById('dropZone').onclick = () => document.getElementById('fileInput').click();
+        document.getElementById('fileInput').onchange = (e) => handleFiles(e.target.files);
+        document.getElementById('dropZone').ondragover = (e) => { e.preventDefault(); e.target.classList.add('drag-over'); };
+        document.getElementById('dropZone').ondragleave = (e) => { e.target.classList.remove('drag-over'); };
+        document.getElementById('dropZone').ondrop = (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
+
+        function handleFiles(files) {
+            if (!files.length) return;
+            const file = files[0];
+            currentFileName = file.name;
+            jsonMode.checked = file.name.toLowerCase().endsWith('.json');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                inputArea.value = e.target.result;
+                showToast(`已載入: ${file.name}`);
+                outputActions.classList.add('hidden');
+            };
+            reader.readAsText(file);
+        }
+
+        async function startConversion() {
+            const input = inputArea.value.trim();
+            if (!input) { showToast("請輸入內容", "red"); return; }
+            extractedSubtitles = [];
+
+            try {
+                if (jsonMode.checked) {
+                    let jsonData = JSON.parse(input);
+                    deepConvertAndExtract(jsonData);
+                    outputArea.value = JSON.stringify(jsonData, null, 2);
+                    detectTimeData(jsonData);
+                } else {
+                    outputArea.value = converter(input);
+                }
+                outputActions.classList.remove('hidden');
+                showToast("轉換成功");
+            } catch (e) {
+                showToast("解析失敗，請確認格式", "red");
+            }
+        }
+
+        function deepConvertAndExtract(obj) {
+            for (let key in obj) {
+                if (typeof obj[key] === 'string') {
+                    if ((obj[key].startsWith('{') || obj[key].startsWith('['))) {
+                        try {
+                            let inner = JSON.parse(obj[key]);
+                            deepConvertAndExtract(inner);
+                            obj[key] = JSON.stringify(inner);
+                        } catch (e) { obj[key] = converter(obj[key]); }
+                    } else { obj[key] = converter(obj[key]); }
+                } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                    deepConvertAndExtract(obj[key]);
+                }
+            }
+        }
+
+        function detectTimeData(data) {
+            const btnSrt = document.getElementById('btnSrt');
+            const btnLrc = document.getElementById('btnLrc');
+
+            if (data.extra_info && data.extra_info.subtitle_fragment_info_list) {
+                data.extra_info.subtitle_fragment_info_list.forEach(frag => {
+                    let startTimeMs = frag.start_time / 1000;
+                    let endTimeMs = frag.end_time / 1000;
+
+                    if (frag.subtitle_cache_info) {
+                        try {
+                            const cache = JSON.parse(frag.subtitle_cache_info);
+                            if (cache.sentence_list) {
+                                cache.sentence_list.forEach(s => {
+                                    if (s.text && s.text.trim()) {
+                                        extractedSubtitles.push({
+                                            start: startTimeMs,
+                                            end: endTimeMs,
+                                            text: s.text
+                                        });
+                                    }
+                                });
+                            }
+                        } catch (e) { }
+                    }
+                });
+            }
+
+            extractedSubtitles.sort((a, b) => a.start - b.start);
+
+            if (extractedSubtitles.length > 0) {
+                btnSrt.classList.remove('hidden');
+                btnLrc.classList.remove('hidden');
+                showToast(`偵測到 ${extractedSubtitles.length} 條字幕，時間軸已修正`);
+            } else {
+                btnSrt.classList.add('hidden');
+                btnLrc.classList.add('hidden');
+            }
+        }
+
+        function formatSrtTime(totalMs) {
+            totalMs = Math.round(totalMs);
+            const mss = String(totalMs % 1000).padStart(3, '0');
+            const totalSeconds = Math.floor(totalMs / 1000);
+            const ss = String(totalSeconds % 60).padStart(2, '0');
+            const totalMinutes = Math.floor(totalSeconds / 60);
+            const mm = String(totalMinutes % 60).padStart(2, '0');
+            const hh = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+
+            return `${hh}:${mm}:${ss},${mss}`;
+        }
+
+        function formatLrcTime(totalMs) {
+            totalMs = Math.round(totalMs);
+            const cs = String(Math.floor((totalMs % 1000) / 10)).padStart(2, '0');
+            const totalSeconds = Math.floor(totalMs / 1000);
+            const ss = String(totalSeconds % 60).padStart(2, '0');
+            const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+
+            return `[${mm}:${ss}.${cs}]`;
+        }
+
+        function exportSrt() {
+            let srt = extractedSubtitles.map((s, i) =>
+                `${i + 1}\n${formatSrtTime(s.start)} --> ${formatSrtTime(s.end)}\n${s.text}\n`
+            ).join('\n');
+            saveFile(srt, ".srt");
+        }
+
+        function exportLrc() {
+            let lrc = extractedSubtitles.map(s =>
+                `${formatLrcTime(s.start)}${s.text}`
+            ).join('\n');
+            saveFile(lrc, ".lrc");
+        }
+
+        function saveFile(content, ext) {
+            const baseName = currentFileName.includes('.') ? currentFileName.substring(0, currentFileName.lastIndexOf('.')) : (currentFileName || "export");
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = baseName + ext;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadOutput() {
+            const ext = jsonMode.checked ? ".json" : ".txt";
+            saveFile(outputArea.value, ext);
+        }
+
+        function copyOutput() {
+            outputArea.select();
+            document.execCommand('copy');
+            showToast("已複製文字");
+        }
+
+        function clearAll() {
+            inputArea.value = outputArea.value = "";
+            outputActions.classList.add('hidden');
+            currentFileName = "";
+            extractedSubtitles = [];
+            showToast("已清空內容");
+        }
+
+        function showToast(msg, type = "blue") {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 text-white rounded-2xl opacity-100 z-50 shadow-2xl transition-all ${type === 'red' ? 'bg-red-500' : 'bg-slate-800'}`;
+            setTimeout(() => toast.classList.replace('opacity-100', 'opacity-0'), 3000);
+        }
+    </script>
+</body>
+
+</html>
