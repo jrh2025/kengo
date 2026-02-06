@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台股三大法人籌碼分析</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Babel for JSX compilation in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Import Map: 解決模組載入問題 -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom": "https://esm.sh/react-dom@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom",
+            "lucide-react": "https://esm.sh/lucide-react@0.303.0?external=react,react-dom",
+            "idb-keyval": "https://esm.sh/idb-keyval@6.2.1"
+        }
+    }
+    </script>
+
+    <style>
+        /* 隱藏滾動條但保留功能 */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* 自定義滾動條樣式 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        /* 平滑過渡效果 */
+        .theme-transition {
+            transition-property: background-color, border-color, color, fill, stroke;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 300ms;
+        }
+
+        /* Markdown 樣式模擬 */
+        .markdown-body h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown-body p {
+            margin-bottom: 0.75rem;
+            line-height: 1.6;
+        }
+
+        .markdown-body ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .markdown-body li {
+            margin-bottom: 0.25rem;
+        }
+
+        .markdown-body strong {
+            font-weight: 600;
+        }
+
+        /* Slider 自定義樣式 */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #6366f1;
+            /* Indigo-500 */
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo } from 'react';
+        import { createRoot } from 'react-dom/client';
+
+        import {
+            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell
+        } from 'recharts';
+
+        import {
+            Upload, FileText, RefreshCw, AlertCircle, Database, TrendingUp, TrendingDown,
+            ArrowUp, ArrowDown, Users, Briefcase, Globe, Landmark, Layers, Calendar, Settings, Trash2,
+            Sun, Moon, Coffee, ExternalLink, Download, CheckSquare, Square, X, Maximize2, Minimize2, FileJson,
+            BookOpen, Info, DollarSign, BarChart2, AlignLeft
+        } from 'lucide-react';
+
+        // 引入 IndexedDB 封裝庫
+        import { get, set, del } from 'idb-keyval';
+
+        // --- 工具函數 ---
+        const formatDateToTWSE = (dateStr) => dateStr.replace(/-/g, ''); // 2023-10-01 -> 20231001
+        const formatDateToDisplay = (dateStr) => {
+            if (!dateStr || dateStr.length !== 8) return dateStr;
+            return `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+        };
+        const formatMoney = (num) => {
+            if (!num) return '0';
+            const absNum = Math.abs(num);
+            if (absNum >= 100000000) return (num / 100000000).toFixed(2) + ' 億';
+            if (absNum >= 10000) return (num / 10000).toFixed(0) + ' 萬';
+            return num.toLocaleString();
+        };
+
+        // 備援 Proxy 清單
+        const PROXY_CANDIDATES = [
+            'https://api.allorigins.win/raw?url=',
+            'https://corsproxy.io/?',
+            'https://thingproxy.freeboard.io/fetch/'
+        ];
+
+        // 主題設定
+        const THEMES = {
+            light: {
+                name: '白',
+                bg: 'bg-slate-50',
+                text: 'text-slate-800',
+                textMuted: 'text-slate-500',
+                card: 'bg-white',
+                border: 'border-slate-200',
+                header: 'bg-slate-900',
+                grid: '#e2e8f0',
+                tooltipBg: '#ffffff',
+                tooltipText: '#1e293b',
+                chartText: '#64748b',
+                infoBg: 'bg-slate-100',
+                infoText: 'text-slate-500',
+                zeroLine: '#0f172a'
+            },
+            warm: {
+                name: '暖',
+                bg: 'bg-[#f5f5f0]',
+                text: 'text-[#44403c]',
+                textMuted: 'text-[#78716c]',
+                card: 'bg-[#fdfbf7]',
+                border: 'border-[#e7e5e4]',
+                header: 'bg-[#57534e]',
+                grid: '#d6d3d1',
+                tooltipBg: '#fafaf9',
+                tooltipText: '#44403c',
+                chartText: '#78716c',
+                infoBg: 'bg-[#e7e5e4]',
+                infoText: 'text-[#78716c]',
+                zeroLine: '#292524'
+            },
+            dark: {
+                name: '暗',
+                bg: 'bg-[#0f172a]',
+                text: 'text-slate-200',
+                textMuted: 'text-slate-400',
+                card: 'bg-[#1e293b]',
+                border: 'border-slate-700',
+                header: 'bg-[#020617]',
+                grid: '#334155',
+                tooltipBg: '#1e293b',
+                tooltipText: '#f8fafc',
+                chartText: '#cbd5e1',
+                infoBg: 'bg-slate-700',
+                infoText: 'text-slate-200',
+                zeroLine: '#f8fafc'
+            }
+        };
+
+        // 使用手冊元件
+        const ManualModal = ({ onClose, theme }) => (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+                <div className={`w-full max-w-3xl max-h-[85vh] overflow-y-auto custom-scrollbar rounded-xl shadow-2xl ${theme.card} ${theme.text}`} onClick={e => e.stopPropagation()}>
+                    <div className={`flex justify-between items-center p-5 border-b sticky top-0 ${theme.card} z-10`} style={{ borderColor: theme.border }}>
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <BookOpen className="w-6 h-6 text-indigo-500" />
+                            台股三大法人籌碼分析 - 使用手冊
+                        </h2>
+                        <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div className="p-6 markdown-body text-sm md:text-base">
+                        <h3>🚀 簡介</h3>
+                        <p>「台股三大法人籌碼分析」是一款基於瀏覽器的專業級金融分析工具。整合證交所 T86 (個股買賣超) 與 BFI82U (市場總金額) 資訊，協助您全方位掌握外資、投信、自營商的資金流向。</p>
+
+                        <h3>✨ 核心亮點</h3>
+                        <ul>
+                            <li><strong>雙軌數據整合</strong>：同時支援「個股張數」與「分類金額」分析。</li>
+                            <li><strong>企業級大容量儲存</strong>：採用 IndexedDB 技術，可儲存數月甚至數年的歷史資料。</li>
+                            <li><strong>專業視覺化分析</strong>：提供買賣超排行、多日累計趨勢、土洋合作偵測。</li>
+                            <li><strong>動態統計區間</strong>：支援 1~60 日靈活調整統計範圍。</li>
+                        </ul>
+
+                        <h3>📖 使用教學</h3>
+                        <p><strong>1. 建立資料庫</strong></p>
+                        <ul>
+                            <li><strong>方法 A：雲端抓取 (推薦)</strong>：選擇日期 -> 點擊「抓取 T86」。</li>
+                            <li><strong>方法 B：CSV 匯入 (手動備援)</strong>：
+                                <ul>
+                                    <li>點擊下載圖示 <span className="inline-block px-1 bg-gray-200 text-black text-xs rounded">張</span> 前往下載 <strong>T86</strong> 報表 -> 點擊「匯入」載入。</li>
+                                    <li>點擊下載圖示 <span className="inline-block px-1 bg-gray-200 text-black text-xs rounded">金</span> 前往下載 <strong>BFI82U</strong> 報表 -> 點擊「匯入」載入。</li>
+                                    <li>系統會自動將兩份報表整合至同一日期。</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <p><strong>2. 視覺化操作</strong></p>
+                        <ul>
+                            <li><strong>圖表模式切換</strong>：點擊圖表右上角的切換按鈕。
+                                <ul>
+                                    <li><strong>📊 淨值 (Net)</strong>：只顯示單一顏色的淨買賣超，簡單直觀。</li>
+                                    <li><strong>📑 堆疊 (Stacked)</strong>：顯示外資/投信/自營的結構，可看出土洋對作。</li>
+                                </ul>
+                            </li>
+                            <li><strong>圖表放大</strong>：點擊圖表右上角的放大圖示，可進入全螢幕模式，清楚查看日期與細節。</li>
+                        </ul>
+
+                        <p><strong>3. 資料管理</strong></p>
+                        <ul>
+                            <li>若瀏覽器提示空間不足，可至「設定」中使用「備份資料庫」功能下載 JSON 檔，再清除舊資料。日後隨時可透過「匯入」功能還原。</li>
+                        </ul>
+                    </div>
+                    <div className={`p-4 border-t text-center text-xs ${theme.textMuted}`} style={{ borderColor: theme.border }}>
+                        Version: 3.7 (Stacked Chart Fix)
+                    </div>
+                </div>
+            </div>
+        );
+
+        const App = () => {
+            // --- State ---
+            const [historicalData, setHistoricalData] = useState({});
+            const [historicalSummary, setHistoricalSummary] = useState({});
+            const [isDbInitialized, setIsDbInitialized] = useState(false);
+
+            const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
+            const [dateRange, setDateRange] = useState(1);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [activeTab, setActiveTab] = useState('overview');
+            const [showSettings, setShowSettings] = useState(false);
+            const [showManual, setShowManual] = useState(false);
+            const [retryCount, setRetryCount] = useState(0);
+
+            const [selectedDates, setSelectedDates] = useState(new Set());
+            const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem('t86_theme') || 'light');
+            const theme = THEMES[currentTheme];
+
+            // 圖表模式 state: 'net' (淨值) 或 'stacked' (堆疊)
+            const [chartMode, setChartMode] = useState('net');
+
+            const [proxyUrl, setProxyUrl] = useState(() => {
+                const saved = localStorage.getItem('t86_proxy_url');
+                if (saved === 'https://corsproxy.io/?') return PROXY_CANDIDATES[0];
+                return saved || PROXY_CANDIDATES[0];
+            });
+
+            // --- Persistence ---
+            useEffect(() => {
+                const initDatabase = async () => {
+                    setLoading(true);
+                    try {
+                        const dbData = await get('t86_historical_data') || {};
+                        const dbSummary = await get('t86_historical_summary') || {};
+
+                        // 遷移舊版
+                        const legacyDataStr = localStorage.getItem('t86_historical_data');
+                        if (legacyDataStr) {
+                            try {
+                                const legacyData = JSON.parse(legacyDataStr);
+                                Object.assign(dbData, legacyData);
+                                localStorage.removeItem('t86_historical_data');
+                            } catch (e) { }
+                        }
+
+                        setHistoricalData(dbData);
+                        setHistoricalSummary(dbSummary);
+                    } catch (err) {
+                        setError("資料庫初始化失敗。");
+                    } finally {
+                        setIsDbInitialized(true);
+                        setLoading(false);
+                    }
+                };
+                initDatabase();
+            }, []);
+
+            useEffect(() => {
+                if (!isDbInitialized) return;
+                const saveData = async () => {
+                    try {
+                        await set('t86_historical_data', historicalData);
+                        await set('t86_historical_summary', historicalSummary);
+                        if (error && error.includes("儲存空間不足")) setError(null);
+                    } catch (err) {
+                        setError("寫入資料庫失敗，請檢查硬碟空間。");
+                    }
+                };
+                saveData();
+            }, [historicalData, historicalSummary, isDbInitialized]);
+
+            useEffect(() => { localStorage.setItem('t86_proxy_url', proxyUrl); }, [proxyUrl]);
+            useEffect(() => { localStorage.setItem('t86_theme', currentTheme); }, [currentTheme]);
+
+            // --- 資料管理 ---
+            const storedDatesList = useMemo(() => Object.keys(historicalData).sort().reverse(), [historicalData]);
+
+            // 計算滑桿上限：最小 1，最大 60，但不超過實際擁有的天數
+            const maxDateRange = useMemo(() => {
+                const count = storedDatesList.length;
+                return Math.min(Math.max(count, 1), 60);
+            }, [storedDatesList]);
+
+            const toggleDateSelection = (date) => {
+                const newSet = new Set(selectedDates);
+                if (newSet.has(date)) newSet.delete(date); else newSet.add(date);
+                setSelectedDates(newSet);
+            };
+
+            const toggleAllDates = () => {
+                setSelectedDates(selectedDates.size === storedDatesList.length ? new Set() : new Set(storedDatesList));
+            };
+
+            const deleteSelectedData = () => {
+                if (selectedDates.size === 0) return;
+                if (!window.confirm(`確定刪除 ${selectedDates.size} 筆資料？`)) return;
+                const newData = { ...historicalData };
+                const newSummary = { ...historicalSummary };
+                selectedDates.forEach(date => { delete newData[date]; delete newSummary[date]; });
+                setHistoricalData(newData);
+                setHistoricalSummary(newSummary);
+                setSelectedDates(new Set());
+            };
+
+            const deleteSingleDate = (date) => {
+                if (!window.confirm(`刪除 ${formatDateToDisplay(date)} 資料？`)) return;
+                const newData = { ...historicalData };
+                const newSummary = { ...historicalSummary };
+                delete newData[date];
+                delete newSummary[date];
+                setHistoricalData(newData);
+                setHistoricalSummary(newSummary);
+            };
+
+            const clearAllData = () => {
+                if (window.confirm("清除所有資料？建議先備份。")) {
+                    setHistoricalData({});
+                    setHistoricalSummary({});
+                    del('t86_historical_data');
+                    del('t86_historical_summary');
+                    setSelectedDates(new Set());
+                    setError(null);
+                }
+            };
+
+            const downloadBackup = () => {
+                const backup = { data: historicalData, summary: historicalSummary };
+                const dataStr = JSON.stringify(backup);
+                const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+                const exportFileDefaultName = `T86_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            };
+
+            // --- API Logic ---
+            const fetchRealData = async () => {
+                setLoading(true);
+                setError(null);
+                setRetryCount(0);
+                const targetDateStr = formatDateToTWSE(currentDate);
+                const proxiesToTry = [proxyUrl, ...PROXY_CANDIDATES.filter(p => p !== proxyUrl)];
+                const uniqueProxies = [...new Set(proxiesToTry)].filter(Boolean);
+
+                let success = false;
+                let lastErrorMsg = '';
+
+                for (let i = 0; i < uniqueProxies.length; i++) {
+                    const currentProxy = uniqueProxies[i];
+                    setRetryCount(i + 1);
+                    try {
+                        const t86Url = `${currentProxy}${encodeURIComponent(`https://www.twse.com.tw/rwd/zh/fund/T86?date=${targetDateStr}&selectType=ALL&response=json`)}`;
+                        const res = await fetch(t86Url);
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const json = await res.json();
+                        if (json.stat !== 'OK') throw new Error(`TWSE_LOGIC_ERROR:${json.stat}`);
+                        processFetchedData(json, targetDateStr);
+
+                        try {
+                            const summaryUrl = `${currentProxy}${encodeURIComponent(`https://www.twse.com.tw/rwd/zh/fund/BFI82U?date=${targetDateStr}&response=json`)}`;
+                            const resSum = await fetch(summaryUrl);
+                            if (resSum.ok) {
+                                const jsonSum = await resSum.json();
+                                if (jsonSum.stat === 'OK') processSummaryData(jsonSum, targetDateStr);
+                            }
+                        } catch (e) {
+                            console.warn("Summary fetch failed:", e);
+                        }
+
+                        success = true;
+                        if (currentProxy !== proxyUrl) setProxyUrl(currentProxy);
+                        break;
+                    } catch (err) {
+                        if (err.message.startsWith('TWSE_LOGIC_ERROR:')) { lastErrorMsg = err.message.split(':')[1]; break; }
+                        lastErrorMsg = err.message;
+                    }
+                }
+
+                if (!success) setError(`抓取失敗: ${lastErrorMsg}`);
+                setLoading(false);
+                setRetryCount(0);
+            };
+
+            const processFetchedData = (json, dateStr) => {
+                try {
+                    const fields = json.fields;
+                    const getIdx = (name) => fields.findIndex(f => f.includes(name));
+                    const idxId = 0; const idxName = 1;
+                    const idxForeign = getIdx('外陸資買賣超股數');
+                    const idxTrust = getIdx('投信買賣超股數');
+                    const idxDealer = getIdx('自營商買賣超股數');
+                    const idxTotal = getIdx('三大法人買賣超股數');
+
+                    if (idxForeign === -1) throw new Error("API 格式變更");
+
+                    const parsedRows = json.data.map(row => {
+                        const parseNum = (val) => parseInt(val.replace(/,/g, ''), 10) || 0;
+                        return {
+                            id: row[idxId], name: row[idxName].trim(),
+                            foreign: parseNum(row[idxForeign]), trust: idxTrust !== -1 ? parseNum(row[idxTrust]) : 0,
+                            dealer: idxDealer !== -1 ? parseNum(row[idxDealer]) : 0,
+                            total: parseNum(row[idxTotal])
+                        };
+                    }).filter(r => r.id.length <= 6 && !isNaN(parseInt(r.id[0])));
+
+                    setHistoricalData(prev => ({ ...prev, [dateStr]: parsedRows }));
+                } catch (e) { throw new Error("資料解析錯誤"); }
+            };
+
+            const processSummaryData = (json, dateStr) => {
+                try {
+                    const data = json.data;
+                    const parseMoney = (rowIdx) => parseInt(data[rowIdx][3].replace(/,/g, ''), 10);
+                    const dealerNet = parseMoney(0) + parseMoney(1);
+                    const trustNet = parseMoney(2);
+                    const foreignNet = parseMoney(3);
+
+                    setHistoricalSummary(prev => ({
+                        ...prev,
+                        [dateStr]: { foreign: foreignNet, trust: trustNet, dealer: dealerNet }
+                    }));
+                } catch (e) { console.error("Summary parse error", e); }
+            };
+
+            // --- CSV & JSON 匯入邏輯 ---
+            const handleFileUpload = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                setLoading(true); setError(null);
+                const reader = new FileReader();
+
+                if (file.type === "application/json" || file.name.endsWith('.json')) {
+                    reader.readAsText(file, 'UTF-8');
+                    reader.onload = (e) => {
+                        try {
+                            const backup = JSON.parse(e.target.result);
+                            if (backup.data) {
+                                setHistoricalData(prev => ({ ...prev, ...backup.data }));
+                                if (backup.summary) setHistoricalSummary(prev => ({ ...prev, ...backup.summary }));
+                            } else {
+                                setHistoricalData(prev => ({ ...prev, ...backup }));
+                            }
+                            alert("還原成功！");
+                        } catch (err) { setError("還原失敗"); }
+                        finally { setLoading(false); }
+                    };
+                } else {
+                    reader.readAsText(file, 'Big5');
+                    reader.onload = (e) => {
+                        try {
+                            const csvText = e.target.result;
+                            const lines = csvText.split(/\r\n|\n/);
+                            const isT86 = lines.some(l => l.includes('證券代號'));
+                            const isBFI82U = lines.some(l => l.includes('單位名稱') && l.includes('買進金額'));
+
+                            let fileDate = formatDateToTWSE(currentDate);
+                            const titleLine = lines.find(l => l.includes('年') && l.includes('月'));
+                            if (titleLine) {
+                                const match = titleLine.match(/(\d{2,3})年(\d{1,2})月(\d{1,2})日/);
+                                if (match) fileDate = `${parseInt(match[1]) + 1911}${match[2].padStart(2, '0')}${match[3].padStart(2, '0')}`;
+                            }
+
+                            if (isT86) {
+                                const result = parseTWSET86CSV(csvText);
+                                if (result.length === 0) throw new Error("無效 T86 CSV");
+                                setHistoricalData(prev => ({ ...prev, [fileDate]: result }));
+                                alert(`成功匯入 ${fileDate} 個股籌碼 (T86)！`);
+                            } else if (isBFI82U) {
+                                const summary = parseBFI82UCSV(csvText);
+                                setHistoricalSummary(prev => ({ ...prev, [fileDate]: summary }));
+                                alert(`成功匯入 ${fileDate} 金額統計 (BFI82U)！`);
+                            } else {
+                                throw new Error("無法識別的 CSV 格式");
+                            }
+                            setCurrentDate(`${fileDate.substring(0, 4)}-${fileDate.substring(4, 6)}-${fileDate.substring(6, 8)}`);
+                        } catch (err) { setError("CSV 讀取失敗: " + err.message); }
+                        finally { setLoading(false); }
+                    };
+                }
+            };
+
+            const parseTWSET86CSV = (text) => {
+                const lines = text.split(/\r\n|\n/);
+                const result = [];
+                let headerIndex = lines.findIndex(l => l.includes('證券代號'));
+                if (headerIndex === -1) return [];
+                for (let i = headerIndex + 1; i < lines.length; i++) {
+                    const line = lines[i].trim(); if (!line) continue;
+                    const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                    if (!cols || cols.length < 5) continue;
+                    const clean = (v) => v ? v.replace(/^"|"$/g, '').replace(/,/g, '').trim() : '0';
+                    const id = clean(cols[0]);
+                    if (id.length > 6 || isNaN(parseInt(id[0]))) continue;
+                    result.push({
+                        id, name: clean(cols[1]),
+                        foreign: parseInt(clean(cols[4])) || 0, trust: parseInt(clean(cols[10])) || 0,
+                        dealer: (parseInt(clean(cols[cols.length - 1])) || 0) - (parseInt(clean(cols[4])) || 0) - (parseInt(clean(cols[10])) || 0),
+                        total: parseInt(clean(cols[cols.length - 1])) || 0
+                    });
+                }
+                return result;
+            };
+
+            const parseBFI82UCSV = (text) => {
+                const lines = text.split(/\r\n|\n/);
+                let foreign = 0, trust = 0, dealer = 0;
+                lines.forEach(line => {
+                    const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                    if (!matches || matches.length < 4) return;
+                    const name = matches[0].replace(/"/g, '').trim();
+                    const netStr = matches[3].replace(/"/g, '').replace(/,/g, '');
+                    const net = parseInt(netStr) || 0;
+                    if (name.includes('外資') || name.includes('陸資')) foreign += net;
+                    else if (name.includes('投信')) trust += net;
+                    else if (name.includes('自營商')) dealer += net;
+                });
+                return { foreign, trust, dealer };
+            };
+
+            // --- 聚合 ---
+            const aggregatedData = useMemo(() => {
+                const targetDateStr = formatDateToTWSE(currentDate);
+                const availableDates = Object.keys(historicalData).sort().reverse();
+                const startIndex = availableDates.indexOf(targetDateStr);
+                if (startIndex === -1) return { stocks: [], summary: null };
+
+                const datesToAggregate = availableDates.slice(startIndex, startIndex + dateRange);
+                const aggMap = {};
+                const aggSummary = { foreign: 0, trust: 0, dealer: 0, count: 0 };
+
+                datesToAggregate.forEach(dateKey => {
+                    (historicalData[dateKey] || []).forEach(row => {
+                        if (!aggMap[row.id]) aggMap[row.id] = { ...row, foreign: 0, trust: 0, dealer: 0, total: 0 };
+                        aggMap[row.id].foreign += row.foreign;
+                        aggMap[row.id].trust += row.trust;
+                        aggMap[row.id].dealer += row.dealer;
+                        aggMap[row.id].total += row.total;
+                    });
+                    if (historicalSummary[dateKey]) {
+                        aggSummary.foreign += historicalSummary[dateKey].foreign;
+                        aggSummary.trust += historicalSummary[dateKey].trust;
+                        aggSummary.dealer += historicalSummary[dateKey].dealer;
+                        aggSummary.count++;
+                    }
+                });
+
+                return {
+                    stocks: Object.values(aggMap).sort((a, b) => b.total - a.total),
+                    summary: aggSummary.count > 0 ? aggSummary : null
+                };
+            }, [historicalData, historicalSummary, currentDate, dateRange]);
+
+            const stats = useMemo(() => {
+                if (aggregatedData.stocks.length === 0) return null;
+                const d = aggregatedData.stocks;
+                return {
+                    totalBuy: [...d].sort((a, b) => b.total - a.total).slice(0, 15),
+                    totalSell: [...d].sort((a, b) => a.total - b.total).slice(0, 15),
+                    coBuy: d.filter(x => x.foreign > 0 && x.trust > 0 && x.dealer > 0).sort((a, b) => b.total - a.total),
+                    coSell: d.filter(x => x.foreign < 0 && x.trust < 0 && x.dealer < 0).sort((a, b) => a.total - b.total),
+                    foreignBuy: [...d].sort((a, b) => b.foreign - a.foreign).slice(0, 20),
+                    foreignSell: [...d].sort((a, b) => a.foreign - b.foreign).slice(0, 20),
+                    trustBuy: [...d].sort((a, b) => b.trust - a.trust).slice(0, 20),
+                    trustSell: [...d].sort((a, b) => a.trust - b.trust).slice(0, 20),
+                    dealerBuy: [...d].sort((a, b) => b.dealer - a.dealer).slice(0, 20),
+                    dealerSell: [...d].sort((a, b) => a.dealer - b.dealer).slice(0, 20),
+                    summary: aggregatedData.summary
+                };
+            }, [aggregatedData]);
+
+            // --- Components ---
+            const CustomTooltip = ({ active, payload }) => {
+                if (active && payload && payload.length) {
+                    const d = payload[0].payload;
+                    return (
+                        <div className={`p-3 border shadow-xl rounded-lg text-sm z-50`} style={{ backgroundColor: theme.tooltipBg, borderColor: theme.border, color: theme.tooltipText }}>
+                            <p className="font-bold mb-1">{d.id} {d.name}</p>
+                            <div className={`text-xs mb-2 border-b pb-1 opacity-70`} style={{ borderColor: theme.border }}>
+                                統計區間: {dateRange} 日累計
+                            </div>
+                            <div className="space-y-1">
+                                <div className="flex justify-between gap-4"><span className="text-blue-500">外資:</span> <span>{d.foreign.toLocaleString()}</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-emerald-500">投信:</span> <span>{d.trust.toLocaleString()}</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-amber-500">自營:</span> <span>{d.dealer.toLocaleString()}</span></div>
+                                <div className="border-t pt-1 mt-1 font-bold flex justify-between gap-4" style={{ borderColor: theme.border }}>
+                                    <span>合計:</span> <span>{d.total.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+                return null;
+            };
+
+            const ChartSection = ({ title, icon: Icon, data, dataKey, color, colorName, currentDate, chartMode, setChartMode }) => {
+                const [isMaximized, setIsMaximized] = useState(false);
+
+                // 處理資料：將正負值拆分以正確堆疊
+                const processedData = useMemo(() => {
+                    if (dataKey !== 'total' || chartMode !== 'stacked') return data;
+                    return data.map(item => ({
+                        ...item,
+                        foreignPos: item.foreign > 0 ? item.foreign : 0,
+                        foreignNeg: item.foreign < 0 ? item.foreign : 0,
+                        trustPos: item.trust > 0 ? item.trust : 0,
+                        trustNeg: item.trust < 0 ? item.trust : 0,
+                        dealerPos: item.dealer > 0 ? item.dealer : 0,
+                        dealerNeg: item.dealer < 0 ? item.dealer : 0,
+                    }));
+                }, [data, dataKey, chartMode]);
+
+                const containerClasses = isMaximized
+                    ? `fixed inset-4 z-50 p-6 rounded-xl shadow-2xl border flex flex-col theme-transition ${theme.card} ${theme.border}`
+                    : `p-6 rounded-xl shadow-sm border h-[400px] flex flex-col theme-transition relative ${theme.card} ${theme.border}`;
+
+                return (
+                    <>
+                        {isMaximized && <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={() => setIsMaximized(false)} />}
+                        <div className={containerClasses}>
+                            <div className="flex items-center justify-between mb-4 shrink-0">
+                                <div className="flex items-center gap-2">
+                                    <div className={`p-2 rounded-lg bg-opacity-10`} style={{ backgroundColor: colorName ? 'transparent' : 'rgba(99, 102, 241, 0.1)' }}>{Icon && <Icon className={`w-5 h-5 ${color}`} />}</div>
+                                    <h3 className={`text-lg font-bold ${theme.text}`}>{title} <span className={`text-xs font-normal ml-2 ${theme.textMuted}`}>({dateRange}日累計)</span></h3>
+                                </div>
+                                <div className="flex gap-2">
+                                    {/* 僅在總覽模式下顯示切換按鈕 */}
+                                    {dataKey === 'total' && (
+                                        <div className={`flex rounded-lg border text-xs p-0.5 ${theme.border}`}>
+                                            <button onClick={() => setChartMode('net')} className={`px-2 py-1 rounded transition-colors ${chartMode === 'net' ? 'bg-indigo-500 text-white' : theme.textMuted}`}>淨值</button>
+                                            <button onClick={() => setChartMode('stacked')} className={`px-2 py-1 rounded transition-colors ${chartMode === 'stacked' ? 'bg-indigo-500 text-white' : theme.textMuted}`}>堆疊</button>
+                                        </div>
+                                    )}
+                                    <button onClick={() => setIsMaximized(!isMaximized)} className={`p-2 rounded-lg hover:bg-black/5 ${theme.textMuted}`}>{isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}</button>
+                                </div>
+                            </div>
+                            {isMaximized && <div className={`text-center mb-4 pb-2 border-b ${theme.border}`}><h2 className={`text-2xl font-bold ${theme.text} flex items-center justify-center gap-2`}><Calendar className="w-6 h-6" /> {formatDateToDisplay(formatDateToTWSE(currentDate))}</h2></div>}
+                            <div className="flex-1 min-h-0">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={processedData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.grid} />
+                                        <XAxis dataKey="name" tick={{ fontSize: isMaximized ? 14 : 12, fill: theme.chartText }} interval={0} angle={-45} textAnchor="end" height={100} stroke={theme.grid} />
+                                        <YAxis tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`} width={65} tick={{ fill: theme.chartText }} stroke={theme.grid} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: theme.text === 'text-slate-200' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }} />
+                                        <ReferenceLine y={0} stroke={theme.zeroLine} strokeWidth={2} />
+
+                                        {/* 根據 chartMode 決定顯示方式 */}
+                                        {dataKey === 'total' ? (
+                                            chartMode === 'net' ? (
+                                                <Bar dataKey="total" fill={color} isAnimationActive={false}>
+                                                    {
+                                                        data.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.total > 0 ? '#ef4444' : '#22c55e'} />
+                                                        ))
+                                                    }
+                                                </Bar>
+                                            ) : (
+                                                <>
+                                                    {/* 正值堆疊 (向上) */}
+                                                    <Bar dataKey="foreignPos" stackId="up" fill="#3b82f6" isAnimationActive={false} />
+                                                    <Bar dataKey="trustPos" stackId="up" fill="#10b981" isAnimationActive={false} />
+                                                    <Bar dataKey="dealerPos" stackId="up" fill="#f59e0b" isAnimationActive={false} />
+
+                                                    {/* 負值堆疊 (向下) */}
+                                                    <Bar dataKey="foreignNeg" stackId="down" fill="#3b82f6" isAnimationActive={false} />
+                                                    <Bar dataKey="trustNeg" stackId="down" fill="#10b981" isAnimationActive={false} />
+                                                    <Bar dataKey="dealerNeg" stackId="down" fill="#f59e0b" isAnimationActive={false} />
+                                                </>
+                                            )
+                                        ) : (
+                                            <Bar dataKey={dataKey} fill={dataKey === 'foreign' ? '#3b82f6' : dataKey === 'trust' ? '#10b981' : '#f59e0b'} isAnimationActive={false} />
+                                        )}
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </>
+                );
+            };
+
+            const MoneyCard = ({ title, amount, color }) => (
+                <div className={`p-4 rounded-xl border flex-1 ${theme.card} ${theme.border}`}>
+                    <div className={`text-xs ${theme.textMuted} mb-1`}>{title}</div>
+                    <div className={`text-lg font-bold ${amount > 0 ? 'text-red-500' : amount < 0 ? 'text-green-500' : theme.textMuted}`}>
+                        {amount > 0 ? '+' : ''}{formatMoney(amount)}
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className={`min-h-screen font-sans theme-transition ${theme.bg} ${theme.text}`}>
+                    {showManual && <ManualModal onClose={() => setShowManual(false)} theme={theme} />}
+
+                    <header className={`p-4 shadow-md sticky top-0 z-20 theme-transition ${theme.header} text-white`}>
+                        <div className="max-w-7xl mx-auto flex flex-col xl:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-4 w-full xl:w-auto">
+                                <h1 className="text-xl font-bold flex items-center gap-2"><TrendingUp className="w-6 h-6 text-emerald-400" /> 台股三大法人籌碼分析</h1>
+                                <button onClick={() => setShowManual(true)} className="flex items-center gap-1 text-xs bg-white/10 hover:bg-white/20 px-2 py-1.5 rounded transition-colors"><BookOpen className="w-4 h-4" /> 手冊</button>
+                                <div className="flex bg-opacity-20 bg-white rounded-lg p-1">
+                                    {['light', 'warm', 'dark'].map(t => <button key={t} onClick={() => setCurrentTheme(t)} className={`p-1.5 rounded ${currentTheme === t ? 'bg-white text-black shadow' : 'text-slate-400 hover:text-white'}`}>{t === 'light' ? <Sun className="w-4 h-4" /> : t === 'warm' ? <Coffee className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>)}
+                                </div>
+                                <button onClick={() => setShowSettings(!showSettings)} className="ml-auto p-2 hover:bg-white/10 rounded-full xl:hidden"><Settings className="w-5 h-5" /></button>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 bg-white/10 p-2 rounded-lg border border-white/10 w-full xl:w-auto justify-center">
+                                <div className="flex items-center bg-black/20 rounded px-3 py-1.5 border border-white/10"><Calendar className="w-4 h-4 text-slate-300 mr-2" /><input type="date" value={currentDate} onChange={(e) => setCurrentDate(e.target.value)} className="bg-transparent text-white text-sm outline-none w-[130px]" style={{ colorScheme: 'dark' }} /></div>
+                                <button onClick={fetchRealData} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded text-sm font-medium min-w-[100px]"><RefreshCw className={`w-3.5 h-3.5 ${loading && 'animate-spin'}`} /> {loading ? `重試(${retryCount})...` : '抓取 T86'}</button>
+                                <div className="w-px h-6 bg-white/20 mx-1 hidden sm:block"></div>
+                                <div className="flex items-center gap-1">
+                                    <label className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded cursor-pointer text-sm font-medium whitespace-nowrap" title="支援 T86(個股) 與 BFI82U(金額) 兩種 CSV">
+                                        <Upload className="w-3.5 h-3.5" /> 匯入
+                                        <input type="file" accept=".csv,.json" className="hidden" onChange={handleFileUpload} />
+                                    </label>
+                                    <div className="flex flex-col gap-0.5">
+                                        <a href="https://www.twse.com.tw/zh/trading/foreign/t86.html" target="_blank" className="flex items-center justify-center w-5 h-4 bg-white/10 hover:bg-white/20 rounded text-[10px] text-emerald-400" title="下載張數(T86)">張</a>
+                                        <a href="https://www.twse.com.tw/zh/trading/foreign/bfi82u.html" target="_blank" className="flex items-center justify-center w-5 h-4 bg-white/10 hover:bg-white/20 rounded text-[10px] text-emerald-400" title="下載金額(BFI82U)">金</a>
+                                    </div>
+                                </div>
+                                <div className="w-px h-6 bg-white/20 mx-1 hidden sm:block"></div>
+                                <div className="flex items-center gap-2 bg-black/20 rounded px-3 py-1.5 border border-white/10"><span className="text-xs text-slate-300 whitespace-nowrap w-12">統計 {dateRange} 日</span><input type="range" min="1" max={maxDateRange} value={dateRange} onChange={(e) => setDateRange(Number(e.target.value))} className="w-24 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-500" disabled={maxDateRange <= 1} /><span className="text-[10px] text-slate-500 w-6 text-right">/{maxDateRange}</span></div>
+                                <button onClick={() => setShowSettings(!showSettings)} className="ml-2 p-1.5 hover:bg-white/10 rounded hidden xl:block"><Settings className="w-5 h-5 text-slate-300" /></button>
+                            </div>
+                        </div>
+                        {showSettings && (
+                            <div className={`max-w-7xl mx-auto mt-4 p-4 rounded-lg border theme-transition animate-in slide-in-from-top-2 ${theme.card} ${theme.border} text-slate-800`}>
+                                <div className="flex justify-between items-start mb-4 border-b pb-2" style={{ borderColor: theme.border }}><h3 className={`text-sm font-bold flex items-center gap-2 ${theme.text}`}><Settings className="w-4 h-4" /> 設定</h3><button onClick={() => setShowSettings(false)}><X className={`w-4 h-4 ${theme.text}`} /></button></div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div><h4 className={`text-xs font-bold mb-2 ${theme.textMuted}`}>資料備份</h4><div className="flex gap-2"><button onClick={downloadBackup} className="flex-1 flex justify-center items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs"><FileJson className="w-4 h-4" /> 下載備份 (JSON)</button></div></div>
+                                        <div className="pt-2 border-t" style={{ borderColor: theme.border }}><h4 className={`text-xs font-bold mb-2 ${theme.textMuted}`}>Proxy</h4><div className="flex gap-2"><input type="text" value={proxyUrl} onChange={(e) => setProxyUrl(e.target.value)} className={`w-full border rounded px-3 py-2 text-xs ${currentTheme === 'dark' ? 'bg-slate-900 text-white border-slate-600' : ''}`} /><button onClick={() => setProxyUrl(PROXY_CANDIDATES[0])} className="px-3 py-1 text-xs rounded bg-slate-200">重置</button></div></div>
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between items-center mb-2"><h4 className={`text-xs font-bold ${theme.textMuted}`}>資料庫 ({storedDatesList.length} 天)</h4><div className="flex gap-2"><button onClick={toggleAllDates} className="text-xs px-2 py-1 bg-slate-100 rounded">全選</button>{selectedDates.size > 0 && <button onClick={deleteSelectedData} className="text-xs px-2 py-1 bg-red-600 text-white rounded">刪除 ({selectedDates.size})</button>}</div></div>
+                                        <div className={`border rounded-lg overflow-hidden max-h-[200px] overflow-y-auto custom-scrollbar ${theme.border} ${currentTheme === 'dark' ? 'bg-slate-900' : ''}`}>{storedDatesList.map(d => <div key={d} className="flex justify-between p-2 border-b text-xs items-center"><input type="checkbox" checked={selectedDates.has(d)} onChange={() => toggleDateSelection(d)} className="mr-2" /><span className={theme.text}>{formatDateToDisplay(d)}</span><button onClick={() => deleteSingleDate(d)} className="text-slate-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button></div>)}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </header>
+
+                    <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+                        {error && <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700 text-sm flex justify-between items-center"><div className="flex items-center gap-2"><AlertCircle className="w-5 h-5" /> {error}</div>{error.includes("不足") && <button onClick={clearAllData} className="px-3 py-1 bg-red-600 text-white rounded text-xs">清除資料</button>}</div>}
+
+                        {stats ? (
+                            <>
+                                <div className={`px-4 py-3 rounded-lg shadow-sm border flex flex-col gap-4 ${theme.card} ${theme.border}`}>
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2"><Database className="w-4 h-4 text-indigo-500" /><span className={`font-bold ${theme.text}`}>{formatDateToDisplay(formatDateToTWSE(currentDate))}</span><span className={`px-2 py-0.5 text-xs font-bold rounded border ${theme.textMuted}`}>{dateRange}日累計</span></div>
+                                        {dateRange > 1 && <div className={`text-xs ${theme.textMuted}`}>有效交易日: <span className="font-bold text-indigo-600">{aggregatedData.summary ? aggregatedData.summary.count : 0}</span> 天</div>}
+                                    </div>
+
+                                    {/* 資金流向看板 */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4" style={{ borderColor: theme.border }}>
+                                        {stats.summary ? (
+                                            <>
+                                                <div className="flex items-center gap-2 md:col-span-3 mb-1"><DollarSign className={`w-4 h-4 ${theme.textMuted}`} /><h4 className={`text-sm font-bold ${theme.text}`}>三大法人買賣超金額 ({dateRange}日合計)</h4></div>
+                                                <MoneyCard title="外資及陸資" amount={stats.summary.foreign} />
+                                                <MoneyCard title="投信" amount={stats.summary.trust} />
+                                                <MoneyCard title="自營商 (自行+避險)" amount={stats.summary.dealer} />
+                                            </>
+                                        ) : (
+                                            <div className={`md:col-span-3 text-center py-2 text-xs ${theme.infoText} rounded ${theme.infoBg}`}>
+                                                尚無金額資料 (若使用 CSV 匯入，請記得額外匯入 BFI82U 報表)
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className={`flex overflow-x-auto gap-2 pb-2 border-b scrollbar-hide ${theme.border}`}>
+                                    {[{ id: 'overview', label: '總覽戰情', icon: Layers }, { id: 'comovement', label: '土洋合作', icon: Users }, { id: 'foreign', label: '外資排行', icon: Globe }, { id: 'trust', label: '投信排行', icon: Landmark }, { id: 'dealer', label: '自營商排行', icon: Briefcase }].map(tab => (
+                                        <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-5 py-3 rounded-t-lg font-bold text-sm whitespace-nowrap border-t border-x border-b-0 ${activeTab === tab.id ? `${theme.card} ${theme.text} ${theme.border} translate-y-[1px]` : `bg-transparent border-transparent ${theme.textMuted} hover:${theme.text} hover:bg-black/5`}`}>{React.createElement(tab.icon, { className: `w-4 h-4 ${activeTab === tab.id ? 'text-indigo-500' : ''}` })}{tab.label}</button>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-6">
+                                    {activeTab === 'overview' && (
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in zoom-in duration-300">
+                                            <ChartSection
+                                                title="合計買超 Top 15" icon={ArrowUp}
+                                                data={stats.totalBuy} dataKey="total" color="text-red-600"
+                                                currentDate={currentDate} chartMode={chartMode} setChartMode={setChartMode}
+                                            />
+                                            <ChartSection
+                                                title="合計賣超 Top 15" icon={ArrowDown}
+                                                data={stats.totalSell} dataKey="total" color="text-green-600"
+                                                currentDate={currentDate} chartMode={chartMode} setChartMode={setChartMode}
+                                            />
+                                            <div className={`lg:col-span-2 rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
+                                                <div className={`px-6 py-4 border-b ${theme.border}`}><h3 className={`font-bold ${theme.text}`}>詳細數據列表 (前 50 筆)</h3></div>
+                                                <div className="overflow-x-auto max-h-[500px]">
+                                                    <table className={`w-full text-sm text-left ${theme.text}`}>
+                                                        <thead className={`font-medium sticky top-0 z-10 shadow-sm ${currentTheme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營商</th><th className="px-6 py-3 text-right">合計</th></tr></thead>
+                                                        <tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.totalBuy.concat(stats.totalSell).slice(0, 50).map(r => <tr key={r.id} className={`transition-colors ${currentTheme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}><td className={`px-6 py-3 font-mono ${theme.textMuted}`}>{r.id}</td><td className="px-6 py-3 font-medium">{r.name}</td><td className={`px-6 py-3 text-right ${r.foreign > 0 ? 'text-red-600' : r.foreign < 0 ? 'text-green-600' : theme.textMuted}`}>{r.foreign.toLocaleString()}</td><td className={`px-6 py-3 text-right ${r.trust > 0 ? 'text-red-600' : r.trust < 0 ? 'text-green-600' : theme.textMuted}`}>{r.trust.toLocaleString()}</td><td className={`px-6 py-3 text-right ${r.dealer > 0 ? 'text-red-600' : r.dealer < 0 ? 'text-green-600' : theme.textMuted}`}>{r.dealer.toLocaleString()}</td><td className={`px-6 py-3 text-right font-bold ${r.total > 0 ? 'text-red-600' : r.total < 0 ? 'text-green-600' : theme.textMuted}`}>{r.total.toLocaleString()}</td></tr>)}</tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {activeTab === 'comovement' && (
+                                        <div className="grid grid-cols-1 gap-6 animate-in fade-in duration-300">
+                                            <div className={`rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
+                                                <div className={`px-6 py-4 border-b flex items-center gap-2 ${theme.border} ${currentTheme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'}`}><TrendingUp className="w-5 h-5 text-red-600" /><h3 className={`font-bold ${currentTheme === 'dark' ? 'text-red-400' : 'text-red-800'}`}>三法同步買超</h3></div>
+                                                {stats.coBuy.length > 0 ? <div className="overflow-x-auto"><table className={`w-full text-sm text-left ${theme.text}`}><thead className={theme.textMuted}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營</th><th className="px-6 py-3 text-right">合計</th></tr></thead><tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.coBuy.map(r => <tr key={r.id} className={`transition-colors ${currentTheme === 'dark' ? 'hover:bg-red-900/10' : 'hover:bg-red-50/50'}`}><td className={`px-6 py-3 font-mono ${theme.textMuted}`}>{r.id}</td><td className="px-6 py-3 font-bold">{r.name}</td><td className="px-6 py-3 text-right text-red-600">{r.foreign.toLocaleString()}</td><td className="px-6 py-3 text-right text-red-600">{r.trust.toLocaleString()}</td><td className="px-6 py-3 text-right text-red-600">{r.dealer.toLocaleString()}</td><td className="px-6 py-3 text-right font-bold text-red-600">{r.total.toLocaleString()}</td></tr>)}</tbody></table></div> : <div className={`p-8 text-center ${theme.textMuted}`}>無資料</div>}
+                                            </div>
+                                            <div className={`rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
+                                                <div className={`px-6 py-4 border-b flex items-center gap-2 ${theme.border} ${currentTheme === 'dark' ? 'bg-green-900/20' : 'bg-green-50'}`}><TrendingDown className="w-5 h-5 text-green-600" /><h3 className={`font-bold ${currentTheme === 'dark' ? 'text-green-400' : 'text-green-800'}`}>三法同步賣超</h3></div>
+                                                {stats.coSell.length > 0 ? <div className="overflow-x-auto"><table className={`w-full text-sm text-left ${theme.text}`}><thead className={theme.textMuted}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營</th><th className="px-6 py-3 text-right">合計</th></tr></thead><tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.coSell.map(r => <tr key={r.id} className={`transition-colors ${currentTheme === 'dark' ? 'hover:bg-green-900/10' : 'hover:bg-green-50/50'}`}><td className={`px-6 py-3 font-mono ${theme.textMuted}`}>{r.id}</td><td className="px-6 py-3 font-bold">{r.name}</td><td className="px-6 py-3 text-right text-green-600">{r.foreign.toLocaleString()}</td><td className="px-6 py-3 text-right text-green-600">{r.trust.toLocaleString()}</td><td className="px-6 py-3 text-right text-green-600">{r.dealer.toLocaleString()}</td><td className="px-6 py-3 text-right font-bold text-green-600">{r.total.toLocaleString()}</td></tr>)}</tbody></table></div> : <div className={`p-8 text-center ${theme.textMuted}`}>無資料</div>}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {activeTab === 'foreign' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300"><ChartSection title="外資 買超 Top 20" icon={Globe} data={stats.foreignBuy} dataKey="foreign" color="text-blue-600" colorName="外資" currentDate={currentDate} /><ChartSection title="外資 賣超 Top 20" icon={Globe} data={stats.foreignSell} dataKey="foreign" color="text-blue-600" colorName="外資" currentDate={currentDate} /></div>}
+                                    {activeTab === 'trust' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300"><ChartSection title="投信 買超 Top 20" icon={Landmark} data={stats.trustBuy} dataKey="trust" color="text-emerald-600" colorName="投信" currentDate={currentDate} /><ChartSection title="投信 賣超 Top 20" icon={Landmark} data={stats.trustSell} dataKey="trust" color="text-emerald-600" colorName="投信" currentDate={currentDate} /></div>}
+                                    {activeTab === 'dealer' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300"><ChartSection title="自營商 買超 Top 20" icon={Briefcase} data={stats.dealerBuy} dataKey="dealer" color="text-amber-600" colorName="自營商" currentDate={currentDate} /><ChartSection title="自營商 賣超 Top 20" icon={Briefcase} data={stats.dealerSell} dataKey="dealer" color="text-amber-600" colorName="自營商" currentDate={currentDate} /></div>}
+                                </div>
+                            </>
+                        ) : (
+                            <div className={`text-center py-20 border-2 border-dashed rounded-xl ${theme.border} bg-opacity-50`}><FileText className={`w-16 h-16 mx-auto mb-4 ${theme.textMuted}`} /><h3 className={`text-lg font-medium ${theme.text}`}>尚無 {currentDate} 的數據</h3><p className={`${theme.textMuted} text-sm mt-2 max-w-md mx-auto`}>請點擊上方 <span className="text-indigo-500 font-bold">「抓取 T86」</span> 或 <span className="text-emerald-500 font-bold">「匯入 CSV」</span> 來建立資料庫。</p></div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
