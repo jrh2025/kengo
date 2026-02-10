@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台股三大法人籌碼分析 (單位：張)</title>
+    <title>台股三大法人籌碼分析 v4 (個股趨勢圖)</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -64,18 +64,29 @@
             font-weight: 700;
             margin-top: 1.5rem;
             margin-bottom: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.5rem;
         }
 
         .markdown-body h3 {
             font-size: 1.25rem;
             font-weight: 600;
-            margin-top: 1.25rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #6366f1;
+            /* Indigo-500 */
+        }
+
+        .markdown-body h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 1rem;
             margin-bottom: 0.5rem;
         }
 
         .markdown-body p {
             margin-bottom: 0.75rem;
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
         .markdown-body ul {
@@ -85,11 +96,11 @@
         }
 
         .markdown-body li {
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.4rem;
         }
 
         .markdown-body strong {
-            font-weight: 600;
+            font-weight: 700;
         }
 
         /* Slider 自定義樣式 */
@@ -112,25 +123,41 @@
             background: #475569;
             border-radius: 2px;
         }
+
+        /* 點擊列的樣式 */
+        .clickable-row {
+            cursor: pointer;
+        }
+
+        .clickable-row:hover td {
+            font-weight: 600;
+            position: relative;
+        }
+
+        /* 暗黑模式下的 hover */
+        .theme-dark .clickable-row:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
     </style>
 </head>
 
-<body>
+<body class="theme-transition">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect, useMemo } from 'react';
         import { createRoot } from 'react-dom/client';
 
+        // 加入 ComposedChart, Line
         import {
-            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell
+            BarChart, Bar, LineChart, Line, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell
         } from 'recharts';
 
         import {
             Upload, FileText, RefreshCw, AlertCircle, Database, TrendingUp, TrendingDown,
             ArrowUp, ArrowDown, Users, Briefcase, Globe, Landmark, Layers, Calendar, Settings, Trash2,
             Sun, Moon, Coffee, ExternalLink, Download, CheckSquare, Square, X, Maximize2, Minimize2, FileJson,
-            BookOpen, Info, DollarSign, BarChart2, AlignLeft
+            BookOpen, Info, DollarSign, BarChart2, AlignLeft, Search
         } from 'lucide-react';
 
         // 引入 IndexedDB 封裝庫
@@ -160,6 +187,7 @@
         // 主題設定
         const THEMES = {
             light: {
+                id: 'light',
                 name: '白',
                 bg: 'bg-slate-50',
                 text: 'text-slate-800',
@@ -176,6 +204,7 @@
                 zeroLine: '#0f172a'
             },
             warm: {
+                id: 'warm',
                 name: '暖',
                 bg: 'bg-[#f5f5f0]',
                 text: 'text-[#44403c]',
@@ -192,6 +221,7 @@
                 zeroLine: '#292524'
             },
             dark: {
+                id: 'dark',
                 name: '暗',
                 bg: 'bg-[#0f172a]',
                 text: 'text-slate-200',
@@ -209,66 +239,272 @@
             }
         };
 
-        // 使用手冊元件
+        // 使用手冊元件 (完整更新版)
         const ManualModal = ({ onClose, theme }) => (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-                <div className={`w-full max-w-3xl max-h-[85vh] overflow-y-auto custom-scrollbar rounded-xl shadow-2xl ${theme.card} ${theme.text}`} onClick={e => e.stopPropagation()}>
+                <div className={`w-full max-w-4xl max-h-[85vh] overflow-y-auto custom-scrollbar rounded-xl shadow-2xl ${theme.card} ${theme.text}`} onClick={e => e.stopPropagation()}>
                     <div className={`flex justify-between items-center p-5 border-b sticky top-0 ${theme.card} z-10`} style={{ borderColor: theme.border }}>
                         <h2 className="text-xl font-bold flex items-center gap-2">
                             <BookOpen className="w-6 h-6 text-indigo-500" />
-                            台股三大法人籌碼分析 - 使用手冊
+                            使用手冊 v4.0
                         </h2>
                         <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors">
                             <X className="w-5 h-5" />
                         </button>
                     </div>
-                    <div className="p-6 markdown-body text-sm md:text-base">
-                        <h3>🚀 簡介</h3>
-                        <p>「台股三大法人籌碼分析」是一款基於瀏覽器的專業級金融分析工具。整合證交所 T86 (個股買賣超) 與 BFI82U (市場總金額) 資訊，協助您全方位掌握外資、投信、自營商的資金流向。</p>
 
-                        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
-                            <p className="font-bold">⚠️ 版本 v4.0 最終修正 (顯示為張數)：</p>
-                            <p>本系統已設定為：<strong>讀取原始股數 -> 自動除以 1000 -> 顯示為張數</strong>。</p>
-                            <p><strong>請注意：</strong> 由於 v3 版本使用的是「股數」單位，若您的資料庫中有混合 v3 與 v4 的資料，數值將會相差 1000 倍。強烈建議您點擊「設定」中的 <strong>「清除所有資料」</strong> 後重新抓取。</p>
+                    <div className="p-6 markdown-body text-sm md:text-base">
+                        {/* 重要警示區塊 */}
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r">
+                            <h3 className="!text-red-700 !mt-0 flex items-center gap-2 !text-lg">
+                                <AlertCircle className="w-5 h-5" /> 版本升級重要須知 (v3 升級 v4)
+                            </h3>
+                            <p className="text-red-800 font-bold mt-2">如果您曾使用舊版 (v3)，請務必先清除資料！</p>
+                            <ul className="text-red-800 list-disc pl-5 mt-1">
+                                <li><strong>原因：</strong>舊版單位為「股」，新版 v4 全面改為「張」。若混合使用，將導致圖表數據錯誤 (暴增 1000 倍)。</li>
+                                <li><strong>操作：</strong>請點擊右上角「設定 (齒輪)」&rarr; 找到「資料庫管理」&rarr; 點擊紅色的「清除所有資料」按鈕。</li>
+                            </ul>
                         </div>
 
-                        <h3>✨ 核心亮點</h3>
+                        {/* 推薦操作區塊 */}
+                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r">
+                            <h3 className="!text-blue-700 !mt-0 flex items-center gap-2 !text-lg">
+                                <CheckSquare className="w-5 h-5" /> 資料建立策略：強烈推薦手動匯入
+                            </h3>
+                            <p className="text-blue-800 mt-2">
+                                雖然系統提供「自動抓取」功能，但因證交所對 API 流量有限制，且 Proxy 連線較不穩定。
+                                <strong>建議優先使用「匯入 CSV」方式</strong>，既快速又準確。
+                            </p>
+                            <p className="text-blue-800 mt-1 text-sm">
+                                * 提示：可一次下載過去 5~10 天的 T86 CSV 檔，逐一匯入以建立完整的趨勢資料庫。
+                            </p>
+                        </div>
+
+                        <h3>1. 系統設計理念</h3>
+                        <p>本系統是專為台股投資人設計的<strong>「輕量級、隱私優先、視覺化」</strong>籌碼分析工具。不同於坊間依賴後端伺服器的軟體，本系統採用 <strong>Serverless (無伺服器)</strong> 架構，所有數據運算與儲存皆在您的瀏覽器 (Client-side) 本地完成。</p>
                         <ul>
-                            <li><strong>自動換算</strong>：抓取證交所原始股數資料後，系統自動換算為「張數」呈現。</li>
-                            <li><strong>雙軌數據整合</strong>：同時支援「個股張數」與「分類金額」分析。</li>
-                            <li><strong>企業級大容量儲存</strong>：採用 IndexedDB 技術，可儲存數月甚至數年的歷史資料。</li>
-                            <li><strong>專業視覺化分析</strong>：提供買賣超排行、多日累計趨勢、土洋合作偵測。</li>
+                            <li><strong>極致隱私：</strong>您的查詢標的與分析習慣完全保留在您的電腦中，不會上傳雲端。</li>
+                            <li><strong>單位優化：</strong>全面採用<strong>「張數」</strong>作為計量單位，符合台股看盤直覺。</li>
+                            <li><strong>動態趨勢：</strong>從單日靜態表格，進化為可互動的時間序列分析。</li>
                         </ul>
 
-                        <h3>📖 使用教學</h3>
-                        <p><strong>1. 建立資料庫</strong></p>
+                        <h3>2. 核心功能介紹</h3>
+
+                        <h4>3.1 統計天數滑桿 (Time-Range Slider)</h4>
+                        <p>位於頂部控制列的滑桿 (預設 1 日) 是 v4 的靈魂功能。它決定了所有圖表與排行的計算基礎。</p>
                         <ul>
-                            <li><strong>方法 A：雲端抓取 (推薦)</strong>：選擇日期 -> 點擊「抓取 T86」。系統會自動將抓到的股數轉為張數。</li>
-                            <li><strong>方法 B：CSV 匯入 (手動備援)</strong>：
-                                <ul>
-                                    <li>點擊下載圖示 <span className="inline-block px-1 bg-gray-200 text-black text-xs rounded">股</span> 前往下載 <strong>T86</strong> 報表 (證交所檔案為股數) -> 點擊「匯入」載入 (系統會自動轉為張數)。</li>
-                                    <li>點擊下載圖示 <span className="inline-block px-1 bg-gray-200 text-black text-xs rounded">金</span> 前往下載 <strong>BFI82U</strong> 報表 -> 點擊「匯入」載入。</li>
-                                </ul>
-                            </li>
+                            <li><strong>設定為 1 日：</strong>查看當日的買賣超排行。</li>
+                            <li><strong>設定為 5 日：</strong>系統自動加總過去 5 個交易日數據，找出「週買超王」。</li>
+                            <li><strong>設定為 20 日：</strong>找出月線等級的主力佈局股。</li>
                         </ul>
 
-                        <p><strong>2. 視覺化操作</strong></p>
+                        <h4>3.2 個股趨勢透視 (Stock Trend Modal)</h4>
+                        <p>在任何列表 (如總覽、土洋合作) 中，<strong>點擊任一檔股票</strong>，即可開啟詳細視窗。</p>
                         <ul>
-                            <li><strong>圖表模式切換</strong>：點擊圖表右上角的切換按鈕。
-                                <ul>
-                                    <li><strong>📊 淨值 (Net)</strong>：只顯示單一顏色的淨買賣超，簡單直觀。</li>
-                                    <li><strong>📑 堆疊 (Stacked)</strong>：顯示外資/投信/自營的結構，可看出土洋對作。</li>
-                                </ul>
-                            </li>
-                            <li><strong>圖表放大</strong>：點擊圖表右上角的放大圖示，可進入全螢幕模式。</li>
+                            <li><strong>混合圖表：</strong>同時顯示外資、投信、自營商的個別動作 (折線) 與合計買賣超 (柱狀)。</li>
+                            <li><strong>區間連動：</strong>趨勢圖預設顯示範圍會呼應您在主畫面設定的統計天數。</li>
+                            <li><strong>即時互動：</strong>滑鼠懸停可查看每日精確張數。</li>
                         </ul>
-                    </div>
-                    <div className={`p-4 border-t text-center text-xs ${theme.textMuted}`} style={{ borderColor: theme.border }}>
-                        Version: 6.0 (Input: Shares / Display: Sheets)
+
+                        <h4>3.3 多維度戰情看板</h4>
+                        <ul>
+                            <li><strong>總覽戰情：</strong>全市場買賣超 Top 15，快速掌握熱門股。</li>
+                            <li><strong>土洋合作：</strong>篩選外資、投信、自營商「方向一致」的股票 (同步買超通常代表籌碼安定)。</li>
+                            <li><strong>法人分項：</strong>獨立檢視三大法人的個別操作習慣。</li>
+                        </ul>
+
+                        <h3>3. 資料來源與匯入教學</h3>
+                        <p>本系統依靠「累積數據」來產生趨勢圖。資料來源皆為<strong>台灣證券交易所 (TWSE)</strong>。</p>
+
+                        <h4>方法 A：手動匯入 CSV (推薦)</h4>
+                        <ol>
+                            <li>點擊介面上的<strong>「股」</strong>按鈕 (下載 T86 個股買賣超)。</li>
+                            <li>點擊介面上的<strong>「金」</strong>按鈕 (下載 BFI82U 買賣金額)。</li>
+                            <li>下載 CSV 檔案後，點擊本系統的<strong>「匯入」</strong>按鈕並選擇檔案。</li>
+                            <li>系統會自動判斷並存入資料庫。</li>
+                        </ol>
+
+                        <h4>方法 B：自動抓取 (僅供輔助)</h4>
+                        <p>透過「抓取 T86」按鈕連線。僅建議在收盤後快速查看「當日」數據時使用。若遇失敗，請改用 CSV 匯入。</p>
+
+                        <h3>4. 資料備份與還原</h3>
+                        <p>由於資料儲存在瀏覽器中，清除快取 (Cache) 會導致資料遺失。建議定期備份。</p>
+                        <ul>
+                            <li><strong>備份：</strong>點擊「設定」&rarr;「下載備份 (JSON)」。此檔案包含所有歷史數據。</li>
+                            <li><strong>還原：</strong>點擊「匯入」&rarr; 選擇備份的 JSON 檔。</li>
+                        </ul>
+
+                        <h3>5. 常見問題 (Q&A)</h3>
+                        <ul>
+                            <li><strong>Q: 為什麼金額顯示為 0？</strong><br />A: 您可能只匯入了「T86 (個股)」。請記得額外匯入「BFI82U (金額)」報表以查看資金流向。</li>
+                            <li><strong>Q: 個股趨勢圖只有一個點？</strong><br />A: 趨勢圖需要歷史資料。請匯入過去幾天的 CSV 檔，系統才能畫出連線。</li>
+                        </ul>
+
+                        <div className="mt-8 pt-4 border-t text-xs text-gray-500 text-center">
+                            免責聲明：本系統僅供數據整理與視覺化輔助，不含任何投資建議。使用者應自行承擔投資風險。
+                        </div>
                     </div>
                 </div>
             </div>
         );
+
+        // --- 新增：個股詳細趨勢 Modal ---
+        const StockDetailModal = ({ stock, historicalData, onClose, theme, currentDate, dateRange }) => {
+            const chartData = useMemo(() => {
+                if (!stock || !stock.id) return [];
+
+                // 1. 取得所有排序後的日期 (由舊到新)
+                const allDates = Object.keys(historicalData).sort();
+
+                // 2. 找到目前選擇日期的位置 (Target Date)
+                const targetDateStr = formatDateToTWSE(currentDate);
+                const targetIndex = allDates.indexOf(targetDateStr);
+
+                if (targetIndex === -1) {
+                    // 如果當天沒資料，嘗試找最近的有資料日期 (雖非必要，但能提升UX)
+                    // 這邊簡單處理：若沒找到該日，直接返回空陣列，因為主畫面也應該顯示無資料
+                    return [];
+                }
+
+                // 3. 計算起始索引 (Start Index)
+                // 我們要取包含 targetDate 在內的過去 dateRange 天
+                // 例如 index 10, range 5 -> 取 6, 7, 8, 9, 10
+                let startIndex = targetIndex - dateRange + 1;
+                if (startIndex < 0) startIndex = 0;
+
+                // 4. 切割出需要的日期區間
+                const selectedDates = allDates.slice(startIndex, targetIndex + 1);
+
+                return selectedDates.map(date => {
+                    const dayData = historicalData[date].find(s => s.id === stock.id);
+                    return {
+                        date: formatDateToDisplay(date),
+                        rawDate: date,
+                        foreign: dayData ? dayData.foreign : 0,
+                        trust: dayData ? dayData.trust : 0,
+                        dealer: dayData ? dayData.dealer : 0,
+                        total: dayData ? dayData.total : 0
+                    };
+                });
+            }, [stock, historicalData, currentDate, dateRange]);
+
+            if (!stock) return null;
+
+            // 計算統計數據 (基於選定的 Range)
+            const totalStats = chartData.reduce((acc, curr) => ({
+                foreign: acc.foreign + curr.foreign,
+                trust: acc.trust + curr.trust,
+                dealer: acc.dealer + curr.dealer,
+                total: acc.total + curr.total
+            }), { foreign: 0, trust: 0, dealer: 0, total: 0 });
+
+            const CustomTooltip = ({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                    return (
+                        <div className={`p-3 border shadow-xl rounded-lg text-sm z-50`} style={{ backgroundColor: theme.tooltipBg, borderColor: theme.border, color: theme.tooltipText }}>
+                            <p className="font-bold mb-2 border-b pb-1" style={{ borderColor: theme.border }}>{label}</p>
+                            <div className="space-y-1">
+                                <div className="flex justify-between gap-4"><span className="text-blue-500">外資:</span> <span>{payload.find(p => p.dataKey === 'foreign')?.value.toLocaleString()} 張</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-emerald-500">投信:</span> <span>{payload.find(p => p.dataKey === 'trust')?.value.toLocaleString()} 張</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-amber-500">自營:</span> <span>{payload.find(p => p.dataKey === 'dealer')?.value.toLocaleString()} 張</span></div>
+                                <div className="border-t pt-1 mt-1 font-bold flex justify-between gap-4" style={{ borderColor: theme.border }}>
+                                    <span>單日合計:</span> <span className={payload.find(p => p.dataKey === 'total')?.value > 0 ? 'text-red-500' : 'text-green-500'}>{payload.find(p => p.dataKey === 'total')?.value.toLocaleString()} 張</span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+                return null;
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={onClose}>
+                    <div className={`w-full max-w-5xl h-[85vh] flex flex-col rounded-xl shadow-2xl ${theme.card} ${theme.text}`} onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className={`flex justify-between items-center p-4 border-b ${theme.card} rounded-t-xl`} style={{ borderColor: theme.border }}>
+                            <div className="flex flex-col">
+                                <h2 className="text-2xl font-bold flex items-center gap-2">
+                                    <span className="font-mono bg-indigo-100 text-indigo-700 px-2 rounded text-xl">{stock.id}</span>
+                                    {stock.name}
+                                </h2>
+                                <span className={`text-xs ${theme.textMuted} mt-1`}>
+                                    顯示區間: {chartData.length > 0 ? `${chartData[0].date} ~ ${chartData[chartData.length - 1].date}` : '無資料'}
+                                    (共 <span className="text-indigo-500 font-bold">{chartData.length}</span> 個交易日)
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className={`text-right hidden sm:block`}>
+                                    <div className="text-xs text-gray-500">區間累計 ({chartData.length}日)</div>
+                                    <div className={`font-bold ${totalStats.total > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                        {totalStats.total > 0 ? '+' : ''}{totalStats.total.toLocaleString()} 張
+                                    </div>
+                                </div>
+                                <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Chart Area */}
+                        <div className="flex-1 p-4 min-h-0">
+                            {chartData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.grid} />
+                                        <XAxis
+                                            dataKey="date"
+                                            tick={{ fontSize: 12, fill: theme.chartText }}
+                                            minTickGap={30}
+                                        />
+                                        <YAxis
+                                            tick={{ fill: theme.chartText }}
+                                            width={60}
+                                            tickFormatter={(val) => Math.abs(val) >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
+                                        />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                                        <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                                        <ReferenceLine y={0} stroke={theme.zeroLine} strokeWidth={1} />
+
+                                        {/* 長條圖：總買賣超 */}
+                                        <Bar dataKey="total" name="合計買賣超" barSize={20} fillOpacity={0.3}>
+                                            {chartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.total > 0 ? '#ef4444' : '#22c55e'} />
+                                            ))}
+                                        </Bar>
+
+                                        {/* 折線圖：三大法人 */}
+                                        <Line type="monotone" dataKey="foreign" name="外資" stroke="#3b82f6" strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
+                                        <Line type="monotone" dataKey="trust" name="投信" stroke="#10b981" strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
+                                        <Line type="monotone" dataKey="dealer" name="自營商" stroke="#f59e0b" strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
+                                    </ComposedChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                                    <Search className="w-16 h-16 mb-4 opacity-50" />
+                                    <p>選定日期無資料，或範圍內無交易</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Summary Footer */}
+                        <div className={`p-4 border-t grid grid-cols-3 gap-4 text-center text-sm ${theme.bg}`} style={{ borderColor: theme.border }}>
+                            <div>
+                                <div className="text-blue-500 font-bold mb-1">外資累計</div>
+                                <span className="font-mono">{totalStats.foreign.toLocaleString()}</span>
+                            </div>
+                            <div>
+                                <div className="text-emerald-500 font-bold mb-1">投信累計</div>
+                                <span className="font-mono">{totalStats.trust.toLocaleString()}</span>
+                            </div>
+                            <div>
+                                <div className="text-amber-500 font-bold mb-1">自營累計</div>
+                                <span className="font-mono">{totalStats.dealer.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
         const App = () => {
             // --- State ---
@@ -285,6 +521,9 @@
             const [showManual, setShowManual] = useState(false);
             const [retryCount, setRetryCount] = useState(0);
 
+            // 新增：選中的個股
+            const [selectedStock, setSelectedStock] = useState(null);
+
             const [selectedDates, setSelectedDates] = useState(new Set());
             const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem('t86_theme') || 'light');
             const theme = THEMES[currentTheme];
@@ -297,6 +536,12 @@
                 if (saved === 'https://corsproxy.io/?') return PROXY_CANDIDATES[0];
                 return saved || PROXY_CANDIDATES[0];
             });
+
+            useEffect(() => {
+                document.body.className = `theme-transition ${theme.bg}`;
+                if (currentTheme === 'dark') document.body.classList.add('theme-dark');
+                else document.body.classList.remove('theme-dark');
+            }, [theme, currentTheme]);
 
             // --- Persistence ---
             useEffect(() => {
@@ -455,7 +700,6 @@
                 setRetryCount(0);
             };
 
-            // v4.0 Update: 恢復換算邏輯 -> 除以 1000 = 張
             const processFetchedData = (json, dateStr) => {
                 try {
                     const fields = json.fields;
@@ -468,7 +712,6 @@
 
                     if (idxForeign === -1) throw new Error("API 格式變更");
 
-                    // 輔助函式：解析原始股數並轉為張數
                     const parseToSheets = (val) => {
                         const rawShares = parseInt(val.replace(/,/g, ''), 10) || 0;
                         return Math.round(rawShares / 1000); // 股 -> 張
@@ -522,7 +765,7 @@
                             } else {
                                 setHistoricalData(prev => ({ ...prev, ...backup }));
                             }
-                            alert("還原成功！(請確認備份檔是否為 v4 張數單位)");
+                            alert("還原成功！");
                         } catch (err) { setError("還原失敗"); }
                         finally { setLoading(false); }
                     };
@@ -561,14 +804,12 @@
                 }
             };
 
-            // v4.0 Update: CSV 解析轉張數
             const parseTWSET86CSV = (text) => {
                 const lines = text.split(/\r\n|\n/);
                 const result = [];
                 let headerIndex = lines.findIndex(l => l.includes('證券代號'));
                 if (headerIndex === -1) return [];
 
-                // 輔助: 轉張數
                 const cleanToSheets = (v) => {
                     if (!v) return 0;
                     const raw = parseInt(v.replace(/^"|"$/g, '').replace(/,/g, '').trim()) || 0;
@@ -588,7 +829,6 @@
                     const foreign = cleanToSheets(cols[4]);
                     const trust = cleanToSheets(cols[10]);
                     const total = cleanToSheets(cols[cols.length - 1]);
-                    // 自營商通常是最後一個欄位(三大法人合計) - 外資 - 投信
                     const dealer = total - foreign - trust;
 
                     result.push({
@@ -666,6 +906,11 @@
                 };
             }, [aggregatedData]);
 
+            // --- Handlers ---
+            const handleStockClick = (stockId, stockName) => {
+                setSelectedStock({ id: stockId, name: stockName });
+            };
+
             // --- Components ---
             const CustomTooltip = ({ active, payload }) => {
                 if (active && payload && payload.length) {
@@ -684,16 +929,16 @@
                                     <span>合計:</span> <span>{d.total.toLocaleString()} 張</span>
                                 </div>
                             </div>
+                            <div className="mt-2 text-[10px] text-gray-500 text-center">(點擊查看歷史趨勢)</div>
                         </div>
                     );
                 }
                 return null;
             };
 
-            const ChartSection = ({ title, icon: Icon, data, dataKey, color, colorName, currentDate, chartMode, setChartMode }) => {
+            const ChartSection = ({ title, icon: Icon, data, dataKey, color, colorName, currentDate, chartMode, chartModeSetter }) => {
                 const [isMaximized, setIsMaximized] = useState(false);
 
-                // 處理資料：將正負值拆分以正確堆疊
                 const processedData = useMemo(() => {
                     if (dataKey !== 'total' || chartMode !== 'stacked') return data;
                     return data.map(item => ({
@@ -708,10 +953,9 @@
                 }, [data, dataKey, chartMode]);
 
                 const containerClasses = isMaximized
-                    ? `fixed inset-4 z-50 p-6 rounded-xl shadow-2xl border flex flex-col theme-transition ${theme.card} ${theme.border}`
+                    ? `fixed inset-4 z-40 p-6 rounded-xl shadow-2xl border flex flex-col theme-transition ${theme.card} ${theme.border}`
                     : `p-6 rounded-xl shadow-sm border h-[400px] flex flex-col theme-transition relative ${theme.card} ${theme.border}`;
 
-                // v4.0 Update: Y軸格式化，顯示張數，超過千張顯示 k
                 const yAxisFormatter = (val) => {
                     const absVal = Math.abs(val);
                     if (absVal >= 1000) return `${(val / 1000).toFixed(1)}k`;
@@ -720,7 +964,7 @@
 
                 return (
                     <>
-                        {isMaximized && <div className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" onClick={() => setIsMaximized(false)} />}
+                        {isMaximized && <div className="fixed inset-0 bg-black/50 z-30 backdrop-blur-sm" onClick={() => setIsMaximized(false)} />}
                         <div className={containerClasses}>
                             <div className="flex items-center justify-between mb-4 shrink-0">
                                 <div className="flex items-center gap-2">
@@ -728,7 +972,6 @@
                                     <h3 className={`text-lg font-bold ${theme.text}`}>{title} <span className={`text-xs font-normal ml-2 ${theme.textMuted}`}>({dateRange}日累計)</span></h3>
                                 </div>
                                 <div className="flex gap-2">
-                                    {/* 僅在總覽模式下顯示切換按鈕 */}
                                     {dataKey === 'total' && (
                                         <div className={`flex rounded-lg border text-xs p-0.5 ${theme.border}`}>
                                             <button onClick={() => setChartMode('net')} className={`px-2 py-1 rounded transition-colors ${chartMode === 'net' ? 'bg-indigo-500 text-white' : theme.textMuted}`}>淨值</button>
@@ -741,17 +984,16 @@
                             {isMaximized && <div className={`text-center mb-4 pb-2 border-b ${theme.border}`}><h2 className={`text-2xl font-bold ${theme.text} flex items-center justify-center gap-2`}><Calendar className="w-6 h-6" /> {formatDateToDisplay(formatDateToTWSE(currentDate))}</h2></div>}
                             <div className="flex-1 min-h-0">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={processedData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                                    <BarChart data={processedData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }} onClick={(data) => data && data.activePayload && handleStockClick(data.activePayload[0].payload.id, data.activePayload[0].payload.name)}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.grid} />
                                         <XAxis dataKey="name" tick={{ fontSize: isMaximized ? 14 : 12, fill: theme.chartText }} interval={0} angle={-45} textAnchor="end" height={100} stroke={theme.grid} />
                                         <YAxis tickFormatter={yAxisFormatter} width={65} tick={{ fill: theme.chartText }} stroke={theme.grid} />
-                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: theme.text === 'text-slate-200' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: theme.text === 'text-slate-200' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', cursor: 'pointer' }} />
                                         <ReferenceLine y={0} stroke={theme.zeroLine} strokeWidth={2} />
 
-                                        {/* 根據 chartMode 決定顯示方式 */}
                                         {dataKey === 'total' ? (
                                             chartMode === 'net' ? (
-                                                <Bar dataKey="total" fill={color} isAnimationActive={false}>
+                                                <Bar dataKey="total" fill={color} isAnimationActive={false} className="cursor-pointer">
                                                     {
                                                         data.map((entry, index) => (
                                                             <Cell key={`cell-${index}`} fill={entry.total > 0 ? '#ef4444' : '#22c55e'} />
@@ -760,19 +1002,17 @@
                                                 </Bar>
                                             ) : (
                                                 <>
-                                                    {/* 正值堆疊 (向上) */}
-                                                    <Bar dataKey="foreignPos" stackId="up" fill="#3b82f6" isAnimationActive={false} />
-                                                    <Bar dataKey="trustPos" stackId="up" fill="#10b981" isAnimationActive={false} />
-                                                    <Bar dataKey="dealerPos" stackId="up" fill="#f59e0b" isAnimationActive={false} />
+                                                    <Bar dataKey="foreignPos" stackId="up" fill="#3b82f6" isAnimationActive={false} className="cursor-pointer" />
+                                                    <Bar dataKey="trustPos" stackId="up" fill="#10b981" isAnimationActive={false} className="cursor-pointer" />
+                                                    <Bar dataKey="dealerPos" stackId="up" fill="#f59e0b" isAnimationActive={false} className="cursor-pointer" />
 
-                                                    {/* 負值堆疊 (向下) */}
-                                                    <Bar dataKey="foreignNeg" stackId="down" fill="#3b82f6" isAnimationActive={false} />
-                                                    <Bar dataKey="trustNeg" stackId="down" fill="#10b981" isAnimationActive={false} />
-                                                    <Bar dataKey="dealerNeg" stackId="down" fill="#f59e0b" isAnimationActive={false} />
+                                                    <Bar dataKey="foreignNeg" stackId="down" fill="#3b82f6" isAnimationActive={false} className="cursor-pointer" />
+                                                    <Bar dataKey="trustNeg" stackId="down" fill="#10b981" isAnimationActive={false} className="cursor-pointer" />
+                                                    <Bar dataKey="dealerNeg" stackId="down" fill="#f59e0b" isAnimationActive={false} className="cursor-pointer" />
                                                 </>
                                             )
                                         ) : (
-                                            <Bar dataKey={dataKey} fill={dataKey === 'foreign' ? '#3b82f6' : dataKey === 'trust' ? '#10b981' : '#f59e0b'} isAnimationActive={false} />
+                                            <Bar dataKey={dataKey} fill={dataKey === 'foreign' ? '#3b82f6' : dataKey === 'trust' ? '#10b981' : '#f59e0b'} isAnimationActive={false} className="cursor-pointer" />
                                         )}
                                     </BarChart>
                                 </ResponsiveContainer>
@@ -791,14 +1031,43 @@
                 </div>
             );
 
+            // 通用表格列渲染
+            const StockRow = ({ r, showTotal = true }) => (
+                <tr
+                    key={r.id}
+                    onClick={() => handleStockClick(r.id, r.name)}
+                    className={`clickable-row transition-colors border-b last:border-0 ${currentTheme === 'dark' ? 'border-slate-700 hover:bg-slate-800' : 'border-slate-100 hover:bg-indigo-50'}`}
+                >
+                    <td className={`px-6 py-3 font-mono ${theme.textMuted}`}>{r.id}</td>
+                    <td className="px-6 py-3 font-medium flex items-center gap-1">
+                        {r.name}
+                        <BarChart2 className="w-3 h-3 text-gray-400 opacity-50" />
+                    </td>
+                    <td className={`px-6 py-3 text-right ${r.foreign > 0 ? 'text-red-600' : r.foreign < 0 ? 'text-green-600' : theme.textMuted}`}>{r.foreign.toLocaleString()}</td>
+                    <td className={`px-6 py-3 text-right ${r.trust > 0 ? 'text-red-600' : r.trust < 0 ? 'text-green-600' : theme.textMuted}`}>{r.trust.toLocaleString()}</td>
+                    <td className={`px-6 py-3 text-right ${r.dealer > 0 ? 'text-red-600' : r.dealer < 0 ? 'text-green-600' : theme.textMuted}`}>{r.dealer.toLocaleString()}</td>
+                    {showTotal && <td className={`px-6 py-3 text-right font-bold ${r.total > 0 ? 'text-red-600' : r.total < 0 ? 'text-green-600' : theme.textMuted}`}>{r.total.toLocaleString()}</td>}
+                </tr>
+            );
+
             return (
                 <div className={`min-h-screen font-sans theme-transition ${theme.bg} ${theme.text}`}>
                     {showManual && <ManualModal onClose={() => setShowManual(false)} theme={theme} />}
+                    {selectedStock && (
+                        <StockDetailModal
+                            stock={selectedStock}
+                            historicalData={historicalData}
+                            onClose={() => setSelectedStock(null)}
+                            theme={theme}
+                            currentDate={currentDate}  // 傳入目前的日期
+                            dateRange={dateRange}      // 傳入目前的統計範圍
+                        />
+                    )}
 
                     <header className={`p-4 shadow-md sticky top-0 z-20 theme-transition ${theme.header} text-white`}>
                         <div className="max-w-7xl mx-auto flex flex-col xl:flex-row justify-between items-center gap-4">
                             <div className="flex items-center gap-4 w-full xl:w-auto">
-                                <h1 className="text-xl font-bold flex items-center gap-2"><TrendingUp className="w-6 h-6 text-emerald-400" /> 台股三大法人籌碼分析 <span className="text-xs bg-indigo-500 px-2 py-0.5 rounded text-white">v4.0 (張)</span></h1>
+                                <h1 className="text-xl font-bold flex items-center gap-2"><TrendingUp className="w-6 h-6 text-emerald-400" /> 台股三大法人籌碼分析 v4 <span className="text-xs bg-indigo-500 px-2 py-0.5 rounded text-white">個股趨勢</span></h1>
                                 <button onClick={() => setShowManual(true)} className="flex items-center gap-1 text-xs bg-white/10 hover:bg-white/20 px-2 py-1.5 rounded transition-colors"><BookOpen className="w-4 h-4" /> 手冊</button>
                                 <div className="flex bg-opacity-20 bg-white rounded-lg p-1">
                                     {['light', 'warm', 'dark'].map(t => <button key={t} onClick={() => setCurrentTheme(t)} className={`p-1.5 rounded ${currentTheme === t ? 'bg-white text-black shadow' : 'text-slate-400 hover:text-white'}`}>{t === 'light' ? <Sun className="w-4 h-4" /> : t === 'warm' ? <Coffee className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>)}
@@ -890,11 +1159,14 @@
                                                 currentDate={currentDate} chartMode={chartMode} setChartMode={setChartMode}
                                             />
                                             <div className={`lg:col-span-2 rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
-                                                <div className={`px-6 py-4 border-b ${theme.border}`}><h3 className={`font-bold ${theme.text}`}>詳細數據列表 (前 50 筆)：張數</h3></div>
+                                                <div className={`px-6 py-4 border-b ${theme.border} flex justify-between items-center`}>
+                                                    <h3 className={`font-bold ${theme.text}`}>詳細數據列表 (前 50 筆)：張數</h3>
+                                                    <span className="text-xs text-gray-400">💡 點擊列表任一列可查看趨勢</span>
+                                                </div>
                                                 <div className="overflow-x-auto max-h-[500px]">
                                                     <table className={`w-full text-sm text-left ${theme.text}`}>
                                                         <thead className={`font-medium sticky top-0 z-10 shadow-sm ${currentTheme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資(張)</th><th className="px-6 py-3 text-right">投信(張)</th><th className="px-6 py-3 text-right">自營商(張)</th><th className="px-6 py-3 text-right">合計(張)</th></tr></thead>
-                                                        <tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.totalBuy.concat(stats.totalSell).slice(0, 50).map(r => <tr key={r.id} className={`transition-colors ${currentTheme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}><td className={`px-6 py-3 font-mono ${theme.textMuted}`}>{r.id}</td><td className="px-6 py-3 font-medium">{r.name}</td><td className={`px-6 py-3 text-right ${r.foreign > 0 ? 'text-red-600' : r.foreign < 0 ? 'text-green-600' : theme.textMuted}`}>{r.foreign.toLocaleString()}</td><td className={`px-6 py-3 text-right ${r.trust > 0 ? 'text-red-600' : r.trust < 0 ? 'text-green-600' : theme.textMuted}`}>{r.trust.toLocaleString()}</td><td className={`px-6 py-3 text-right ${r.dealer > 0 ? 'text-red-600' : r.dealer < 0 ? 'text-green-600' : theme.textMuted}`}>{r.dealer.toLocaleString()}</td><td className={`px-6 py-3 text-right font-bold ${r.total > 0 ? 'text-red-600' : r.total < 0 ? 'text-green-600' : theme.textMuted}`}>{r.total.toLocaleString()}</td></tr>)}</tbody>
+                                                        <tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.totalBuy.concat(stats.totalSell).slice(0, 50).map(r => <StockRow key={r.id} r={r} />)}</tbody>
                                                     </table>
                                                 </div>
                                             </div>
@@ -904,11 +1176,11 @@
                                         <div className="grid grid-cols-1 gap-6 animate-in fade-in duration-300">
                                             <div className={`rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
                                                 <div className={`px-6 py-4 border-b flex items-center gap-2 ${theme.border} ${currentTheme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'}`}><TrendingUp className="w-5 h-5 text-red-600" /><h3 className={`font-bold ${currentTheme === 'dark' ? 'text-red-400' : 'text-red-800'}`}>三法同步買超(張數)</h3></div>
-                                                {stats.coBuy.length > 0 ? <div className="overflow-x-auto"><table className={`w-full text-sm text-left ${theme.text}`}><thead className={theme.textMuted}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營</th><th className="px-6 py-3 text-right">合計</th></tr></thead><tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.coBuy.map(r => <tr key={r.id} className={`transition-colors ${currentTheme === 'dark' ? 'hover:bg-red-900/10' : 'hover:bg-red-50/50'}`}><td className={`px-6 py-3 font-mono ${theme.textMuted}`}>{r.id}</td><td className="px-6 py-3 font-bold">{r.name}</td><td className="px-6 py-3 text-right text-red-600">{r.foreign.toLocaleString()}</td><td className="px-6 py-3 text-right text-red-600">{r.trust.toLocaleString()}</td><td className="px-6 py-3 text-right text-red-600">{r.dealer.toLocaleString()}</td><td className="px-6 py-3 text-right font-bold text-red-600">{r.total.toLocaleString()}</td></tr>)}</tbody></table></div> : <div className={`p-8 text-center ${theme.textMuted}`}>無資料</div>}
+                                                {stats.coBuy.length > 0 ? <div className="overflow-x-auto"><table className={`w-full text-sm text-left ${theme.text}`}><thead className={theme.textMuted}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營</th><th className="px-6 py-3 text-right">合計</th></tr></thead><tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.coBuy.map(r => <StockRow key={r.id} r={r} />)}</tbody></table></div> : <div className={`p-8 text-center ${theme.textMuted}`}>無資料</div>}
                                             </div>
                                             <div className={`rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
                                                 <div className={`px-6 py-4 border-b flex items-center gap-2 ${theme.border} ${currentTheme === 'dark' ? 'bg-green-900/20' : 'bg-green-50'}`}><TrendingDown className="w-5 h-5 text-green-600" /><h3 className={`font-bold ${currentTheme === 'dark' ? 'text-green-400' : 'text-green-800'}`}>三法同步賣超(張數)</h3></div>
-                                                {stats.coSell.length > 0 ? <div className="overflow-x-auto"><table className={`w-full text-sm text-left ${theme.text}`}><thead className={theme.textMuted}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營</th><th className="px-6 py-3 text-right">合計</th></tr></thead><tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.coSell.map(r => <tr key={r.id} className={`transition-colors ${currentTheme === 'dark' ? 'hover:bg-green-900/10' : 'hover:bg-green-50/50'}`}><td className={`px-6 py-3 font-mono ${theme.textMuted}`}>{r.id}</td><td className="px-6 py-3 font-bold">{r.name}</td><td className="px-6 py-3 text-right text-green-600">{r.foreign.toLocaleString()}</td><td className="px-6 py-3 text-right text-green-600">{r.trust.toLocaleString()}</td><td className="px-6 py-3 text-right text-green-600">{r.dealer.toLocaleString()}</td><td className="px-6 py-3 text-right font-bold text-green-600">{r.total.toLocaleString()}</td></tr>)}</tbody></table></div> : <div className={`p-8 text-center ${theme.textMuted}`}>無資料</div>}
+                                                {stats.coSell.length > 0 ? <div className="overflow-x-auto"><table className={`w-full text-sm text-left ${theme.text}`}><thead className={theme.textMuted}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營</th><th className="px-6 py-3 text-right">合計</th></tr></thead><tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.coSell.map(r => <StockRow key={r.id} r={r} />)}</tbody></table></div> : <div className={`p-8 text-center ${theme.textMuted}`}>無資料</div>}
                                             </div>
                                         </div>
                                     )}
