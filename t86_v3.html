@@ -228,7 +228,7 @@
 
                         <h3>✨ 核心亮點</h3>
                         <ul>
-                            <li><strong>雙軌數據整合</strong>：同時支援「個股張數」與「分類金額」分析。</li>
+                            <li><strong>雙軌數據整合</strong>：同時支援「個股股數」與「分類金額」分析。</li>
                             <li><strong>企業級大容量儲存</strong>：採用 IndexedDB 技術，可儲存數月甚至數年的歷史資料。</li>
                             <li><strong>專業視覺化分析</strong>：提供買賣超排行、多日累計趨勢、土洋合作偵測。</li>
                             <li><strong>動態統計區間</strong>：支援 1~60 日靈活調整統計範圍。</li>
@@ -240,7 +240,7 @@
                             <li><strong>方法 A：雲端抓取 (推薦)</strong>：選擇日期 -> 點擊「抓取 T86」。</li>
                             <li><strong>方法 B：CSV 匯入 (手動備援)</strong>：
                                 <ul>
-                                    <li>點擊下載圖示 <span className="inline-block px-1 bg-gray-200 text-black text-xs rounded">張</span> 前往下載 <strong>T86</strong> 報表 -> 點擊「匯入」載入。</li>
+                                    <li>點擊下載圖示 <span className="inline-block px-1 bg-gray-200 text-black text-xs rounded">股</span> 前往下載 <strong>T86</strong> 報表 -> 點擊「匯入」載入。</li>
                                     <li>點擊下載圖示 <span className="inline-block px-1 bg-gray-200 text-black text-xs rounded">金</span> 前往下載 <strong>BFI82U</strong> 報表 -> 點擊「匯入」載入。</li>
                                     <li>系統會自動將兩份報表整合至同一日期。</li>
                                 </ul>
@@ -784,7 +784,7 @@
                                         <input type="file" accept=".csv,.json" className="hidden" onChange={handleFileUpload} />
                                     </label>
                                     <div className="flex flex-col gap-0.5">
-                                        <a href="https://www.twse.com.tw/zh/trading/foreign/t86.html" target="_blank" className="flex items-center justify-center w-5 h-4 bg-white/10 hover:bg-white/20 rounded text-[10px] text-emerald-400" title="下載張數(T86)">張</a>
+                                        <a href="https://www.twse.com.tw/zh/trading/foreign/t86.html" target="_blank" className="flex items-center justify-center w-5 h-4 bg-white/10 hover:bg-white/20 rounded text-[10px] text-emerald-400" title="下載股數(T86)">股</a>
                                         <a href="https://www.twse.com.tw/zh/trading/foreign/bfi82u.html" target="_blank" className="flex items-center justify-center w-5 h-4 bg-white/10 hover:bg-white/20 rounded text-[10px] text-emerald-400" title="下載金額(BFI82U)">金</a>
                                     </div>
                                 </div>
@@ -848,17 +848,17 @@
                                     {activeTab === 'overview' && (
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in zoom-in duration-300">
                                             <ChartSection
-                                                title="合計買超 Top 15：張數" icon={ArrowUp}
+                                                title="合計買超 Top 15：股數" icon={ArrowUp}
                                                 data={stats.totalBuy} dataKey="total" color="text-red-600"
                                                 currentDate={currentDate} chartMode={chartMode} setChartMode={setChartMode}
                                             />
                                             <ChartSection
-                                                title="合計賣超 Top 15：張數" icon={ArrowDown}
+                                                title="合計賣超 Top 15：股數" icon={ArrowDown}
                                                 data={stats.totalSell} dataKey="total" color="text-green-600"
                                                 currentDate={currentDate} chartMode={chartMode} setChartMode={setChartMode}
                                             />
                                             <div className={`lg:col-span-2 rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
-                                                <div className={`px-6 py-4 border-b ${theme.border}`}><h3 className={`font-bold ${theme.text}`}>詳細數據列表 (前 50 筆)：張數</h3></div>
+                                                <div className={`px-6 py-4 border-b ${theme.border}`}><h3 className={`font-bold ${theme.text}`}>詳細數據列表 (前 50 筆)：股數</h3></div>
                                                 <div className="overflow-x-auto max-h-[500px]">
                                                     <table className={`w-full text-sm text-left ${theme.text}`}>
                                                         <thead className={`font-medium sticky top-0 z-10 shadow-sm ${currentTheme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營商</th><th className="px-6 py-3 text-right">合計</th></tr></thead>
@@ -871,18 +871,18 @@
                                     {activeTab === 'comovement' && (
                                         <div className="grid grid-cols-1 gap-6 animate-in fade-in duration-300">
                                             <div className={`rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
-                                                <div className={`px-6 py-4 border-b flex items-center gap-2 ${theme.border} ${currentTheme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'}`}><TrendingUp className="w-5 h-5 text-red-600" /><h3 className={`font-bold ${currentTheme === 'dark' ? 'text-red-400' : 'text-red-800'}`}>三法同步買超(張數)</h3></div>
+                                                <div className={`px-6 py-4 border-b flex items-center gap-2 ${theme.border} ${currentTheme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'}`}><TrendingUp className="w-5 h-5 text-red-600" /><h3 className={`font-bold ${currentTheme === 'dark' ? 'text-red-400' : 'text-red-800'}`}>三法同步買超(股數)</h3></div>
                                                 {stats.coBuy.length > 0 ? <div className="overflow-x-auto"><table className={`w-full text-sm text-left ${theme.text}`}><thead className={theme.textMuted}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營</th><th className="px-6 py-3 text-right">合計</th></tr></thead><tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.coBuy.map(r => <tr key={r.id} className={`transition-colors ${currentTheme === 'dark' ? 'hover:bg-red-900/10' : 'hover:bg-red-50/50'}`}><td className={`px-6 py-3 font-mono ${theme.textMuted}`}>{r.id}</td><td className="px-6 py-3 font-bold">{r.name}</td><td className="px-6 py-3 text-right text-red-600">{r.foreign.toLocaleString()}</td><td className="px-6 py-3 text-right text-red-600">{r.trust.toLocaleString()}</td><td className="px-6 py-3 text-right text-red-600">{r.dealer.toLocaleString()}</td><td className="px-6 py-3 text-right font-bold text-red-600">{r.total.toLocaleString()}</td></tr>)}</tbody></table></div> : <div className={`p-8 text-center ${theme.textMuted}`}>無資料</div>}
                                             </div>
                                             <div className={`rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
-                                                <div className={`px-6 py-4 border-b flex items-center gap-2 ${theme.border} ${currentTheme === 'dark' ? 'bg-green-900/20' : 'bg-green-50'}`}><TrendingDown className="w-5 h-5 text-green-600" /><h3 className={`font-bold ${currentTheme === 'dark' ? 'text-green-400' : 'text-green-800'}`}>三法同步賣超(張數)</h3></div>
+                                                <div className={`px-6 py-4 border-b flex items-center gap-2 ${theme.border} ${currentTheme === 'dark' ? 'bg-green-900/20' : 'bg-green-50'}`}><TrendingDown className="w-5 h-5 text-green-600" /><h3 className={`font-bold ${currentTheme === 'dark' ? 'text-green-400' : 'text-green-800'}`}>三法同步賣超(股數)</h3></div>
                                                 {stats.coSell.length > 0 ? <div className="overflow-x-auto"><table className={`w-full text-sm text-left ${theme.text}`}><thead className={theme.textMuted}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營</th><th className="px-6 py-3 text-right">合計</th></tr></thead><tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.coSell.map(r => <tr key={r.id} className={`transition-colors ${currentTheme === 'dark' ? 'hover:bg-green-900/10' : 'hover:bg-green-50/50'}`}><td className={`px-6 py-3 font-mono ${theme.textMuted}`}>{r.id}</td><td className="px-6 py-3 font-bold">{r.name}</td><td className="px-6 py-3 text-right text-green-600">{r.foreign.toLocaleString()}</td><td className="px-6 py-3 text-right text-green-600">{r.trust.toLocaleString()}</td><td className="px-6 py-3 text-right text-green-600">{r.dealer.toLocaleString()}</td><td className="px-6 py-3 text-right font-bold text-green-600">{r.total.toLocaleString()}</td></tr>)}</tbody></table></div> : <div className={`p-8 text-center ${theme.textMuted}`}>無資料</div>}
                                             </div>
                                         </div>
                                     )}
-                                    {activeTab === 'foreign' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300"><ChartSection title="外資 買超 Top 20(張數)" icon={Globe} data={stats.foreignBuy} dataKey="foreign" color="text-blue-600" colorName="外資" currentDate={currentDate} /><ChartSection title="外資 賣超 Top 20(張數)" icon={Globe} data={stats.foreignSell} dataKey="foreign" color="text-blue-600" colorName="外資" currentDate={currentDate} /></div>}
-                                    {activeTab === 'trust' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300"><ChartSection title="投信 買超 Top 20(張數)" icon={Landmark} data={stats.trustBuy} dataKey="trust" color="text-emerald-600" colorName="投信" currentDate={currentDate} /><ChartSection title="投信 賣超 Top 20(張數)" icon={Landmark} data={stats.trustSell} dataKey="trust" color="text-emerald-600" colorName="投信" currentDate={currentDate} /></div>}
-                                    {activeTab === 'dealer' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300"><ChartSection title="自營商 買超 Top 20(張數)" icon={Briefcase} data={stats.dealerBuy} dataKey="dealer" color="text-amber-600" colorName="自營商" currentDate={currentDate} /><ChartSection title="自營商 賣超 Top 20(張數)" icon={Briefcase} data={stats.dealerSell} dataKey="dealer" color="text-amber-600" colorName="自營商" currentDate={currentDate} /></div>}
+                                    {activeTab === 'foreign' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300"><ChartSection title="外資 買超 Top 20(股數)" icon={Globe} data={stats.foreignBuy} dataKey="foreign" color="text-blue-600" colorName="外資" currentDate={currentDate} /><ChartSection title="外資 賣超 Top 20(股數)" icon={Globe} data={stats.foreignSell} dataKey="foreign" color="text-blue-600" colorName="外資" currentDate={currentDate} /></div>}
+                                    {activeTab === 'trust' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300"><ChartSection title="投信 買超 Top 20(股數)" icon={Landmark} data={stats.trustBuy} dataKey="trust" color="text-emerald-600" colorName="投信" currentDate={currentDate} /><ChartSection title="投信 賣超 Top 20(股數)" icon={Landmark} data={stats.trustSell} dataKey="trust" color="text-emerald-600" colorName="投信" currentDate={currentDate} /></div>}
+                                    {activeTab === 'dealer' && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300"><ChartSection title="自營商 買超 Top 20(股數)" icon={Briefcase} data={stats.dealerBuy} dataKey="dealer" color="text-amber-600" colorName="自營商" currentDate={currentDate} /><ChartSection title="自營商 賣超 Top 20(股數)" icon={Briefcase} data={stats.dealerSell} dataKey="dealer" color="text-amber-600" colorName="自營商" currentDate={currentDate} /></div>}
                                 </div>
                             </>
                         ) : (
