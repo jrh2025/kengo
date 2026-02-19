@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Harmony Studio - Native Audio/Visual</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* 自定義捲軸 - 根據 CSS 變數調整顏色 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.8);
+        }
+
+        /* Range Input Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        /* Thumb */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: currentColor;
+            /* Use text color */
+            margin-top: -7px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        /* Track */
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(128, 128, 128, 0.2);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        const Icons = {
+            Image: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>,
+            Music: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>,
+            Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>,
+            Play: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>,
+            Record: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" /></svg>,
+            Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>,
+            Refresh: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg>,
+            Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+            Moon: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>,
+            Sun: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>,
+            Feather: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" /><line x1="16" y1="8" x2="2" y2="22" /><line x1="17.5" y1="15" x2="9" y2="15" /></svg>
+        };
+
+        // --- 主題設定 ---
+        const Themes = {
+            dark: {
+                id: 'dark',
+                name: '暗黑',
+                icon: <Icons.Moon />,
+                bg: 'bg-slate-950',
+                text: 'text-slate-100',
+                textSub: 'text-slate-400',
+                panel: 'bg-slate-900/60 border-white/5 backdrop-blur-xl',
+                inputBg: 'bg-slate-800',
+                inputBorder: 'border-slate-700',
+                accent: 'text-rose-400',
+                accentBg: 'bg-rose-500',
+                accentHover: 'hover:bg-rose-600',
+                buttonText: 'text-white',
+                vizColor1: 'rgba(244, 63, 94, 0.9)',
+                vizColor2: 'rgba(168, 85, 247, 0.6)',
+            },
+            light: {
+                id: 'light',
+                name: '光亮',
+                icon: <Icons.Sun />,
+                bg: 'bg-gray-50',
+                text: 'text-gray-900',
+                textSub: 'text-gray-500',
+                panel: 'bg-white/80 border-gray-200 shadow-xl backdrop-blur-xl',
+                inputBg: 'bg-gray-100',
+                inputBorder: 'border-gray-300',
+                accent: 'text-blue-600',
+                accentBg: 'bg-blue-600',
+                accentHover: 'hover:bg-blue-700',
+                buttonText: 'text-white',
+                vizColor1: 'rgba(37, 99, 235, 0.9)',
+                vizColor2: 'rgba(79, 70, 229, 0.6)',
+            },
+            soft: {
+                id: 'soft',
+                name: '柔和',
+                icon: <Icons.Feather />,
+                bg: 'bg-[#F5F2EA]', // 暖米色
+                text: 'text-[#5C554B]', // 暖深灰
+                textSub: 'text-[#948D81]',
+                panel: 'bg-[#FFFCF5]/80 border-[#E6E0D4] shadow-lg backdrop-blur-xl',
+                inputBg: 'bg-[#EEE9DD]',
+                inputBorder: 'border-[#D4CEC2]',
+                accent: 'text-[#D97757]', // 磚紅/陶土色
+                accentBg: 'bg-[#D97757]',
+                accentHover: 'hover:bg-[#C26649]',
+                buttonText: 'text-white',
+                vizColor1: 'rgba(217, 119, 87, 0.9)',
+                vizColor2: 'rgba(217, 166, 87, 0.6)',
+            }
+        };
+
+        const VisualizerOptions = [
+            { id: 'none', label: '無特效', desc: '純淨畫面' },
+            { id: 'bars', label: '經典頻譜', desc: '動態長條' },
+            { id: 'round_bars', label: '柔和頻譜', desc: '圓角律動' },
+            { id: 'aurora', label: '極光流動', desc: '漸層光幕' },
+            { id: 'wave', label: '聲波線條', desc: '即時波形' },
+            { id: 'circle', label: '光環輻射', desc: '環狀粒子' },
+            { id: 'pulse', label: '呼吸脈衝', desc: '極簡圓形' },
+        ];
+
+        const App = () => {
+            const [theme, setTheme] = useState(Themes.dark);
+            const [status, setStatus] = useState('idle'); // idle, recording, completed
+            const [imageFile, setImageFile] = useState(null);
+            const [audioFile, setAudioFile] = useState(null);
+            const [progress, setProgress] = useState(0);
+            const [duration, setDuration] = useState(0);
+            const [outputUrl, setOutputUrl] = useState(null);
+            const [outputFormat, setOutputFormat] = useState('mp4');
+            const [visualizerType, setVisualizerType] = useState('bars');
+
+            // 視覺特效配置
+            const [vizConfig, setVizConfig] = useState({
+                x: 50, // 0-100%
+                y: 50, // 0-100%
+                scale: 1.0 // 0.1 - 3.0
+            });
+
+            // 畫布尺寸
+            const [canvasSize, setCanvasSize] = useState({ width: 1920, height: 1080 });
+
+            const canvasRef = useRef(null);
+            const audioContextRef = useRef(null);
+            const sourceNodeRef = useRef(null);
+            const analyserRef = useRef(null);
+            const recorderRef = useRef(null);
+            const animationRef = useRef(null);
+            const imgRef = useRef(null);
+            const startTimeRef = useRef(0);
+
+            // 更新 Body class 
+            useEffect(() => {
+                document.body.className = `${theme.bg} ${theme.text} min-h-screen selection:${theme.accentBg}/30 transition-colors duration-300`;
+            }, [theme]);
+
+            // 當圖片載入時預覽
+            useEffect(() => {
+                if (imageFile) {
+                    const url = URL.createObjectURL(imageFile);
+                    const img = new Image();
+                    img.src = url;
+                    img.onload = () => {
+                        imgRef.current = img;
+                        const w = img.naturalWidth % 2 === 0 ? img.naturalWidth : img.naturalWidth - 1;
+                        const h = img.naturalHeight % 2 === 0 ? img.naturalHeight : img.naturalHeight - 1;
+                        setCanvasSize({ width: w, height: h });
+                        setTimeout(() => drawStaticPreview(), 0);
+                    };
+                    return () => URL.revokeObjectURL(url);
+                }
+            }, [imageFile]);
+
+            // 當特效設定改變時重繪預覽
+            useEffect(() => {
+                if (status === 'idle' && imgRef.current) {
+                    drawStaticPreview();
+                }
+            }, [vizConfig, visualizerType, canvasSize, theme]);
+
+            // 當音訊載入時取得長度
+            useEffect(() => {
+                if (audioFile) {
+                    const url = URL.createObjectURL(audioFile);
+                    const audio = new Audio(url);
+                    audio.onloadedmetadata = () => {
+                        setDuration(audio.duration);
+                    };
+                    return () => URL.revokeObjectURL(url);
+                }
+            }, [audioFile]);
+
+            const drawStaticPreview = () => {
+                const canvas = canvasRef.current;
+                const img = imgRef.current;
+                if (!canvas || !img) return;
+
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvasSize.width;
+                canvas.height = canvasSize.height;
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                if (visualizerType !== 'none') {
+                    const dummyData = new Uint8Array(64).map((_, i) => 100 + Math.sin(i * 0.5) * 50);
+                    drawVisualizer(ctx, dummyData, 64, canvas.width, canvas.height);
+                }
+            };
+
+            const drawVisualizer = (ctx, dataArray, bufferLength, width, height) => {
+                const centerX = width * (vizConfig.x / 100);
+                const centerY = height * (vizConfig.y / 100);
+
+                if (visualizerType === 'bars') {
+                    const barWidth = (width / bufferLength) * 2.5;
+                    let x = 0;
+                    const baseLine = height * (vizConfig.y / 100);
+
+                    for (let i = 0; i < bufferLength; i++) {
+                        const barHeight = dataArray[i] * 2.0 * vizConfig.scale;
+                        const gradient = ctx.createLinearGradient(0, baseLine, 0, baseLine - barHeight);
+                        gradient.addColorStop(0, theme.vizColor1);
+                        gradient.addColorStop(1, theme.vizColor2);
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(x, baseLine - barHeight, barWidth, barHeight);
+                        x += barWidth + 1;
+                        if (x > width) break;
+                    }
+                } else if (visualizerType === 'round_bars') {
+                    const barWidth = (width / bufferLength) * 1.5 * vizConfig.scale;
+                    const spacing = barWidth * 1.2;
+                    let x = (width - (bufferLength * spacing)) / 2;
+                    if (x < 0) x = 0;
+                    const baseLine = height * (vizConfig.y / 100);
+
+                    ctx.lineCap = 'round';
+                    ctx.lineWidth = barWidth;
+
+                    for (let i = 0; i < bufferLength; i++) {
+                        const barHeight = (dataArray[i] / 255) * (height * 0.4) * vizConfig.scale;
+                        const gradient = ctx.createLinearGradient(0, baseLine, 0, baseLine - barHeight);
+                        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+                        gradient.addColorStop(1, theme.vizColor2);
+                        ctx.beginPath();
+                        ctx.moveTo(x, baseLine);
+                        ctx.lineTo(x, baseLine - Math.max(1, barHeight));
+                        ctx.strokeStyle = gradient;
+                        ctx.stroke();
+                        x += spacing;
+                        if (x > width) break;
+                    }
+
+                } else if (visualizerType === 'aurora') {
+                    const sliceWidth = width * 1.0 / bufferLength;
+                    let x = 0;
+                    const baseLine = height * (vizConfig.y / 100);
+                    ctx.beginPath();
+                    ctx.moveTo(0, baseLine);
+                    for (let i = 0; i < bufferLength; i++) {
+                        const v = dataArray[i] / 128.0;
+                        const y = baseLine - (v - 1) * (height * 0.3) * vizConfig.scale;
+                        ctx.lineTo(x, y);
+                        x += sliceWidth;
+                    }
+                    ctx.lineTo(width, baseLine);
+                    ctx.lineTo(width, height);
+                    ctx.lineTo(0, height);
+                    ctx.closePath();
+                    const gradient = ctx.createLinearGradient(0, baseLine - height * 0.3, 0, height);
+                    gradient.addColorStop(0, theme.vizColor1.replace('0.9', '0.6'));
+                    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+
+                } else if (visualizerType === 'wave') {
+                    ctx.lineWidth = 4 * vizConfig.scale;
+                    ctx.strokeStyle = theme.vizColor1;
+                    ctx.beginPath();
+                    const sliceWidth = width * 1.0 / bufferLength;
+                    let x = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        const v = dataArray[i] / 128.0;
+                        const y = centerY + (v - 1) * (height / 2) * vizConfig.scale;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                        x += sliceWidth;
+                    }
+                    ctx.lineTo(width, centerY);
+                    ctx.stroke();
+
+                } else if (visualizerType === 'circle') {
+                    const radius = (Math.min(width, height) / 4) * vizConfig.scale;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    const bars = 60;
+                    const step = Math.floor(bufferLength / bars);
+                    for (let i = 0; i < bars; i++) {
+                        const value = dataArray[i * step];
+                        const barLen = (value / 255) * (radius * 0.8);
+                        const rad = (i / bars) * 2 * Math.PI;
+                        const xStart = centerX + Math.cos(rad) * radius;
+                        const yStart = centerY + Math.sin(rad) * radius;
+                        const xEnd = centerX + Math.cos(rad) * (radius + barLen);
+                        const yEnd = centerY + Math.sin(rad) * (radius + barLen);
+                        ctx.beginPath();
+                        ctx.moveTo(xStart, yStart);
+                        ctx.lineTo(xEnd, yEnd);
+                        ctx.lineWidth = 4 * vizConfig.scale;
+                        ctx.lineCap = 'round';
+                        ctx.strokeStyle = theme.vizColor2;
+                        ctx.stroke();
+                    }
+                } else if (visualizerType === 'pulse') {
+                    let sum = 0;
+                    for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+                    const average = sum / bufferLength;
+                    const baseRadius = (Math.min(width, height) / 6) * vizConfig.scale;
+                    const dynamicRadius = baseRadius + (average / 255) * baseRadius * 0.8;
+                    const gradient = ctx.createRadialGradient(centerX, centerY, baseRadius * 0.5, centerX, centerY, dynamicRadius * 1.5);
+                    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                    gradient.addColorStop(0.4, theme.vizColor2.replace('0.6', '0.3'));
+                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, dynamicRadius * 1.5, 0, 2 * Math.PI);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, dynamicRadius, 0, 2 * Math.PI);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+            };
+
+            const startRecording = async () => {
+                if (!imageFile || !audioFile) return;
+                setStatus('recording');
+                setProgress(0);
+
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const actx = new AudioContext();
+                audioContextRef.current = actx;
+
+                const arrayBuffer = await audioFile.arrayBuffer();
+                const audioBuffer = await actx.decodeAudioData(arrayBuffer);
+                setDuration(audioBuffer.duration);
+
+                const source = actx.createBufferSource();
+                source.buffer = audioBuffer;
+
+                const analyser = actx.createAnalyser();
+                analyser.fftSize = 2048;
+                analyser.smoothingTimeConstant = 0.85;
+                analyserRef.current = analyser;
+
+                const dest = actx.createMediaStreamDestination();
+                source.connect(analyser);
+                analyser.connect(dest);
+                analyser.connect(actx.destination);
+                sourceNodeRef.current = source;
+
+                const canvas = canvasRef.current;
+                const canvasStream = canvas.captureStream(60);
+                const combinedStream = new MediaStream([
+                    ...dest.stream.getAudioTracks(),
+                    ...canvasStream.getVideoTracks()
+                ]);
+
+                let mimeType = 'video/webm';
+                if (outputFormat === 'mp4') {
+                    if (MediaRecorder.isTypeSupported('video/mp4; codecs=avc1,mp4a.40.2')) mimeType = 'video/mp4; codecs=avc1,mp4a.40.2';
+                    else if (MediaRecorder.isTypeSupported('video/mp4')) mimeType = 'video/mp4';
+                    else mimeType = 'video/webm; codecs=vp9,opus';
+                } else {
+                    mimeType = 'video/webm; codecs=vp9,opus';
+                }
+
+                const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 10000000 });
+                const chunks = [];
+                recorder.ondataavailable = (e) => chunks.push(e.data);
+                recorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: mimeType });
+                    const url = URL.createObjectURL(blob);
+                    setOutputUrl(url);
+                    setStatus('completed');
+                    stopAnimation();
+                };
+
+                recorderRef.current = recorder;
+                recorder.start();
+                source.start(0);
+                startTimeRef.current = Date.now();
+                startAnimation();
+                source.onended = () => {
+                    if (recorder.state === 'recording') recorder.stop();
+                    setStatus('completed');
+                };
+            };
+
+            const startAnimation = () => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                const img = imgRef.current;
+                const analyser = analyserRef.current;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                const animate = () => {
+                    const elapsed = (Date.now() - startTimeRef.current) / 1000;
+                    setProgress((elapsed / duration) * 100);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    if (analyser && visualizerType !== 'none') {
+                        if (visualizerType === 'wave' || visualizerType === 'aurora') analyser.getByteTimeDomainData(dataArray);
+                        else analyser.getByteFrequencyData(dataArray);
+                        drawVisualizer(ctx, dataArray, bufferLength, canvas.width, canvas.height);
+                    }
+                    animationRef.current = requestAnimationFrame(animate);
+                };
+                animationRef.current = requestAnimationFrame(animate);
+            };
+
+            const stopAnimation = () => {
+                if (animationRef.current) cancelAnimationFrame(animationRef.current);
+                if (sourceNodeRef.current) { try { sourceNodeRef.current.stop(); } catch (e) { } }
+                if (recorderRef.current && recorderRef.current.state === 'recording') recorderRef.current.stop();
+            };
+
+            const reset = () => {
+                stopAnimation();
+                setImageFile(null);
+                setAudioFile(null);
+                setOutputUrl(null);
+                setStatus('idle');
+                setProgress(0);
+                const canvas = canvasRef.current;
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            };
+
+            return (
+                <div className={`min-h-screen pb-20`}>
+                    {/* 頂部導航與標題 */}
+                    <nav className={`w-full py-6 px-8 flex justify-between items-center ${theme.id === 'dark' ? 'border-white/5' : 'border-black/5'} border-b mb-10`}>
+                        <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${theme.accentBg} text-white shadow-lg`}>
+                                <Icons.Play />
+                            </div>
+                            <div>
+                                <h1 className={`text-2xl font-black tracking-tight ${theme.text}`}>VISUAL HARMONY</h1>
+                                <p className={`text-xs font-medium tracking-wide opacity-60`}>NATIVE AUDIO SYNTHESIS</p>
+                            </div>
+                        </div>
+
+                        {/* 主題切換器 */}
+                        <div className={`flex p-1 rounded-full ${theme.inputBg} border ${theme.inputBorder}`}>
+                            {Object.values(Themes).map(t => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => setTheme(t)}
+                                    className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${theme.id === t.id ? 'bg-white text-black shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                                    title={t.name}
+                                >
+                                    {t.icon} <span className="hidden md:inline">{t.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </nav>
+
+                    <main className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+
+                        {/* 左側：控制面板 (Visualizer Only) */}
+                        <div className="lg:col-span-4 space-y-8">
+                            <div className={`rounded-[2rem] p-8 border ${theme.panel} sticky top-8`}>
+                                <h2 className={`text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-50`}>視覺特效引擎</h2>
+
+                                <div className="grid grid-cols-1 gap-3 mb-8">
+                                    {VisualizerOptions.map((opt) => (
+                                        <button
+                                            key={opt.id}
+                                            onClick={() => setVisualizerType(opt.id)}
+                                            className={`p-4 rounded-2xl text-left border transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-4 ${visualizerType === opt.id ? `${theme.accentBg} ${theme.buttonText} shadow-lg border-transparent` : `${theme.inputBg} ${theme.inputBorder} ${theme.textSub} hover:border-gray-400`}`}
+                                            disabled={status === 'recording'}
+                                        >
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${visualizerType === opt.id ? 'bg-white/20' : 'bg-black/5'}`}>
+                                                {/* Simple Icon based on type? Or just a dot */}
+                                                <div className={`w-2 h-2 rounded-full ${visualizerType === opt.id ? 'bg-white' : 'bg-current opacity-30'}`} />
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-bold">{opt.label}</div>
+                                                <div className={`text-xs ${visualizerType === opt.id ? 'opacity-80' : 'opacity-50'}`}>{opt.desc}</div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {visualizerType !== 'none' && (
+                                    <div className={`p-6 rounded-2xl ${theme.inputBg} border ${theme.inputBorder} space-y-6 animate-in fade-in slide-in-from-top-4`}>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className={`text-xs font-bold ${theme.textSub} uppercase`}>水平位置 (X)</span>
+                                                    <span className={`text-xs font-mono font-bold ${theme.accent}`}>{vizConfig.x}%</span>
+                                                </div>
+                                                <input
+                                                    type="range" min="0" max="100"
+                                                    value={vizConfig.x}
+                                                    onChange={(e) => setVizConfig({ ...vizConfig, x: Number(e.target.value) })}
+                                                    className={`w-full h-2 rounded-full appearance-none bg-gray-300 ${theme.accent}`}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className={`text-xs font-bold ${theme.textSub} uppercase`}>垂直位置 (Y)</span>
+                                                    <span className={`text-xs font-mono font-bold ${theme.accent}`}>{vizConfig.y}%</span>
+                                                </div>
+                                                <input
+                                                    type="range" min="0" max="100"
+                                                    value={vizConfig.y}
+                                                    onChange={(e) => setVizConfig({ ...vizConfig, y: Number(e.target.value) })}
+                                                    className={`w-full h-2 rounded-full appearance-none bg-gray-300 ${theme.accent}`}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className={`text-xs font-bold ${theme.textSub} uppercase`}>縮放比例</span>
+                                                    <span className={`text-xs font-mono font-bold ${theme.accent}`}>{vizConfig.scale.toFixed(1)}x</span>
+                                                </div>
+                                                <input
+                                                    type="range" min="0.1" max="3" step="0.1"
+                                                    value={vizConfig.scale}
+                                                    onChange={(e) => setVizConfig({ ...vizConfig, scale: Number(e.target.value) })}
+                                                    className={`w-full h-2 rounded-full appearance-none bg-gray-300 ${theme.accent}`}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 右側：預覽視窗 + 資源配置 + 輸出格式 (佔比 8/12) */}
+                        <div className="lg:col-span-8 space-y-6">
+
+                            {/* 1. Preview Area */}
+                            <div className={`border ${theme.panel} rounded-[2.5rem] overflow-hidden shadow-2xl relative group`}>
+                                {/* ... existing Preview code ... */}
+                                <div
+                                    className="relative w-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CjxyZWN0IHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0iI2ZmZmZmZiIvPgo8Y2lyY2xlIGN4PSIxIiBjeT0iMSIgcj0iMSIgZmlsbD0iI2VlZWVlZSIvPjwvc3ZnPg==')] bg-repeat"
+                                    style={{
+                                        aspectRatio: imageFile ? `${canvasSize.width}/${canvasSize.height}` : '16/9',
+                                        maxHeight: '60vh' // Reduce max height slightly to fit more content
+                                    }}
+                                >
+                                    <canvas
+                                        ref={canvasRef}
+                                        width={canvasSize.width}
+                                        height={canvasSize.height}
+                                        className={`w-full h-full object-contain transition-opacity duration-500 ${outputUrl ? 'opacity-0 absolute inset-0' : 'opacity-100'}`}
+                                    />
+                                    {/* ... existing video output & overlays ... */}
+                                    {outputUrl && (
+                                        <div className="absolute inset-0 z-20 bg-black flex flex-col items-center justify-center animate-in fade-in">
+                                            <video src={outputUrl} controls className="w-full h-full object-contain" />
+                                            <div className="absolute bottom-6 left-6 right-6 flex gap-3 justify-center">
+                                                <a href={outputUrl} download={`harmony_output.${outputFormat === 'mp4' ? 'mp4' : 'webm'}`} className="px-8 bg-white text-black py-4 rounded-xl font-bold text-sm uppercase tracking-widest text-center shadow-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-2">
+                                                    <Icons.Download /> 下載影片
+                                                </a>
+                                                <button onClick={reset} className="px-6 bg-white/20 backdrop-blur-md hover:bg-white/30 text-white rounded-xl">
+                                                    <Icons.Refresh />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {status === 'idle' && !imageFile && (
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/5 backdrop-blur-sm">
+                                            <div className="text-center space-y-4">
+                                                <div className={`w-24 h-24 rounded-full ${theme.inputBg} flex items-center justify-center mx-auto shadow-inner`}>
+                                                    <Icons.Play className={`w-10 h-10 ${theme.textSub}`} />
+                                                </div>
+                                                <p className={`text-sm font-bold tracking-widest ${theme.textSub} uppercase`}>PREVIEW AREA</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {status === 'recording' && (
+                                        <div className="absolute top-6 right-6 px-4 py-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 flex items-center gap-3 z-30 shadow-xl">
+                                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.8)]"></div>
+                                            <span className="text-xs font-bold text-white tracking-wider">REC</span>
+                                        </div>
+                                    )}
+                                </div>
+                                {status === 'recording' && (
+                                    <div className="h-2 bg-slate-800 w-full relative overflow-hidden">
+                                        <div
+                                            className={`h-full ${theme.accentBg} transition-all duration-200 ease-linear`}
+                                            style={{ width: `${Math.min(progress, 100)}%` }}
+                                        ></div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 2. Resources & Output Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Resources Configuration */}
+                                <div className={`rounded-[2rem] p-8 border ${theme.panel}`}>
+                                    <h2 className={`text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-50`}>資源配置</h2>
+                                    <div className="space-y-4">
+                                        {/* Image Upload */}
+                                        <div className={`group relative border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer overflow-hidden ${imageFile ? `border-${theme.accentBg.split('-')[1]}-400/50 bg-${theme.accentBg.split('-')[1]}-400/5` : `${theme.inputBorder} hover:border-${theme.accentBg.split('-')[1]}-400/50`}`}>
+                                            <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                                            {imageFile ? (
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`p-2 rounded-full ${theme.accentBg} text-white`}>
+                                                        <Icons.Check />
+                                                    </div>
+                                                    <div className="text-left overflow-hidden">
+                                                        <p className={`text-sm font-bold ${theme.accent} truncate`}>{imageFile.name}</p>
+                                                        <p className={`text-xs ${theme.textSub} mt-0.5`}>{canvasSize.width} x {canvasSize.height}</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className={`flex items-center justify-center gap-3 ${theme.textSub} group-hover:${theme.accent} transition-colors`}>
+                                                    <Icons.Image />
+                                                    <span className="text-sm font-bold">上傳背景</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Audio Upload */}
+                                        <div className={`group relative border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer overflow-hidden ${audioFile ? `border-${theme.accentBg.split('-')[1]}-400/50 bg-${theme.accentBg.split('-')[1]}-400/5` : `${theme.inputBorder} hover:border-${theme.accentBg.split('-')[1]}-400/50`}`}>
+                                            <input type="file" accept="audio/*" onChange={(e) => setAudioFile(e.target.files[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                                            {audioFile ? (
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`p-2 rounded-full ${theme.accentBg} text-white`}>
+                                                        <Icons.Check />
+                                                    </div>
+                                                    <div className="text-left overflow-hidden">
+                                                        <p className={`text-sm font-bold ${theme.accent} truncate`}>{audioFile.name}</p>
+                                                        <p className={`text-xs ${theme.textSub} mt-0.5`}>{Math.floor(duration)} 秒</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className={`flex items-center justify-center gap-3 ${theme.textSub} group-hover:${theme.accent} transition-colors`}>
+                                                    <Icons.Music />
+                                                    <span className="text-sm font-bold">上傳音樂</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Output Configuration */}
+                                <div className={`rounded-[2rem] p-8 border ${theme.panel} flex flex-col justify-between`}>
+                                    <div>
+                                        <h2 className={`text-xs font-black uppercase tracking-[0.2em] mb-6 opacity-50`}>輸出設定</h2>
+                                        <div className={`flex p-1.5 rounded-xl ${theme.inputBg} mb-6`}>
+                                            <button
+                                                onClick={() => setOutputFormat('mp4')}
+                                                className={`flex-1 py-3 rounded-lg text-xs font-bold transition-all ${outputFormat === 'mp4' ? 'bg-white text-black shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                                            >
+                                                MP4
+                                            </button>
+                                            <button
+                                                onClick={() => setOutputFormat('webm')}
+                                                className={`flex-1 py-3 rounded-lg text-xs font-bold transition-all ${outputFormat === 'webm' ? 'bg-white text-black shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                                            >
+                                                WebM
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={startRecording}
+                                        disabled={!imageFile || !audioFile || status === 'recording'}
+                                        className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest text-white shadow-xl transition-all active:scale-[0.98] hover:-translate-y-1
+                                            ${status === 'recording' ? 'bg-rose-500 animate-pulse' : theme.accentBg}
+                                            ${(!imageFile || !audioFile) ? 'opacity-50 cursor-not-allowed grayscale' : ''}
+                                        `}
+                                    >
+                                        {status === 'recording' ? "渲染中..." : "開始合成"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
