@@ -247,7 +247,7 @@
         );
 
         // --- 個股詳細趨勢 Modal (整合股價、成交量與本地快取) ---
-        const StockDetailModal = ({ stock, historicalData, onClose, theme, currentTheme, currentDate, dateRange, proxyUrl }) => { // currentTheme added as prop
+        const StockDetailModal = ({ stock, historicalData, onClose, theme, currentTheme, currentDate, dateRange, proxyUrl }) => {
             const [priceData, setPriceData] = useState({});
             const [isLoadingPrice, setIsLoadingPrice] = useState(false);
             const [priceError, setPriceError] = useState(null);
@@ -318,8 +318,9 @@
                         const startFmt = `${minDate.substring(0, 4)}-${minDate.substring(4, 6)}-${minDate.substring(6, 8)}`;
                         const endFmt = `${maxDate.substring(0, 4)}-${maxDate.substring(4, 6)}-${maxDate.substring(6, 8)}`;
 
-                        const fmUrl = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${stock.id}&start_date=${startFmt}&end_date=${endFmt}`;
-                        const proxiedUrl = `${proxyUrl}${encodeURIComponent(fmUrl)}`;
+                        // 移除嵌套的樣板字面值，避免引發舊版解析器的 SyntaxError
+                        const fmTargetUrl = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${stock.id}&start_date=${startFmt}&end_date=${endFmt}`;
+                        const proxiedUrl = `${proxyUrl}${encodeURIComponent(fmTargetUrl)}`;
 
                         const res = await fetch(proxiedUrl);
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -428,18 +429,28 @@
             const maxVolume = validVolumes.length ? Math.max(...validVolumes) : 0;
             const rightYAxisDomain = [0, maxVolume === 0 ? 'auto' : maxVolume * 4];
 
-            // 自定義 Tooltip (籌碼 - 加入安全鏈接運算符防止 undefined exception)
+            // 自定義 Tooltip (籌碼 - 安全取值寫法)
             const CustomTooltipChips = ({ active, payload, label }) => {
                 if (active && payload && payload.length) {
+                    const getVal = (key) => {
+                        const found = payload.find(p => p.dataKey === key);
+                        return (found && found.value != null) ? found.value : 0;
+                    };
+
+                    const fVal = getVal('foreign');
+                    const tVal = getVal('trust');
+                    const dVal = getVal('dealer');
+                    const totalVal = getVal('total');
+
                     return (
                         <div className={`p-3 border shadow-xl rounded-lg text-sm z-50`} style={{ backgroundColor: theme.tooltipBg, borderColor: theme.border, color: theme.tooltipText }}>
                             <p className="font-bold mb-2 border-b pb-1" style={{ borderColor: theme.border }}>{label} 籌碼動作</p>
                             <div className="space-y-1">
-                                <div className="flex justify-between gap-4"><span className="text-blue-500">外資:</span> <span>{payload.find(p => p.dataKey === 'foreign')?.value?.toLocaleString() ?? 0} 張</span></div>
-                                <div className="flex justify-between gap-4"><span className="text-emerald-500">投信:</span> <span>{payload.find(p => p.dataKey === 'trust')?.value?.toLocaleString() ?? 0} 張</span></div>
-                                <div className="flex justify-between gap-4"><span className="text-amber-500">自營:</span> <span>{payload.find(p => p.dataKey === 'dealer')?.value?.toLocaleString() ?? 0} 張</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-blue-500">外資:</span> <span>{fVal.toLocaleString()} 張</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-emerald-500">投信:</span> <span>{tVal.toLocaleString()} 張</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-amber-500">自營:</span> <span>{dVal.toLocaleString()} 張</span></div>
                                 <div className="border-t pt-1 mt-1 font-bold flex justify-between gap-4" style={{ borderColor: theme.border }}>
-                                    <span>單日合計:</span> <span className={(payload.find(p => p.dataKey === 'total')?.value ?? 0) > 0 ? 'text-red-500' : 'text-green-500'}>{payload.find(p => p.dataKey === 'total')?.value?.toLocaleString() ?? 0} 張</span>
+                                    <span>單日合計:</span> <span className={totalVal > 0 ? 'text-red-500' : 'text-green-500'}>{totalVal.toLocaleString()} 張</span>
                                 </div>
                             </div>
                         </div>
@@ -792,7 +803,9 @@
                     const currentProxy = uniqueProxies[i];
                     setRetryCount(i + 1);
                     try {
-                        const t86Url = `${currentProxy}${encodeURIComponent(`https://www.twse.com.tw/rwd/zh/fund/T86?date=${targetDateStr}&selectType=ALL&response=json`)}`;
+                        const targetUrl = `https://www.twse.com.tw/rwd/zh/fund/T86?date=${targetDateStr}&selectType=ALL&response=json`;
+                        const t86Url = `${currentProxy}${encodeURIComponent(targetUrl)}`;
+
                         const res = await fetch(t86Url);
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         const json = await res.json();
@@ -800,7 +813,8 @@
                         processFetchedData(json, targetDateStr);
 
                         try {
-                            const summaryUrl = `${currentProxy}${encodeURIComponent(`https://www.twse.com.tw/rwd/zh/fund/BFI82U?date=${targetDateStr}&response=json`)}`;
+                            const targetSumUrl = `https://www.twse.com.tw/rwd/zh/fund/BFI82U?date=${targetDateStr}&response=json`;
+                            const summaryUrl = `${currentProxy}${encodeURIComponent(targetSumUrl)}`;
                             const resSum = await fetch(summaryUrl);
                             if (resSum.ok) {
                                 const jsonSum = await resSum.json();
@@ -1185,18 +1199,22 @@
                     )}
 
                     <header className={`p-3 sm:p-4 shadow-md sticky top-0 z-20 theme-transition ${theme.header} text-white`}>
-                        <div className="max-w-7xl mx-auto flex flex-col xl:flex-row justify-between items-center gap-4">
+                        <div className="max-w-7xl mx-auto flex flex-col gap-3">
 
-                            {/* 左側與頂部：品牌區、搜尋列、全域設定 (說明/主題/設定) */}
-                            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between w-full xl:w-auto gap-3">
-                                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-                                    <h1 className="text-xl font-bold flex items-center gap-2 shrink-0">
-                                        <TrendingUp className="w-6 h-6 text-emerald-400" />
-                                        <span className="hidden sm:inline">台股分析</span> <span className="sm:hidden">分析</span> v4.1
+                            {/* 第一行：標題與全域設定 */}
+                            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between w-full gap-3">
+                                {/* 標題區 */}
+                                <div className="flex items-center justify-start w-full sm:w-auto shrink-0">
+                                    <h1 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                                        <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
+                                        <span>台股三大法人籌碼分析 v4.1</span>
                                     </h1>
+                                </div>
 
+                                {/* 搜尋與全域按鈕 */}
+                                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
                                     {/* 整合入導覽列的搜尋框 */}
-                                    <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-48 max-w-[200px]">
+                                    <form onSubmit={handleSearchSubmit} className="relative flex-1 sm:w-48 min-w-[120px]">
                                         <input
                                             type="text"
                                             placeholder="代號 (例: 2330)"
@@ -1207,24 +1225,21 @@
                                         <Search className="w-3.5 h-3.5 absolute left-3 top-2 text-slate-400" />
                                         <button type="submit" className="hidden">搜尋</button>
                                     </form>
-                                </div>
 
-                                {/* 全域按鈕群組：不再讓齒輪單獨流浪 */}
-                                <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
-                                    <button onClick={() => setShowManual(true)} className="flex items-center gap-1 text-xs bg-white/10 hover:bg-white/20 px-2 py-1.5 rounded transition-colors">
+                                    <button onClick={() => setShowManual(true)} className="flex items-center gap-1 text-xs bg-white/10 hover:bg-white/20 px-2 sm:px-3 py-1.5 rounded transition-colors shrink-0">
                                         <BookOpen className="w-4 h-4" /> <span className="hidden sm:inline">說明</span>
                                     </button>
-                                    <div className="flex bg-white/20 rounded-lg p-1 hidden sm:flex">
+                                    <div className="flex bg-white/20 rounded-lg p-1 hidden md:flex shrink-0">
                                         {['light', 'warm', 'dark'].map(t => <button key={t} onClick={() => setCurrentTheme(t)} className={`p-1.5 rounded ${currentTheme === t ? 'bg-white text-black shadow' : 'text-slate-400 hover:text-white'}`}>{t === 'light' ? <Sun className="w-4 h-4" /> : t === 'warm' ? <Coffee className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>)}
                                     </div>
-                                    <button onClick={() => setShowSettings(!showSettings)} className="p-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors">
+                                    <button onClick={() => setShowSettings(!showSettings)} className="p-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors shrink-0">
                                         <Settings className="w-5 h-5 text-white" />
                                     </button>
                                 </div>
                             </div>
 
-                            {/* 右側與底部：資料操作區塊 (統一底色與邊框，避免凌亂) */}
-                            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-white/10 p-2 rounded-xl border border-white/10 w-full xl:w-auto">
+                            {/* 第二行：資料操作區塊 */}
+                            <div className="flex flex-wrap md:flex-nowrap items-center justify-start gap-x-3 gap-y-3 bg-white/10 p-2 sm:px-4 sm:py-2.5 rounded-xl border border-white/10 w-full">
                                 <div className="flex items-center bg-black/20 rounded-lg px-2 py-1.5 border border-white/10 shrink-0">
                                     <Calendar className="w-4 h-4 text-slate-300 mr-2" />
                                     <input type="date" value={currentDate} onChange={(e) => setCurrentDate(e.target.value)} className="bg-transparent text-white text-sm outline-none w-[120px]" style={{ colorScheme: 'dark' }} />
@@ -1235,7 +1250,7 @@
                                     {loading ? `重試(${retryCount})` : '抓取 T86'}
                                 </button>
 
-                                <div className="w-px h-6 bg-white/20 hidden sm:block"></div>
+                                <div className="w-px h-6 bg-white/20 hidden md:block shrink-0"></div>
 
                                 <div className="flex items-center gap-1 shrink-0">
                                     <label className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg cursor-pointer text-sm font-medium" title="支援 T86(個股) 與 BFI82U(金額) 兩種 CSV">
@@ -1248,11 +1263,11 @@
                                     </div>
                                 </div>
 
-                                <div className="w-px h-6 bg-white/20 hidden sm:block"></div>
+                                <div className="w-px h-6 bg-white/20 hidden md:block shrink-0 ml-auto"></div>
 
-                                <div className="flex items-center gap-2 bg-black/20 rounded-lg px-3 py-1.5 border border-white/10 w-full sm:w-auto justify-center shrink-0">
-                                    <span className="text-xs text-slate-300 whitespace-nowrap w-12">統計 {dateRange} 日</span>
-                                    <input type="range" min="1" max={maxDateRange} value={dateRange} onChange={(e) => setDateRange(Number(e.target.value))} className="w-24 sm:w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-500" disabled={maxDateRange <= 1} />
+                                <div className="flex items-center gap-2 bg-black/20 rounded-lg px-3 py-1.5 border border-white/10 w-full md:w-auto justify-center shrink-0">
+                                    <span className="text-xs text-slate-300 whitespace-nowrap min-w-[45px]">統計 {dateRange} 日</span>
+                                    <input type="range" min="1" max={maxDateRange} value={dateRange} onChange={(e) => setDateRange(Number(e.target.value))} className="w-full md:w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-500" disabled={maxDateRange <= 1} />
                                     <span className="text-[10px] text-slate-500 w-6 text-right">/{maxDateRange}</span>
                                 </div>
                             </div>
