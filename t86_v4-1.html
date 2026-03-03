@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台股三大法人籌碼分析 v4.1 (籌碼與股價雙效檢視)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Babel for JSX compilation in browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- html2canvas for Screenshot Feature -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Import Map: 解決模組載入問題 -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom": "https://esm.sh/react-dom@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom",
+            "lucide-react": "https://esm.sh/lucide-react@0.303.0?external=react,react-dom",
+            "idb-keyval": "https://esm.sh/idb-keyval@6.2.1"
+        }
+    }
+    </script>
+
+    <style>
+        /* 隱藏滾動條但保留功能 */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* 自定義滾動條樣式 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        /* 平滑過渡效果 */
+        .theme-transition {
+            transition-property: background-color, border-color, color, fill, stroke, opacity;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 300ms;
+        }
+
+        /* Markdown 樣式模擬 */
+        .markdown-body h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #6366f1;
+        }
+
+        .markdown-body h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown-body p {
+            margin-bottom: 0.75rem;
+            line-height: 1.7;
+        }
+
+        .markdown-body ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .markdown-body li {
+            margin-bottom: 0.4rem;
+        }
+
+        .markdown-body strong {
+            font-weight: 700;
+        }
+
+        /* Slider 自定義樣式 */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+
+        .clickable-row {
+            cursor: pointer;
+        }
+
+        .clickable-row:hover td {
+            font-weight: 600;
+            position: relative;
+        }
+
+        .theme-dark .clickable-row:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+    </style>
+</head>
+
+<body class="theme-transition">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+
+        import {
+            BarChart, Bar, LineChart, Line, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell
+        } from 'recharts';
+
+        import {
+            Upload, FileText, RefreshCw, AlertCircle, Database, TrendingUp, TrendingDown,
+            ArrowUp, ArrowDown, Users, Briefcase, Globe, Landmark, Layers, Calendar, Settings, Trash2,
+            Sun, Moon, Coffee, ExternalLink, Download, CheckSquare, Square, X, Maximize2, Minimize2, FileJson,
+            BookOpen, Info, DollarSign, BarChart2, AlignLeft, Search, Activity, Camera
+        } from 'lucide-react';
+
+        import { get, set, del } from 'idb-keyval';
+
+        // --- 工具函數 ---
+        const formatDateToTWSE = (dateStr) => dateStr.replace(/-/g, ''); // 2023-10-01 -> 20231001
+        const formatDateToDisplay = (dateStr) => {
+            if (!dateStr || dateStr.length !== 8) return dateStr;
+            return `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+        };
+        const formatMoney = (num) => {
+            if (!num || isNaN(num)) return '0';
+            const absNum = Math.abs(num);
+            if (absNum >= 100000000) return (num / 100000000).toFixed(2) + ' 億';
+            if (absNum >= 10000) return (num / 10000).toFixed(0) + ' 萬';
+            return num.toLocaleString();
+        };
+
+        // 安全的數值解析器 (阻絕 API 回傳逗號字串或空值導致的 NaN 崩潰)
+        const safeNumber = (val) => {
+            if (val == null) return 0;
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            if (typeof val === 'string') {
+                const parsed = parseFloat(val.replace(/,/g, '').trim());
+                return isNaN(parsed) ? 0 : parsed;
+            }
+            return 0;
+        };
+
+        const parseRocDateToTwse = (rocDateStr) => {
+            const parts = rocDateStr.split('/');
+            if (parts.length !== 3) return rocDateStr;
+            const year = parseInt(parts[0], 10) + 1911;
+            return `${year}${parts[1].padStart(2, '0')}${parts[2].padStart(2, '0')}`;
+        };
+
+        // 備援 Proxy 清單
+        const PROXY_CANDIDATES = [
+            'https://api.allorigins.win/raw?url=',
+            'https://corsproxy.io/?',
+            'https://thingproxy.freeboard.io/fetch/'
+        ];
+
+        // 主題設定
+        const THEMES = {
+            light: { id: 'light', name: '白', bg: 'bg-slate-50', text: 'text-slate-800', textMuted: 'text-slate-500', card: 'bg-white', border: 'border-slate-200', header: 'bg-slate-900', grid: '#e2e8f0', tooltipBg: '#ffffff', tooltipText: '#1e293b', chartText: '#64748b', infoBg: 'bg-slate-100', infoText: 'text-slate-500', zeroLine: '#0f172a' },
+            warm: { id: 'warm', name: '暖', bg: 'bg-[#f5f5f0]', text: 'text-[#44403c]', textMuted: 'text-[#78716c]', card: 'bg-[#fdfbf7]', border: 'border-[#e7e5e4]', header: 'bg-[#57534e]', grid: '#d6d3d1', tooltipBg: '#fafaf9', tooltipText: '#44403c', chartText: '#78716c', infoBg: 'bg-[#e7e5e4]', infoText: 'text-[#78716c]', zeroLine: '#292524' },
+            dark: { id: 'dark', name: '暗', bg: 'bg-[#0f172a]', text: 'text-slate-200', textMuted: 'text-slate-400', card: 'bg-[#1e293b]', border: 'border-slate-700', header: 'bg-[#020617]', grid: '#334155', tooltipBg: '#1e293b', tooltipText: '#f8fafc', chartText: '#cbd5e1', infoBg: 'bg-slate-700', infoText: 'text-slate-200', zeroLine: '#f8fafc' }
+        };
+
+        // 使用手冊元件
+        const ManualModal = ({ onClose, theme }) => (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+                <div className={`w-full max-w-4xl max-h-[85vh] overflow-y-auto custom-scrollbar rounded-xl shadow-2xl ${theme.card} ${theme.text}`} onClick={e => e.stopPropagation()}>
+                    <div className={`flex justify-between items-center p-5 border-b sticky top-0 ${theme.card} z-10`} style={{ borderColor: theme.border }}>
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <BookOpen className="w-6 h-6 text-indigo-500" /> 使用手冊 v4.1
+                        </h2>
+                        <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors"><X className="w-5 h-5" /></button>
+                    </div>
+                    <div className="p-6 markdown-body text-sm md:text-base">
+                        <h3>系統升級說明 (v4.1)</h3>
+                        <p>本次升級加入了<strong>技術分析維度</strong>，全面提升量化分析能力：</p>
+                        <ul>
+                            <li><strong>版面最佳化與一鍵截圖：</strong>個股視窗不再出現捲軸，單頁完美呈現價量與籌碼圖表。同時新增「截圖」按鈕，便於快速保存與分享分析結果。</li>
+                            <li><strong>FinMind 股價智慧快取：</strong>捨棄不穩定的證交所爬蟲，改接 FinMind 雙引擎，並在您的設備上建立本地股價資料庫（IndexedDB 快取），實現二次查詢「零延遲」。</li>
+                            <li><strong>股價時序對比：</strong>在個股視窗中，新增收盤價與成交量趨勢圖。圖表 X 軸自動同步，游標滑動時可同時比對「法人籌碼動作」與「量價變化」，找出背離或共振訊號。</li>
+                            <li><strong>全域智慧檢索：</strong>導覽列新增搜尋框。輸入股票代號（如 2330），系統會自動掃描歷史資料庫提取名稱，並即時運算其籌碼與價格趨勢。</li>
+                        </ul>
+                        <hr className="my-6 border-slate-200" />
+                        <h3>1. 系統設計理念</h3>
+                        <p>本系統是專為台股投資人設計的<strong>「輕量級、隱私優先、視覺化」</strong>籌碼分析工具。資料運算與儲存皆在您的瀏覽器本地完成，保障極致隱私。</p>
+                        <h3>2. 核心功能介紹</h3>
+                        <p>1. <strong>統計天數滑桿：</strong>位於頂部控制列的滑桿決定所有圖表的計算基礎 (支援 1~60 日)。<br />
+                            2. <strong>個股趨勢透視：</strong>點擊任一檔股票或使用搜尋框，開啟詳細視窗，查看三大法人與股價的連動。<br />
+                            3. <strong>多維度戰情看板：</strong>總覽戰情、土洋合作、法人分項獨立檢視。</p>
+                        <h3>3. 資料來源與匯入教學</h3>
+                        <p>強烈推薦<strong>手動匯入 CSV</strong>：</p>
+                        <ol>
+                            <li>點擊介面上的<strong>「股」</strong>按鈕 (下載 T86 個股買賣超)。</li>
+                            <li>點擊介面上的<strong>「金」</strong>按鈕 (下載 BFI82U 買賣金額)。</li>
+                            <li>點擊本系統的<strong>「匯入」</strong>按鈕並選擇檔案，系統會自動判斷並存入資料庫。</li>
+                        </ol>
+                        <h3>4. 資料庫管理與備份</h3>
+                        <p>點擊右上角的「設定 (齒輪)」可以下載備份 JSON 或刪除歷史資料。若要重設股價快取，點擊「清除所有資料」即可一併釋放空間。</p>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // --- 個股詳細趨勢 Modal (整合股價、成交量與本地快取) ---
+        const StockDetailModal = ({ stock, historicalData, onClose, theme, currentTheme, currentDate, dateRange, proxyUrl }) => { // currentTheme added as prop
+            const [priceData, setPriceData] = useState({});
+            const [isLoadingPrice, setIsLoadingPrice] = useState(false);
+            const [priceError, setPriceError] = useState(null);
+
+            // 截圖功能狀態與參照
+            const modalRef = useRef(null);
+            const [isCapturing, setIsCapturing] = useState(false);
+
+            // 1. 整理籌碼圖表基礎資料
+            const baseChartData = useMemo(() => {
+                if (!stock || !stock.id) return [];
+                const allDates = Object.keys(historicalData).sort();
+                const targetDateStr = formatDateToTWSE(currentDate);
+                const targetIndex = allDates.indexOf(targetDateStr);
+
+                // 若當日無資料，且為搜尋進來的，嘗試拿最近 N 天
+                let startIndex, endIndex, selectedDates;
+                if (targetIndex === -1) {
+                    if (allDates.length === 0) return [];
+                    endIndex = allDates.length - 1;
+                    startIndex = Math.max(0, endIndex - dateRange + 1);
+                    selectedDates = allDates.slice(startIndex, endIndex + 1);
+                } else {
+                    startIndex = Math.max(0, targetIndex - dateRange + 1);
+                    selectedDates = allDates.slice(startIndex, targetIndex + 1);
+                }
+
+                return selectedDates.map(date => {
+                    const dayData = historicalData[date].find(s => s.id === stock.id);
+                    return {
+                        date: formatDateToDisplay(date),
+                        rawDate: date,
+                        foreign: dayData ? dayData.foreign : 0,
+                        trust: dayData ? dayData.trust : 0,
+                        dealer: dayData ? dayData.dealer : 0,
+                        total: dayData ? dayData.total : 0
+                    };
+                });
+            }, [stock, historicalData, currentDate, dateRange]);
+
+            // 2. 獲取股價演算法 (引入 FinMind API 與 IndexedDB Local Cache，包含量、額、價)
+            const fetchPrices = useCallback(async (forceRefresh = false) => {
+                if (!stock || !stock.id || baseChartData.length === 0) return;
+
+                setIsLoadingPrice(true);
+                setPriceError(null);
+
+                try {
+                    // 1. 取得全域本地快取
+                    const globalPriceCache = (await get('t86_stock_prices')) || {};
+                    const stockCache = globalPriceCache[stock.id] || {};
+
+                    // 2. 盤點需要的日期 (由圖表區間決定)
+                    const requiredDates = baseChartData.map(d => d.rawDate);
+
+                    // 3. 找出快取中缺失的日期
+                    // 若快取資料格式為純數字 (舊版 cache)，視為缺失強制更新
+                    let missingDates = forceRefresh
+                        ? requiredDates
+                        : requiredDates.filter(d => stockCache[d] === undefined || typeof stockCache[d] === 'number');
+
+                    // 4. 若有缺失，才向伺服器發出請求
+                    if (missingDates.length > 0) {
+                        missingDates.sort();
+                        const minDate = missingDates[0];
+                        const maxDate = missingDates[missingDates.length - 1];
+
+                        const startFmt = `${minDate.substring(0, 4)}-${minDate.substring(4, 6)}-${minDate.substring(6, 8)}`;
+                        const endFmt = `${maxDate.substring(0, 4)}-${maxDate.substring(4, 6)}-${maxDate.substring(6, 8)}`;
+
+                        const fmUrl = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${stock.id}&start_date=${startFmt}&end_date=${endFmt}`;
+                        const proxiedUrl = `${proxyUrl}${encodeURIComponent(fmUrl)}`;
+
+                        const res = await fetch(proxiedUrl);
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const json = await res.json();
+
+                        if (json.msg === 'success' && json.data) {
+                            json.data.forEach(row => {
+                                const twseDate = row.date.replace(/-/g, '');
+                                stockCache[twseDate] = {
+                                    close: safeNumber(row.close),
+                                    volume: Math.round(safeNumber(row.Trading_Volume) / 1000), // 轉為張數
+                                    money: safeNumber(row.Trading_money)
+                                };
+                            });
+
+                            // 非同步寫回 IndexedDB
+                            globalPriceCache[stock.id] = stockCache;
+                            await set('t86_stock_prices', globalPriceCache);
+                        } else {
+                            console.warn("FinMind API Response:", json);
+                            if (json.msg && json.msg.includes('limit')) {
+                                throw new Error("遭遇 API 頻率限制");
+                            } else {
+                                throw new Error(json.msg || "遠端無此標的股價資料");
+                            }
+                        }
+                    }
+
+                    // 6. 將快取對應回畫面需要的格式
+                    const newPriceData = {};
+                    requiredDates.forEach(d => {
+                        if (stockCache[d] !== undefined && typeof stockCache[d] !== 'number') {
+                            newPriceData[d] = stockCache[d];
+                        }
+                    });
+                    setPriceData(newPriceData);
+
+                } catch (err) {
+                    console.error("Fetch price error:", err);
+                    setPriceError(err.message || "股價獲取失敗");
+                } finally {
+                    setIsLoadingPrice(false);
+                }
+            }, [stock, baseChartData, proxyUrl]);
+
+            // 監聽基礎資料改變時自動發動資料對齊
+            useEffect(() => {
+                fetchPrices(false);
+            }, [fetchPrices]);
+
+            // 一鍵截圖演算法
+            const handleScreenshot = async (e) => {
+                e.stopPropagation();
+                if (!modalRef.current) return;
+
+                setIsCapturing(true);
+                // 讓 React 重新渲染一次，以觸發隱藏不需要在截圖中出現的按鈕元素
+                await new Promise(resolve => setTimeout(resolve, 50));
+
+                try {
+                    const canvas = await window.html2canvas(modalRef.current, {
+                        backgroundColor: theme.id === 'dark' ? '#1e293b' : (theme.id === 'warm' ? '#fdfbf7' : '#ffffff'),
+                        scale: window.devicePixelRatio > 1 ? window.devicePixelRatio : 2, // 確保高解析度
+                        logging: false,
+                        useCORS: true
+                    });
+
+                    const link = document.createElement('a');
+                    link.download = `${stock.id}_${stock.name}_分析圖.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } catch (err) {
+                    console.error('Screenshot failed', err);
+                    alert('截圖生成失敗，請稍後再試。');
+                } finally {
+                    setIsCapturing(false);
+                }
+            };
+
+            // 3. 合併資料供圖表渲染
+            const mergedChartData = useMemo(() => {
+                return baseChartData.map(d => ({
+                    ...d,
+                    price: priceData[d.rawDate] !== undefined ? priceData[d.rawDate].close : null,
+                    volume: priceData[d.rawDate] !== undefined ? priceData[d.rawDate].volume : null,
+                    money: priceData[d.rawDate] !== undefined ? priceData[d.rawDate].money : null
+                }));
+            }, [baseChartData, priceData]);
+
+            if (!stock) return null;
+
+            // 計算籌碼統計
+            const totalStats = mergedChartData.reduce((acc, curr) => ({
+                foreign: acc.foreign + (curr.foreign || 0),
+                trust: acc.trust + (curr.trust || 0),
+                dealer: acc.dealer + (curr.dealer || 0),
+                total: acc.total + (curr.total || 0)
+            }), { foreign: 0, trust: 0, dealer: 0, total: 0 });
+
+            // 防禦性計算 Y 軸 Range，過濾掉任何 null 或 NaN 以防止 Recharts 白屏崩潰
+            const validPrices = mergedChartData.map(d => d.price).filter(p => typeof p === 'number' && !isNaN(p));
+            const minPrice = validPrices.length ? Math.max(0, Math.floor(Math.min(...validPrices) * 0.95)) : 0;
+            const maxPrice = validPrices.length ? Math.ceil(Math.max(...validPrices) * 1.05) : 'auto';
+
+            const validVolumes = mergedChartData.map(d => d.volume).filter(v => typeof v === 'number' && !isNaN(v));
+            const maxVolume = validVolumes.length ? Math.max(...validVolumes) : 0;
+            const rightYAxisDomain = [0, maxVolume === 0 ? 'auto' : maxVolume * 4];
+
+            // 自定義 Tooltip (籌碼 - 加入安全鏈接運算符防止 undefined exception)
+            const CustomTooltipChips = ({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                    return (
+                        <div className={`p-3 border shadow-xl rounded-lg text-sm z-50`} style={{ backgroundColor: theme.tooltipBg, borderColor: theme.border, color: theme.tooltipText }}>
+                            <p className="font-bold mb-2 border-b pb-1" style={{ borderColor: theme.border }}>{label} 籌碼動作</p>
+                            <div className="space-y-1">
+                                <div className="flex justify-between gap-4"><span className="text-blue-500">外資:</span> <span>{payload.find(p => p.dataKey === 'foreign')?.value?.toLocaleString() ?? 0} 張</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-emerald-500">投信:</span> <span>{payload.find(p => p.dataKey === 'trust')?.value?.toLocaleString() ?? 0} 張</span></div>
+                                <div className="flex justify-between gap-4"><span className="text-amber-500">自營:</span> <span>{payload.find(p => p.dataKey === 'dealer')?.value?.toLocaleString() ?? 0} 張</span></div>
+                                <div className="border-t pt-1 mt-1 font-bold flex justify-between gap-4" style={{ borderColor: theme.border }}>
+                                    <span>單日合計:</span> <span className={(payload.find(p => p.dataKey === 'total')?.value ?? 0) > 0 ? 'text-red-500' : 'text-green-500'}>{payload.find(p => p.dataKey === 'total')?.value?.toLocaleString() ?? 0} 張</span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+                return null;
+            };
+
+            // 自定義 Tooltip (價量)
+            const CustomTooltipPrice = ({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                    const pricePayload = payload.find(p => p.dataKey === 'price');
+                    const volumePayload = payload.find(p => p.dataKey === 'volume');
+                    const rawData = payload[0].payload || {};
+
+                    return (
+                        <div className={`p-3 border shadow-xl rounded-lg text-sm z-50`} style={{ backgroundColor: theme.tooltipBg, borderColor: theme.border, color: theme.tooltipText }}>
+                            <p className="font-bold mb-2 border-b pb-1" style={{ borderColor: theme.border }}>{label} 交易資訊</p>
+                            <div className="space-y-1">
+                                {pricePayload && pricePayload.value != null && !isNaN(pricePayload.value) && (
+                                    <div className="flex justify-between gap-4 font-bold text-purple-500">
+                                        <span>收盤價:</span> <span>{pricePayload.value} 元</span>
+                                    </div>
+                                )}
+                                {volumePayload && volumePayload.value != null && !isNaN(volumePayload.value) && (
+                                    <div className="flex justify-between gap-4 text-slate-500">
+                                        <span>成交量:</span> <span>{volumePayload.value.toLocaleString()} 張</span>
+                                    </div>
+                                )}
+                                {rawData.money != null && !isNaN(rawData.money) && (
+                                    <div className="flex justify-between gap-4 text-slate-500">
+                                        <span>成交額:</span> <span>{formatMoney(rawData.money)}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                }
+                return null;
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4" onClick={onClose}>
+                    <div ref={modalRef} className={`w-full max-w-5xl h-[92vh] flex flex-col rounded-xl shadow-2xl ${theme.card} ${theme.text}`} onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className={`flex justify-between items-center p-4 border-b ${theme.card} rounded-t-xl shrink-0`} style={{ borderColor: theme.border }}>
+                            <div className="flex flex-col">
+                                <h2 className="text-2xl font-bold flex items-center gap-2">
+                                    <span className="font-mono bg-indigo-100 text-indigo-700 px-2 rounded text-xl">{stock.id}</span>
+                                    {stock.name}
+                                </h2>
+                                <div className={`text-xs flex flex-wrap items-center gap-2 ${theme.textMuted} mt-1`}>
+                                    <span>
+                                        區間: {mergedChartData.length > 0 ? `${mergedChartData[0].date} ~ ${mergedChartData[mergedChartData.length - 1].date}` : '無資料'}
+                                        (共 <span className="text-indigo-500 font-bold">{mergedChartData.length}</span> 日)
+                                    </span>
+
+                                    {/* 狀態與按鈕群組 (截圖時透過 opacity-0 隱藏以維持排版空間) */}
+                                    <div className={`flex items-center gap-2 ml-1 pl-2 border-l border-slate-300 dark:border-slate-600 transition-opacity duration-200 ${isCapturing ? 'opacity-0' : 'opacity-100'}`}>
+                                        {isLoadingPrice ? (
+                                            <span className="text-purple-500 flex items-center gap-1 animate-pulse"><RefreshCw className="w-3 h-3 animate-spin" /> 獲取中...</span>
+                                        ) : (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); fetchPrices(true); }}
+                                                className="text-purple-600 flex items-center gap-1 hover:text-purple-700 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-800/50 px-2 py-0.5 rounded transition-colors text-[10px] sm:text-xs border border-purple-200 dark:border-purple-800"
+                                                title="強制無視快取，自伺服器重新獲取股價"
+                                            >
+                                                <RefreshCw className="w-3 h-3" /> <span className="hidden sm:inline">更新股價</span>
+                                            </button>
+                                        )}
+
+                                        <button
+                                            onClick={handleScreenshot}
+                                            disabled={isCapturing}
+                                            className={`flex items-center gap-1 px-2 py-0.5 rounded transition-colors text-[10px] sm:text-xs border ${currentTheme === 'dark' ? 'text-blue-400 bg-blue-900/30 border-blue-800 hover:bg-blue-800/50' : 'text-blue-600 bg-blue-100 border-blue-200 hover:bg-blue-200'
+                                                }`}
+                                            title="將此畫面存為圖片"
+                                        >
+                                            <Camera className="w-3 h-3" /> <span className="hidden sm:inline">截圖</span>
+                                        </button>
+
+                                        {priceError && <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {priceError}</span>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 右側統計與關閉按鈕 (截圖時隱藏) */}
+                            <div className={`flex items-center gap-4 transition-opacity duration-200 ${isCapturing ? 'opacity-0' : 'opacity-100'}`}>
+                                <div className={`text-right hidden sm:block`}>
+                                    <div className="text-xs text-gray-500">區間累計 ({mergedChartData.length}日)</div>
+                                    <div className={`font-bold ${totalStats.total > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                        {totalStats.total > 0 ? '+' : ''}{totalStats.total.toLocaleString()} 張
+                                    </div>
+                                </div>
+                                <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Chart Area - 修正卷軸問題：改用 flex 比例分配高度且隱藏溢出 */}
+                        <div className="flex-1 p-3 sm:p-4 min-h-0 flex flex-col gap-2 overflow-hidden">
+                            {mergedChartData.length > 0 ? (
+                                <>
+                                    {/* 上半部：籌碼長條圖/折線圖 (佔比稍大) */}
+                                    <div className="flex-[1.2] min-h-0 flex flex-col relative pb-2">
+                                        <div className={`text-xs font-bold pl-[85px] pb-1 z-10 ${theme.textMuted}`}><Activity className="inline w-3 h-3 mr-1" />法人籌碼 (張)</div>
+                                        <div className="flex-1 min-h-0">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <ComposedChart data={mergedChartData} margin={{ top: 5, right: 30, left: 0, bottom: 0 }} syncId="stockCharts">
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.grid} />
+                                                    <XAxis dataKey="date" tick={false} axisLine={false} /> {/* 隱藏上圖 X 軸標籤 */}
+                                                    <YAxis tick={{ fill: theme.chartText, fontSize: 12 }} width={85} tickFormatter={(val) => Math.abs(val) >= 1000 ? `${(val / 1000).toFixed(1)}k` : val} />
+                                                    <Tooltip content={<CustomTooltipChips />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                                                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                                                    <ReferenceLine y={0} stroke={theme.zeroLine} strokeWidth={1} />
+
+                                                    <Bar dataKey="total" name="合計買賣超" barSize={20} fillOpacity={0.3}>
+                                                        {mergedChartData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.total > 0 ? '#ef4444' : '#22c55e'} />
+                                                        ))}
+                                                    </Bar>
+                                                    <Line type="monotone" dataKey="foreign" name="外資" stroke="#3b82f6" strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
+                                                    <Line type="monotone" dataKey="trust" name="投信" stroke="#10b981" strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
+                                                    <Line type="monotone" dataKey="dealer" name="自營商" stroke="#f59e0b" strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
+                                                </ComposedChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+
+                                    {/* 下半部：收盤價與成交量折柱圖 (佔比稍小) */}
+                                    <div className="flex-[1] min-h-0 flex flex-col border-t pt-2" style={{ borderColor: theme.grid }}>
+                                        <div className={`text-xs font-bold pl-[85px] pb-1 z-10 flex justify-between pr-8 ${theme.textMuted}`}>
+                                            <div><TrendingUp className="inline w-3 h-3 mr-1 text-purple-500" />收盤價 (元) & 成交量 (張)</div>
+                                        </div>
+                                        <div className="flex-1 min-h-0">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <ComposedChart data={mergedChartData} margin={{ top: 5, right: 30, left: 0, bottom: 20 }} syncId="stockCharts">
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.grid} />
+                                                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: theme.chartText }} minTickGap={30} />
+
+                                                    {/* 左側 Y 軸：收盤價 */}
+                                                    <YAxis yAxisId="left" domain={[minPrice, maxPrice]} tick={{ fill: theme.chartText, fontSize: 12 }} width={85} allowDataOverflow={true} />
+
+                                                    {/* 右側 Y 軸：成交量 (隱藏刻度避免干擾，但保留比例尺讓 Bar 不會佔滿整張圖) */}
+                                                    <YAxis yAxisId="right" orientation="right" domain={rightYAxisDomain} hide={true} />
+
+                                                    <Tooltip content={<CustomTooltipPrice />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+
+                                                    {/* 成交量 Bar (綁定右側 Y 軸，使用淡灰色降低干擾) */}
+                                                    <Bar yAxisId="right" dataKey="volume" name="成交量" fill="#94a3b8" opacity={0.4} barSize={12} isAnimationActive={false} />
+
+                                                    {/* 收盤價 Line (綁定左側 Y 軸) */}
+                                                    <Line yAxisId="left" type="monotone" dataKey="price" name="收盤價" stroke="#a855f7" strokeWidth={2} dot={false} activeDot={{ r: 6, fill: '#a855f7' }} connectNulls={true} />
+                                                </ComposedChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                                    <Search className="w-16 h-16 mb-4 opacity-50" />
+                                    <p>選定日期範圍內無資料</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Summary Footer */}
+                        <div className={`p-4 border-t grid grid-cols-3 gap-4 text-center text-sm ${theme.bg} shrink-0 rounded-b-xl`} style={{ borderColor: theme.border }}>
+                            <div>
+                                <div className="text-blue-500 font-bold mb-1">外資累計</div>
+                                <span className="font-mono">{totalStats.foreign.toLocaleString()}</span>
+                            </div>
+                            <div>
+                                <div className="text-emerald-500 font-bold mb-1">投信累計</div>
+                                <span className="font-mono">{totalStats.trust.toLocaleString()}</span>
+                            </div>
+                            <div>
+                                <div className="text-amber-500 font-bold mb-1">自營累計</div>
+                                <span className="font-mono">{totalStats.dealer.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            // --- State ---
+            const [historicalData, setHistoricalData] = useState({});
+            const [historicalSummary, setHistoricalSummary] = useState({});
+            const [isDbInitialized, setIsDbInitialized] = useState(false);
+
+            const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
+            const [dateRange, setDateRange] = useState(1);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [activeTab, setActiveTab] = useState('overview');
+            const [showSettings, setShowSettings] = useState(false);
+            const [showManual, setShowManual] = useState(false);
+            const [retryCount, setRetryCount] = useState(0);
+
+            // 搜尋列狀態
+            const [searchInput, setSearchInput] = useState("");
+
+            // 選中的個股 (開啟 Modal 用)
+            const [selectedStock, setSelectedStock] = useState(null);
+
+            const [selectedDates, setSelectedDates] = useState(new Set());
+            const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem('t86_theme') || 'light');
+            const theme = THEMES[currentTheme];
+
+            // 圖表模式 state: 'net' (淨值) 或 'stacked' (堆疊)
+            const [chartMode, setChartMode] = useState('net');
+
+            const [proxyUrl, setProxyUrl] = useState(() => {
+                const saved = localStorage.getItem('t86_proxy_url');
+                if (saved === 'https://corsproxy.io/?') return PROXY_CANDIDATES[0];
+                return saved || PROXY_CANDIDATES[0];
+            });
+
+            useEffect(() => {
+                document.body.className = `theme-transition ${theme.bg}`;
+                if (currentTheme === 'dark') document.body.classList.add('theme-dark');
+                else document.body.classList.remove('theme-dark');
+            }, [theme, currentTheme]);
+
+            // --- Persistence ---
+            useEffect(() => {
+                const initDatabase = async () => {
+                    setLoading(true);
+                    try {
+                        const dbData = await get('t86_historical_data') || {};
+                        const dbSummary = await get('t86_historical_summary') || {};
+
+                        // 遷移舊版
+                        const legacyDataStr = localStorage.getItem('t86_historical_data');
+                        if (legacyDataStr) {
+                            try {
+                                const legacyData = JSON.parse(legacyDataStr);
+                                Object.assign(dbData, legacyData);
+                                localStorage.removeItem('t86_historical_data');
+                            } catch (e) { }
+                        }
+
+                        setHistoricalData(dbData);
+                        setHistoricalSummary(dbSummary);
+                    } catch (err) {
+                        setError("資料庫初始化失敗。");
+                    } finally {
+                        setIsDbInitialized(true);
+                        setLoading(false);
+                    }
+                };
+                initDatabase();
+            }, []);
+
+            useEffect(() => {
+                if (!isDbInitialized) return;
+                const saveData = async () => {
+                    try {
+                        await set('t86_historical_data', historicalData);
+                        await set('t86_historical_summary', historicalSummary);
+                        if (error && error.includes("儲存空間不足")) setError(null);
+                    } catch (err) {
+                        setError("寫入資料庫失敗，請檢查硬碟空間。");
+                    }
+                };
+                saveData();
+            }, [historicalData, historicalSummary, isDbInitialized]);
+
+            useEffect(() => { localStorage.setItem('t86_proxy_url', proxyUrl); }, [proxyUrl]);
+            useEffect(() => { localStorage.setItem('t86_theme', currentTheme); }, [currentTheme]);
+
+            // --- 資料管理與設定功能保留 ---
+            const storedDatesList = useMemo(() => Object.keys(historicalData).sort().reverse(), [historicalData]);
+
+            const maxDateRange = useMemo(() => {
+                const count = storedDatesList.length;
+                return Math.min(Math.max(count, 1), 60);
+            }, [storedDatesList]);
+
+            const toggleDateSelection = (date) => {
+                const newSet = new Set(selectedDates);
+                if (newSet.has(date)) newSet.delete(date); else newSet.add(date);
+                setSelectedDates(newSet);
+            };
+
+            const toggleAllDates = () => {
+                setSelectedDates(selectedDates.size === storedDatesList.length ? new Set() : new Set(storedDatesList));
+            };
+
+            const deleteSelectedData = () => {
+                if (selectedDates.size === 0) return;
+                if (!window.confirm(`確定刪除 ${selectedDates.size} 筆資料？`)) return;
+                const newData = { ...historicalData };
+                const newSummary = { ...historicalSummary };
+                selectedDates.forEach(date => { delete newData[date]; delete newSummary[date]; });
+                setHistoricalData(newData);
+                setHistoricalSummary(newSummary);
+                setSelectedDates(new Set());
+            };
+
+            const deleteSingleDate = (date) => {
+                if (!window.confirm(`刪除 ${formatDateToDisplay(date)} 資料？`)) return;
+                const newData = { ...historicalData };
+                const newSummary = { ...historicalSummary };
+                delete newData[date];
+                delete newSummary[date];
+                setHistoricalData(newData);
+                setHistoricalSummary(newSummary);
+            };
+
+            const clearAllData = () => {
+                if (window.confirm("清除所有資料？這將一併清除所有歷史匯入與您已快取的股價資料。")) {
+                    setHistoricalData({});
+                    setHistoricalSummary({});
+                    del('t86_historical_data');
+                    del('t86_historical_summary');
+                    del('t86_stock_prices'); // 一併清除股價快取
+                    setSelectedDates(new Set());
+                    setError(null);
+                }
+            };
+
+            const downloadBackup = () => {
+                const backup = { data: historicalData, summary: historicalSummary };
+                const dataStr = JSON.stringify(backup);
+                const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+                const exportFileDefaultName = `T86_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            };
+
+            // --- API Logic 保留 ---
+            const fetchRealData = async () => {
+                setLoading(true);
+                setError(null);
+                setRetryCount(0);
+                const targetDateStr = formatDateToTWSE(currentDate);
+                const proxiesToTry = [proxyUrl, ...PROXY_CANDIDATES.filter(p => p !== proxyUrl)];
+                const uniqueProxies = [...new Set(proxiesToTry)].filter(Boolean);
+
+                let success = false;
+                let lastErrorMsg = '';
+
+                for (let i = 0; i < uniqueProxies.length; i++) {
+                    const currentProxy = uniqueProxies[i];
+                    setRetryCount(i + 1);
+                    try {
+                        const t86Url = `${currentProxy}${encodeURIComponent(`https://www.twse.com.tw/rwd/zh/fund/T86?date=${targetDateStr}&selectType=ALL&response=json`)}`;
+                        const res = await fetch(t86Url);
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const json = await res.json();
+                        if (json.stat !== 'OK') throw new Error(`TWSE_LOGIC_ERROR:${json.stat}`);
+                        processFetchedData(json, targetDateStr);
+
+                        try {
+                            const summaryUrl = `${currentProxy}${encodeURIComponent(`https://www.twse.com.tw/rwd/zh/fund/BFI82U?date=${targetDateStr}&response=json`)}`;
+                            const resSum = await fetch(summaryUrl);
+                            if (resSum.ok) {
+                                const jsonSum = await resSum.json();
+                                if (jsonSum.stat === 'OK') processSummaryData(jsonSum, targetDateStr);
+                            }
+                        } catch (e) {
+                            console.warn("Summary fetch failed:", e);
+                        }
+
+                        success = true;
+                        if (currentProxy !== proxyUrl) setProxyUrl(currentProxy);
+                        break;
+                    } catch (err) {
+                        if (err.message.startsWith('TWSE_LOGIC_ERROR:')) { lastErrorMsg = err.message.split(':')[1]; break; }
+                        lastErrorMsg = err.message;
+                    }
+                }
+
+                if (!success) setError(`抓取失敗: ${lastErrorMsg}`);
+                setLoading(false);
+                setRetryCount(0);
+            };
+
+            const processFetchedData = (json, dateStr) => {
+                try {
+                    const fields = json.fields;
+                    const getIdx = (name) => fields.findIndex(f => f.includes(name));
+                    const idxId = 0; const idxName = 1;
+                    const idxForeign = getIdx('外陸資買賣超股數');
+                    const idxTrust = getIdx('投信買賣超股數');
+                    const idxDealer = getIdx('自營商買賣超股數');
+                    const idxTotal = getIdx('三大法人買賣超股數');
+
+                    if (idxForeign === -1) throw new Error("API 格式變更");
+
+                    const parseToSheets = (val) => {
+                        const rawShares = parseInt(val.replace(/,/g, ''), 10) || 0;
+                        return Math.round(rawShares / 1000); // 股 -> 張
+                    };
+
+                    const parsedRows = json.data.map(row => {
+                        return {
+                            id: row[idxId],
+                            name: row[idxName].trim(),
+                            foreign: parseToSheets(row[idxForeign]),
+                            trust: idxTrust !== -1 ? parseToSheets(row[idxTrust]) : 0,
+                            dealer: idxDealer !== -1 ? parseToSheets(row[idxDealer]) : 0,
+                            total: parseToSheets(row[idxTotal])
+                        };
+                    }).filter(r => r.id.length <= 6 && !isNaN(parseInt(r.id[0])));
+
+                    setHistoricalData(prev => ({ ...prev, [dateStr]: parsedRows }));
+                } catch (e) { throw new Error("資料解析錯誤"); }
+            };
+
+            const processSummaryData = (json, dateStr) => {
+                try {
+                    const data = json.data;
+                    const parseMoney = (rowIdx) => parseInt(data[rowIdx][3].replace(/,/g, ''), 10);
+                    const dealerNet = parseMoney(0) + parseMoney(1);
+                    const trustNet = parseMoney(2);
+                    const foreignNet = parseMoney(3);
+
+                    setHistoricalSummary(prev => ({
+                        ...prev,
+                        [dateStr]: { foreign: foreignNet, trust: trustNet, dealer: dealerNet }
+                    }));
+                } catch (e) { console.error("Summary parse error", e); }
+            };
+
+            // --- CSV & JSON 匯入邏輯保留 ---
+            const handleFileUpload = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                setLoading(true); setError(null);
+                const reader = new FileReader();
+
+                if (file.type === "application/json" || file.name.endsWith('.json')) {
+                    reader.readAsText(file, 'UTF-8');
+                    reader.onload = (e) => {
+                        try {
+                            const backup = JSON.parse(e.target.result);
+                            if (backup.data) {
+                                setHistoricalData(prev => ({ ...prev, ...backup.data }));
+                                if (backup.summary) setHistoricalSummary(prev => ({ ...prev, ...backup.summary }));
+                            } else {
+                                setHistoricalData(prev => ({ ...prev, ...backup }));
+                            }
+                            alert("還原成功！");
+                        } catch (err) { setError("還原失敗"); }
+                        finally { setLoading(false); }
+                    };
+                } else {
+                    reader.readAsText(file, 'Big5');
+                    reader.onload = (e) => {
+                        try {
+                            const csvText = e.target.result;
+                            const lines = csvText.split(/\r\n|\n/);
+                            const isT86 = lines.some(l => l.includes('證券代號'));
+                            const isBFI82U = lines.some(l => l.includes('單位名稱') && l.includes('買進金額'));
+
+                            let fileDate = formatDateToTWSE(currentDate);
+                            const titleLine = lines.find(l => l.includes('年') && l.includes('月'));
+                            if (titleLine) {
+                                const match = titleLine.match(/(\d{2,3})年(\d{1,2})月(\d{1,2})日/);
+                                if (match) fileDate = `${parseInt(match[1]) + 1911}${match[2].padStart(2, '0')}${match[3].padStart(2, '0')}`;
+                            }
+
+                            if (isT86) {
+                                const result = parseTWSET86CSV(csvText);
+                                if (result.length === 0) throw new Error("無效 T86 CSV");
+                                setHistoricalData(prev => ({ ...prev, [fileDate]: result }));
+                                alert(`成功匯入 ${fileDate} 個股籌碼 (T86)！已自動轉為張數。`);
+                            } else if (isBFI82U) {
+                                const summary = parseBFI82UCSV(csvText);
+                                setHistoricalSummary(prev => ({ ...prev, [fileDate]: summary }));
+                                alert(`成功匯入 ${fileDate} 金額統計 (BFI82U)！`);
+                            } else {
+                                throw new Error("無法識別的 CSV 格式");
+                            }
+                            setCurrentDate(`${fileDate.substring(0, 4)}-${fileDate.substring(4, 6)}-${fileDate.substring(6, 8)}`);
+                        } catch (err) { setError("CSV 讀取失敗: " + err.message); }
+                        finally { setLoading(false); }
+                    };
+                }
+            };
+
+            const parseTWSET86CSV = (text) => {
+                const lines = text.split(/\r\n|\n/);
+                const result = [];
+                let headerIndex = lines.findIndex(l => l.includes('證券代號'));
+                if (headerIndex === -1) return [];
+
+                const cleanToSheets = (v) => {
+                    if (!v) return 0;
+                    const raw = parseInt(v.replace(/^"|"$/g, '').replace(/,/g, '').trim()) || 0;
+                    return Math.round(raw / 1000);
+                };
+
+                for (let i = headerIndex + 1; i < lines.length; i++) {
+                    const line = lines[i].trim(); if (!line) continue;
+                    const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                    if (!cols || cols.length < 5) continue;
+                    const cleanId = (v) => v ? v.replace(/^"|"$/g, '').replace(/,/g, '').trim() : '0';
+                    const cleanName = (v) => v ? v.replace(/^"|"$/g, '').replace(/,/g, '').trim() : '';
+
+                    const id = cleanId(cols[0]);
+                    if (id.length > 6 || isNaN(parseInt(id[0]))) continue;
+
+                    const foreign = cleanToSheets(cols[4]);
+                    const trust = cleanToSheets(cols[10]);
+                    const total = cleanToSheets(cols[cols.length - 1]);
+                    const dealer = total - foreign - trust;
+
+                    result.push({
+                        id, name: cleanName(cols[1]),
+                        foreign, trust, dealer, total
+                    });
+                }
+                return result;
+            };
+
+            const parseBFI82UCSV = (text) => {
+                const lines = text.split(/\r\n|\n/);
+                let foreign = 0, trust = 0, dealer = 0;
+                lines.forEach(line => {
+                    const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                    if (!matches || matches.length < 4) return;
+                    const name = matches[0].replace(/"/g, '').trim();
+                    const netStr = matches[3].replace(/"/g, '').replace(/,/g, '');
+                    const net = parseInt(netStr) || 0;
+                    if (name.includes('外資') || name.includes('陸資')) foreign += net;
+                    else if (name.includes('投信')) trust += net;
+                    else if (name.includes('自營商')) dealer += net;
+                });
+                return { foreign, trust, dealer };
+            };
+
+            // --- Handlers ---
+            const handleStockClick = (stockId, stockName) => {
+                setSelectedStock({ id: stockId, name: stockName });
+            };
+
+            const handleSearchSubmit = (e) => {
+                e.preventDefault();
+                const code = searchInput.trim();
+                if (!code) return;
+
+                // 嘗試從本地資料庫中尋找股票名稱
+                let foundName = "";
+                for (const date in historicalData) {
+                    const stockRecord = historicalData[date].find(x => x.id === code);
+                    if (stockRecord) {
+                        foundName = stockRecord.name;
+                        break;
+                    }
+                }
+
+                // 就算找不到名稱，依然開啟 Modal (可純看技術線型)
+                setSelectedStock({ id: code, name: foundName || '自訂查詢標的' });
+                setSearchInput("");
+            };
+
+            // --- 聚合與統計 ---
+            const aggregatedData = useMemo(() => {
+                const targetDateStr = formatDateToTWSE(currentDate);
+                const availableDates = Object.keys(historicalData).sort().reverse();
+                const startIndex = availableDates.indexOf(targetDateStr);
+                if (startIndex === -1) return { stocks: [], summary: null };
+
+                const datesToAggregate = availableDates.slice(startIndex, startIndex + dateRange);
+                const aggMap = {};
+                const aggSummary = { foreign: 0, trust: 0, dealer: 0, count: 0 };
+
+                datesToAggregate.forEach(dateKey => {
+                    (historicalData[dateKey] || []).forEach(row => {
+                        if (!aggMap[row.id]) aggMap[row.id] = { ...row, foreign: 0, trust: 0, dealer: 0, total: 0 };
+                        aggMap[row.id].foreign += row.foreign;
+                        aggMap[row.id].trust += row.trust;
+                        aggMap[row.id].dealer += row.dealer;
+                        aggMap[row.id].total += row.total;
+                    });
+                    if (historicalSummary[dateKey]) {
+                        aggSummary.foreign += historicalSummary[dateKey].foreign;
+                        aggSummary.trust += historicalSummary[dateKey].trust;
+                        aggSummary.dealer += historicalSummary[dateKey].dealer;
+                        aggSummary.count++;
+                    }
+                });
+
+                return {
+                    stocks: Object.values(aggMap).sort((a, b) => b.total - a.total),
+                    summary: aggSummary.count > 0 ? aggSummary : null
+                };
+            }, [historicalData, historicalSummary, currentDate, dateRange]);
+
+            const stats = useMemo(() => {
+                if (aggregatedData.stocks.length === 0) return null;
+                const d = aggregatedData.stocks;
+                return {
+                    totalBuy: [...d].sort((a, b) => b.total - a.total).slice(0, 15),
+                    totalSell: [...d].sort((a, b) => a.total - b.total).slice(0, 15),
+                    coBuy: d.filter(x => x.foreign > 0 && x.trust > 0 && x.dealer > 0).sort((a, b) => b.total - a.total),
+                    coSell: d.filter(x => x.foreign < 0 && x.trust < 0 && x.dealer < 0).sort((a, b) => a.total - b.total),
+                    foreignBuy: [...d].sort((a, b) => b.foreign - a.foreign).slice(0, 20),
+                    foreignSell: [...d].sort((a, b) => a.foreign - b.foreign).slice(0, 20),
+                    trustBuy: [...d].sort((a, b) => b.trust - a.trust).slice(0, 20),
+                    trustSell: [...d].sort((a, b) => a.trust - b.trust).slice(0, 20),
+                    dealerBuy: [...d].sort((a, b) => b.dealer - a.dealer).slice(0, 20),
+                    dealerSell: [...d].sort((a, b) => a.dealer - b.dealer).slice(0, 20),
+                    summary: aggregatedData.summary
+                };
+            }, [aggregatedData]);
+
+            // --- 完整 UI 元件 ---
+            const ChartSection = ({ title, icon: Icon, data, dataKey, color, colorName, currentDate, chartMode, chartModeSetter }) => {
+                const [isMaximized, setIsMaximized] = useState(false);
+                const processedData = useMemo(() => {
+                    if (dataKey !== 'total' || chartMode !== 'stacked') return data;
+                    return data.map(item => ({
+                        ...item,
+                        foreignPos: item.foreign > 0 ? item.foreign : 0, foreignNeg: item.foreign < 0 ? item.foreign : 0,
+                        trustPos: item.trust > 0 ? item.trust : 0, trustNeg: item.trust < 0 ? item.trust : 0,
+                        dealerPos: item.dealer > 0 ? item.dealer : 0, dealerNeg: item.dealer < 0 ? item.dealer : 0,
+                    }));
+                }, [data, dataKey, chartMode]);
+
+                const yAxisFormatter = (val) => Math.abs(val) >= 1000 ? `${(val / 1000).toFixed(1)}k` : val;
+
+                const containerClasses = isMaximized
+                    ? `fixed inset-4 z-40 p-6 rounded-xl shadow-2xl border flex flex-col theme-transition ${theme.card} ${theme.border}`
+                    : `p-6 rounded-xl shadow-sm border h-[400px] flex flex-col theme-transition relative ${theme.card} ${theme.border}`;
+
+                // Tooltip
+                const ChartTooltip = ({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                        const d = payload[0].payload;
+                        return (
+                            <div className={`p-3 border shadow-xl rounded-lg text-sm z-50`} style={{ backgroundColor: theme.tooltipBg, borderColor: theme.border, color: theme.tooltipText }}>
+                                <p className="font-bold mb-1">{d.id} {d.name}</p>
+                                <div className={`text-xs mb-2 border-b pb-1 opacity-70`} style={{ borderColor: theme.border }}>
+                                    統計區間: {dateRange} 日累計
+                                </div>
+                                <div className="space-y-1 mt-2">
+                                    <div className="flex justify-between gap-4"><span className="text-blue-500">外資:</span> <span>{d.foreign.toLocaleString()} 張</span></div>
+                                    <div className="flex justify-between gap-4"><span className="text-emerald-500">投信:</span> <span>{d.trust.toLocaleString()} 張</span></div>
+                                    <div className="flex justify-between gap-4"><span className="text-amber-500">自營:</span> <span>{d.dealer.toLocaleString()} 張</span></div>
+                                    <div className="border-t pt-1 mt-1 font-bold flex justify-between gap-4" style={{ borderColor: theme.border }}><span>合計:</span> <span>{d.total.toLocaleString()} 張</span></div>
+                                </div>
+                                <div className="mt-2 text-[10px] text-gray-500 text-center">(點擊查看歷史趨勢)</div>
+                            </div>
+                        );
+                    } return null;
+                };
+
+                return (
+                    <>
+                        {isMaximized && <div className="fixed inset-0 bg-black/50 z-30 backdrop-blur-sm" onClick={() => setIsMaximized(false)} />}
+                        <div className={containerClasses}>
+                            <div className="flex items-center justify-between mb-4 shrink-0">
+                                <div className="flex items-center gap-2">
+                                    <div className={`p-2 rounded-lg bg-opacity-10`} style={{ backgroundColor: colorName ? 'transparent' : 'rgba(99, 102, 241, 0.1)' }}>{Icon && <Icon className={`w-5 h-5 ${color}`} />}</div>
+                                    <h3 className={`text-lg font-bold ${theme.text}`}>{title}</h3>
+                                </div>
+                                <div className="flex gap-2">
+                                    {dataKey === 'total' && chartModeSetter && (
+                                        <div className={`flex rounded-lg border text-xs p-0.5 ${theme.border}`}>
+                                            <button onClick={() => chartModeSetter('net')} className={`px-2 py-1 rounded ${chartMode === 'net' ? 'bg-indigo-500 text-white' : theme.textMuted}`}>淨值</button>
+                                            <button onClick={() => chartModeSetter('stacked')} className={`px-2 py-1 rounded ${chartMode === 'stacked' ? 'bg-indigo-500 text-white' : theme.textMuted}`}>堆疊</button>
+                                        </div>
+                                    )}
+                                    <button onClick={() => setIsMaximized(!isMaximized)} className={`p-2 rounded-lg hover:bg-black/5 ${theme.textMuted}`}>{isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}</button>
+                                </div>
+                            </div>
+                            {isMaximized && <div className={`text-center mb-4 pb-2 border-b ${theme.border}`}><h2 className={`text-2xl font-bold ${theme.text} flex items-center justify-center gap-2`}><Calendar className="w-6 h-6" /> {formatDateToDisplay(formatDateToTWSE(currentDate))}</h2></div>}
+                            <div className="flex-1 min-h-0">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={processedData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }} onClick={(data) => data && data.activePayload && handleStockClick(data.activePayload[0].payload.id, data.activePayload[0].payload.name)}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.grid} />
+                                        <XAxis dataKey="name" tick={{ fontSize: isMaximized ? 14 : 12, fill: theme.chartText }} interval={0} angle={-45} textAnchor="end" height={100} stroke={theme.grid} />
+                                        <YAxis tickFormatter={yAxisFormatter} width={65} tick={{ fill: theme.chartText }} stroke={theme.grid} />
+                                        <Tooltip content={<ChartTooltip />} cursor={{ fill: theme.text === 'text-slate-200' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', cursor: 'pointer' }} />
+                                        <ReferenceLine y={0} stroke={theme.zeroLine} strokeWidth={2} />
+                                        {dataKey === 'total' ? (
+                                            chartMode === 'net' ? (
+                                                <Bar dataKey="total" fill={color} isAnimationActive={false} className="cursor-pointer">
+                                                    {data.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.total > 0 ? '#ef4444' : '#22c55e'} />)}
+                                                </Bar>
+                                            ) : (
+                                                <>
+                                                    <Bar dataKey="foreignPos" stackId="up" fill="#3b82f6" isAnimationActive={false} className="cursor-pointer" />
+                                                    <Bar dataKey="trustPos" stackId="up" fill="#10b981" isAnimationActive={false} className="cursor-pointer" />
+                                                    <Bar dataKey="dealerPos" stackId="up" fill="#f59e0b" isAnimationActive={false} className="cursor-pointer" />
+                                                    <Bar dataKey="foreignNeg" stackId="down" fill="#3b82f6" isAnimationActive={false} className="cursor-pointer" />
+                                                    <Bar dataKey="trustNeg" stackId="down" fill="#10b981" isAnimationActive={false} className="cursor-pointer" />
+                                                    <Bar dataKey="dealerNeg" stackId="down" fill="#f59e0b" isAnimationActive={false} className="cursor-pointer" />
+                                                </>
+                                            )
+                                        ) : (
+                                            <Bar dataKey={dataKey} fill={dataKey === 'foreign' ? '#3b82f6' : dataKey === 'trust' ? '#10b981' : '#f59e0b'} isAnimationActive={false} className="cursor-pointer" />
+                                        )}
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </>
+                );
+            };
+
+            const MoneyCard = ({ title, amount }) => (
+                <div className={`p-4 rounded-xl border flex-1 ${theme.card} ${theme.border}`}>
+                    <div className={`text-xs ${theme.textMuted} mb-1`}>{title}</div>
+                    <div className={`text-lg font-bold ${amount > 0 ? 'text-red-500' : amount < 0 ? 'text-green-500' : theme.textMuted}`}>
+                        {amount > 0 ? '+' : ''}{formatMoney(amount)}
+                    </div>
+                </div>
+            );
+
+            const StockRow = ({ r, showTotal = true }) => (
+                <tr onClick={() => handleStockClick(r.id, r.name)} className={`clickable-row transition-colors border-b last:border-0 ${currentTheme === 'dark' ? 'border-slate-700 hover:bg-slate-800' : 'border-slate-100 hover:bg-indigo-50'}`}>
+                    <td className={`px-6 py-3 font-mono ${theme.textMuted}`}>{r.id}</td>
+                    <td className="px-6 py-3 font-medium flex items-center gap-1">{r.name} <BarChart2 className="w-3 h-3 text-gray-400 opacity-50" /></td>
+                    <td className={`px-6 py-3 text-right ${r.foreign > 0 ? 'text-red-600' : r.foreign < 0 ? 'text-green-600' : theme.textMuted}`}>{r.foreign.toLocaleString()}</td>
+                    <td className={`px-6 py-3 text-right ${r.trust > 0 ? 'text-red-600' : r.trust < 0 ? 'text-green-600' : theme.textMuted}`}>{r.trust.toLocaleString()}</td>
+                    <td className={`px-6 py-3 text-right ${r.dealer > 0 ? 'text-red-600' : r.dealer < 0 ? 'text-green-600' : theme.textMuted}`}>{r.dealer.toLocaleString()}</td>
+                    {showTotal && <td className={`px-6 py-3 text-right font-bold ${r.total > 0 ? 'text-red-600' : r.total < 0 ? 'text-green-600' : theme.textMuted}`}>{r.total.toLocaleString()}</td>}
+                </tr>
+            );
+
+            return (
+                <div className={`min-h-screen font-sans theme-transition ${theme.bg} ${theme.text}`}>
+                    {showManual && <ManualModal onClose={() => setShowManual(false)} theme={theme} />}
+
+                    {/* 傳入 ProxyUrl 讓股價抓取能順利繞過 CORS */}
+                    {selectedStock && (
+                        <StockDetailModal
+                            stock={selectedStock} historicalData={historicalData}
+                            onClose={() => setSelectedStock(null)} theme={theme}
+                            currentTheme={currentTheme}
+                            currentDate={currentDate} dateRange={dateRange} proxyUrl={proxyUrl}
+                        />
+                    )}
+
+                    <header className={`p-3 sm:p-4 shadow-md sticky top-0 z-20 theme-transition ${theme.header} text-white`}>
+                        <div className="max-w-7xl mx-auto flex flex-col xl:flex-row justify-between items-center gap-4">
+
+                            {/* 左側與頂部：品牌區、搜尋列、全域設定 (說明/主題/設定) */}
+                            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between w-full xl:w-auto gap-3">
+                                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                                    <h1 className="text-xl font-bold flex items-center gap-2 shrink-0">
+                                        <TrendingUp className="w-6 h-6 text-emerald-400" />
+                                        <span className="hidden sm:inline">台股分析</span> <span className="sm:hidden">分析</span> v4.1
+                                    </h1>
+
+                                    {/* 整合入導覽列的搜尋框 */}
+                                    <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-48 max-w-[200px]">
+                                        <input
+                                            type="text"
+                                            placeholder="代號 (例: 2330)"
+                                            value={searchInput}
+                                            onChange={(e) => setSearchInput(e.target.value)}
+                                            className="bg-black/20 text-white text-sm border border-white/20 rounded-full pl-8 pr-3 py-1.5 outline-none focus:border-indigo-400 transition-colors w-full"
+                                        />
+                                        <Search className="w-3.5 h-3.5 absolute left-3 top-2 text-slate-400" />
+                                        <button type="submit" className="hidden">搜尋</button>
+                                    </form>
+                                </div>
+
+                                {/* 全域按鈕群組：不再讓齒輪單獨流浪 */}
+                                <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                                    <button onClick={() => setShowManual(true)} className="flex items-center gap-1 text-xs bg-white/10 hover:bg-white/20 px-2 py-1.5 rounded transition-colors">
+                                        <BookOpen className="w-4 h-4" /> <span className="hidden sm:inline">說明</span>
+                                    </button>
+                                    <div className="flex bg-white/20 rounded-lg p-1 hidden sm:flex">
+                                        {['light', 'warm', 'dark'].map(t => <button key={t} onClick={() => setCurrentTheme(t)} className={`p-1.5 rounded ${currentTheme === t ? 'bg-white text-black shadow' : 'text-slate-400 hover:text-white'}`}>{t === 'light' ? <Sun className="w-4 h-4" /> : t === 'warm' ? <Coffee className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>)}
+                                    </div>
+                                    <button onClick={() => setShowSettings(!showSettings)} className="p-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors">
+                                        <Settings className="w-5 h-5 text-white" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 右側與底部：資料操作區塊 (統一底色與邊框，避免凌亂) */}
+                            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-white/10 p-2 rounded-xl border border-white/10 w-full xl:w-auto">
+                                <div className="flex items-center bg-black/20 rounded-lg px-2 py-1.5 border border-white/10 shrink-0">
+                                    <Calendar className="w-4 h-4 text-slate-300 mr-2" />
+                                    <input type="date" value={currentDate} onChange={(e) => setCurrentDate(e.target.value)} className="bg-transparent text-white text-sm outline-none w-[120px]" style={{ colorScheme: 'dark' }} />
+                                </div>
+
+                                <button onClick={fetchRealData} disabled={loading} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium shrink-0">
+                                    <RefreshCw className={`w-3.5 h-3.5 ${loading && 'animate-spin'}`} />
+                                    {loading ? `重試(${retryCount})` : '抓取 T86'}
+                                </button>
+
+                                <div className="w-px h-6 bg-white/20 hidden sm:block"></div>
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                    <label className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg cursor-pointer text-sm font-medium" title="支援 T86(個股) 與 BFI82U(金額) 兩種 CSV">
+                                        <Upload className="w-3.5 h-3.5" /> 匯入
+                                        <input type="file" accept=".csv,.json" className="hidden" onChange={handleFileUpload} />
+                                    </label>
+                                    <div className="flex flex-col gap-0.5">
+                                        <a href="https://www.twse.com.tw/zh/trading/foreign/t86.html" target="_blank" className="flex items-center justify-center w-5 h-4 bg-white/10 hover:bg-white/20 rounded text-[10px] text-emerald-400" title="下載張數(T86)">股</a>
+                                        <a href="https://www.twse.com.tw/zh/trading/foreign/bfi82u.html" target="_blank" className="flex items-center justify-center w-5 h-4 bg-white/10 hover:bg-white/20 rounded text-[10px] text-emerald-400" title="下載金額(BFI82U)">金</a>
+                                    </div>
+                                </div>
+
+                                <div className="w-px h-6 bg-white/20 hidden sm:block"></div>
+
+                                <div className="flex items-center gap-2 bg-black/20 rounded-lg px-3 py-1.5 border border-white/10 w-full sm:w-auto justify-center shrink-0">
+                                    <span className="text-xs text-slate-300 whitespace-nowrap w-12">統計 {dateRange} 日</span>
+                                    <input type="range" min="1" max={maxDateRange} value={dateRange} onChange={(e) => setDateRange(Number(e.target.value))} className="w-24 sm:w-32 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-500" disabled={maxDateRange <= 1} />
+                                    <span className="text-[10px] text-slate-500 w-6 text-right">/{maxDateRange}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {showSettings && (
+                            <div className={`max-w-7xl mx-auto mt-4 p-4 rounded-lg border theme-transition animate-in slide-in-from-top-2 ${theme.card} ${theme.border} text-slate-800`}>
+                                <div className="flex justify-between items-start mb-4 border-b pb-2" style={{ borderColor: theme.border }}><h3 className={`text-sm font-bold flex items-center gap-2 ${theme.text}`}><Settings className="w-4 h-4" /> 設定</h3><button onClick={() => setShowSettings(false)}><X className={`w-4 h-4 ${theme.text}`} /></button></div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div><h4 className={`text-xs font-bold mb-2 ${theme.textMuted}`}>資料備份</h4><div className="flex gap-2"><button onClick={downloadBackup} className="flex-1 flex justify-center items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs"><FileJson className="w-4 h-4" /> 下載備份 (JSON)</button></div></div>
+                                        <div className="pt-2 border-t" style={{ borderColor: theme.border }}><h4 className={`text-xs font-bold mb-2 ${theme.textMuted}`}>Proxy</h4><div className="flex gap-2"><input type="text" value={proxyUrl} onChange={(e) => setProxyUrl(e.target.value)} className={`w-full border rounded px-3 py-2 text-xs ${currentTheme === 'dark' ? 'bg-slate-900 text-white border-slate-600' : ''}`} /><button onClick={() => setProxyUrl(PROXY_CANDIDATES[0])} className="px-3 py-1 text-xs rounded bg-slate-200 text-slate-800">重置</button></div></div>
+                                        <div className="pt-2 border-t" style={{ borderColor: theme.border }}><h4 className={`text-xs font-bold mb-2 ${theme.textMuted}`}>資料庫管理</h4><button onClick={clearAllData} className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs flex items-center justify-center gap-2"><Trash2 className="w-4 h-4" /> 清除所有資料 (含股價快取)</button></div>
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between items-center mb-2"><h4 className={`text-xs font-bold ${theme.textMuted}`}>資料庫 ({storedDatesList.length} 天)</h4><div className="flex gap-2"><button onClick={toggleAllDates} className="text-xs px-2 py-1 bg-slate-100 rounded text-slate-800">全選</button>{selectedDates.size > 0 && <button onClick={deleteSelectedData} className="text-xs px-2 py-1 bg-red-600 text-white rounded">刪除 ({selectedDates.size})</button>}</div></div>
+                                        <div className={`border rounded-lg overflow-hidden max-h-[200px] overflow-y-auto custom-scrollbar ${theme.border} ${currentTheme === 'dark' ? 'bg-slate-900' : ''}`}>{storedDatesList.map(d => <div key={d} className="flex justify-between p-2 border-b text-xs items-center"><input type="checkbox" checked={selectedDates.has(d)} onChange={() => toggleDateSelection(d)} className="mr-2" /><span className={theme.text}>{formatDateToDisplay(d)}</span><button onClick={() => deleteSingleDate(d)} className="text-slate-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button></div>)}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </header>
+
+                    <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+                        {error && <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700 text-sm flex justify-between items-center"><div className="flex items-center gap-2"><AlertCircle className="w-5 h-5" /> {error}</div>{error.includes("不足") && <button onClick={clearAllData} className="px-3 py-1 bg-red-600 text-white rounded text-xs">清除資料</button>}</div>}
+
+                        {stats ? (
+                            <>
+                                <div className={`px-4 py-3 rounded-lg shadow-sm border flex flex-col gap-4 ${theme.card} ${theme.border}`}>
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2"><Database className="w-4 h-4 text-indigo-500" /><span className={`font-bold ${theme.text}`}>{formatDateToDisplay(formatDateToTWSE(currentDate))}</span><span className={`px-2 py-0.5 text-xs font-bold rounded border ${theme.textMuted}`}>{dateRange}日累計</span></div>
+                                        {dateRange > 1 && <div className={`text-xs ${theme.textMuted}`}>有效交易日: <span className="font-bold text-indigo-600">{aggregatedData.summary ? aggregatedData.summary.count : 0}</span> 天</div>}
+                                    </div>
+
+                                    {/* 資金流向看板 */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4" style={{ borderColor: theme.border }}>
+                                        {stats.summary ? (
+                                            <>
+                                                <div className="flex items-center gap-2 md:col-span-3 mb-1"><DollarSign className={`w-4 h-4 ${theme.textMuted}`} /><h4 className={`text-sm font-bold ${theme.text}`}>三大法人買賣超金額 ({dateRange}日合計)</h4></div>
+                                                <MoneyCard title="外資及陸資" amount={stats.summary.foreign} />
+                                                <MoneyCard title="投信" amount={stats.summary.trust} />
+                                                <MoneyCard title="自營商 (自行+避險)" amount={stats.summary.dealer} />
+                                            </>
+                                        ) : (
+                                            <div className={`md:col-span-3 text-center py-2 text-xs ${theme.infoText} rounded ${theme.infoBg}`}>
+                                                尚無金額資料 (若使用 CSV 匯入，請記得額外匯入 BFI82U 報表)
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className={`flex overflow-x-auto gap-2 pb-2 border-b scrollbar-hide ${theme.border}`}>
+                                    {[{ id: 'overview', label: '總覽戰情', icon: Layers }, { id: 'comovement', label: '土洋合作', icon: Users }, { id: 'foreign', label: '外資排行', icon: Globe }, { id: 'trust', label: '投信排行', icon: Landmark }, { id: 'dealer', label: '自營商排行', icon: Briefcase }].map(tab => (
+                                        <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-5 py-3 rounded-t-lg font-bold text-sm whitespace-nowrap border-t border-x border-b-0 ${activeTab === tab.id ? `${theme.card} ${theme.text} ${theme.border} translate-y-[1px]` : `bg-transparent border-transparent ${theme.textMuted} hover:${theme.text} hover:bg-black/5`}`}>{React.createElement(tab.icon, { className: `w-4 h-4 ${activeTab === tab.id ? 'text-indigo-500' : ''}` })}{tab.label}</button>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-6">
+                                    {activeTab === 'overview' && (
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in zoom-in duration-300">
+                                            <ChartSection title="合計買超 Top 15 (張數)" icon={ArrowUp} data={stats.totalBuy} dataKey="total" color="text-red-600" currentDate={currentDate} chartMode={chartMode} chartModeSetter={setChartMode} />
+                                            <ChartSection title="合計賣超 Top 15 (張數)" icon={ArrowDown} data={stats.totalSell} dataKey="total" color="text-green-600" currentDate={currentDate} chartMode={chartMode} chartModeSetter={setChartMode} />
+                                            <div className={`lg:col-span-2 rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
+                                                <div className={`px-6 py-4 border-b ${theme.border} flex justify-between items-center`}><h3 className={`font-bold ${theme.text}`}>詳細數據列表 (前 50 筆)</h3><span className="text-xs text-gray-400">💡 點擊列表可查看技術與籌碼連動</span></div>
+                                                <div className="overflow-x-auto max-h-[500px]">
+                                                    <table className={`w-full text-sm text-left ${theme.text}`}>
+                                                        <thead className={`font-medium sticky top-0 z-10 shadow-sm ${currentTheme === 'dark' ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資(張)</th><th className="px-6 py-3 text-right">投信(張)</th><th className="px-6 py-3 text-right">自營商(張)</th><th className="px-6 py-3 text-right">合計(張)</th></tr></thead>
+                                                        <tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.totalBuy.concat(stats.totalSell).slice(0, 50).map(r => <StockRow key={r.id} r={r} />)}</tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {activeTab === 'comovement' && (
+                                        <div className="grid grid-cols-1 gap-6 animate-in fade-in duration-300">
+                                            <div className={`rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
+                                                <div className={`px-6 py-4 border-b flex items-center gap-2 ${theme.border} ${currentTheme === 'dark' ? 'bg-red-900/20' : 'bg-red-50'}`}><TrendingUp className="w-5 h-5 text-red-600" /><h3 className={`font-bold ${currentTheme === 'dark' ? 'text-red-400' : 'text-red-800'}`}>三法同步買超(張數)</h3></div>
+                                                {stats.coBuy.length > 0 ? <div className="overflow-x-auto"><table className={`w-full text-sm text-left ${theme.text}`}><thead className={theme.textMuted}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營</th><th className="px-6 py-3 text-right">合計</th></tr></thead><tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.coBuy.map(r => <StockRow key={r.id} r={r} />)}</tbody></table></div> : <div className={`p-8 text-center ${theme.textMuted}`}>無資料</div>}
+                                            </div>
+                                            <div className={`rounded-xl shadow-sm border overflow-hidden theme-transition ${theme.card} ${theme.border}`}>
+                                                <div className={`px-6 py-4 border-b flex items-center gap-2 ${theme.border} ${currentTheme === 'dark' ? 'bg-green-900/20' : 'bg-green-50'}`}><TrendingDown className="w-5 h-5 text-green-600" /><h3 className={`font-bold ${currentTheme === 'dark' ? 'text-green-400' : 'text-green-800'}`}>三法同步賣超(張數)</h3></div>
+                                                {stats.coSell.length > 0 ? <div className="overflow-x-auto"><table className={`w-full text-sm text-left ${theme.text}`}><thead className={theme.textMuted}><tr><th className="px-6 py-3">代號</th><th className="px-6 py-3">名稱</th><th className="px-6 py-3 text-right">外資</th><th className="px-6 py-3 text-right">投信</th><th className="px-6 py-3 text-right">自營</th><th className="px-6 py-3 text-right">合計</th></tr></thead><tbody className={`divide-y ${currentTheme === 'dark' ? 'divide-slate-700' : 'divide-slate-100'}`}>{stats.coSell.map(r => <StockRow key={r.id} r={r} />)}</tbody></table></div> : <div className={`p-8 text-center ${theme.textMuted}`}>無資料</div>}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {activeTab === 'foreign' && (
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
+                                            <ChartSection title="外資 買超 Top 20(張數)" icon={Globe} data={stats.foreignBuy} dataKey="foreign" color="text-blue-600" colorName="外資" currentDate={currentDate} />
+                                            <ChartSection title="外資 賣超 Top 20(張數)" icon={Globe} data={stats.foreignSell} dataKey="foreign" color="text-blue-600" colorName="外資" currentDate={currentDate} />
+                                        </div>
+                                    )}
+                                    {activeTab === 'trust' && (
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
+                                            <ChartSection title="投信 買超 Top 20(張數)" icon={Landmark} data={stats.trustBuy} dataKey="trust" color="text-emerald-600" colorName="投信" currentDate={currentDate} />
+                                            <ChartSection title="投信 賣超 Top 20(張數)" icon={Landmark} data={stats.trustSell} dataKey="trust" color="text-emerald-600" colorName="投信" currentDate={currentDate} />
+                                        </div>
+                                    )}
+                                    {activeTab === 'dealer' && (
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
+                                            <ChartSection title="自營商 買超 Top 20(張數)" icon={Briefcase} data={stats.dealerBuy} dataKey="dealer" color="text-amber-600" colorName="自營商" currentDate={currentDate} />
+                                            <ChartSection title="自營商 賣超 Top 20(張數)" icon={Briefcase} data={stats.dealerSell} dataKey="dealer" color="text-amber-600" colorName="自營商" currentDate={currentDate} />
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <div className={`text-center py-20 border-2 border-dashed rounded-xl ${theme.border} bg-opacity-50`}><FileText className={`w-16 h-16 mx-auto mb-4 ${theme.textMuted}`} /><h3 className={`text-lg font-medium ${theme.text}`}>尚無 {currentDate} 的數據</h3><p className={`${theme.textMuted} text-sm mt-2 max-w-md mx-auto`}>請點擊上方 <span className="text-indigo-500 font-bold">「抓取 T86」</span> 或 <span className="text-emerald-500 font-bold">「匯入 CSV」</span> 來建立資料庫，或直接輸入代碼查詢。</p></div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
