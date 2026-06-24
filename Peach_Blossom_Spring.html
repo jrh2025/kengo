@@ -1,0 +1,3027 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>《桃花源記》沉浸式文本解謎教學系統</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google 漢字字型與宋體 -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+            background-color: #fcfaf2;
+        }
+
+        .font-classical {
+            font-family: 'Noto Serif TC', Georgia, serif;
+        }
+
+        /* 古典縱書排版樣式：確保段落由右至左，橫向不疊加 */
+        .vertical-scroll-container {
+            display: flex;
+            flex-direction: row-reverse;
+            /* 古文由右向左閱讀 */
+            overflow-x: auto;
+            overflow-y: hidden;
+            height: 100%;
+            width: 100%;
+        }
+
+        .vertical-segment {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            height: 100%;
+            padding: 0 1.25rem;
+            border-left: 1px dashed #d6cebe;
+            flex-shrink: 0;
+            white-space: normal;
+            transition: all 0.5s ease-in-out;
+        }
+
+        /* 自訂捲軸樣式，呈現竹簡/宣紙美感 */
+        .custom-scroll::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1ebd9;
+            border-radius: 4px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #b25d46;
+            border-radius: 4px;
+        }
+
+        /* 漸變與動畫 */
+        .transition-grayscale {
+            transition: filter 1.5s ease-in-out, background-color 1s ease-in-out;
+        }
+
+        /* 當前朗讀句子高亮樣式 */
+        .tts-active-sentence {
+            background-color: rgba(178, 93, 70, 0.15);
+            border-right: 3px solid #b25d46;
+            border-left: 3px solid #b25d46;
+            border-radius: 4px;
+            padding: 2px 4px;
+            transition: all 0.3s ease;
+        }
+
+        /* 煙雨雲霧緩緩飄移特效 */
+        @keyframes mistDrift {
+            0% {
+                transform: translateX(-5%) translateY(-2%);
+            }
+
+            50% {
+                transform: translateX(5%) translateY(2%);
+            }
+
+            100% {
+                transform: translateX(-5%) translateY(-2%);
+            }
+        }
+
+        .animate-mist {
+            animation: mistDrift 16s infinite ease-in-out;
+        }
+
+        /* 落花旋轉下降動畫 */
+        @keyframes petalFall {
+            0% {
+                transform: translateY(-20px) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.8;
+            }
+
+            90% {
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translateY(180px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .petal-particle {
+            animation: petalFall 8s infinite linear;
+        }
+    </style>
+</head>
+
+<body class="text-[#2c2c2c] selection:bg-[#b25d46] selection:text-white pb-10">
+
+    <!-- 武陵渡口登船名冊 (登入 Overlay) -->
+    <div id="loginOverlay"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/90 backdrop-blur-md px-4 transition-all duration-500">
+        <div
+            class="max-w-md w-full bg-[#fcfaf2] border-4 border-[#b25d46] rounded-xl p-6 shadow-2xl relative text-center">
+            <div
+                class="w-16 h-16 mx-auto rounded-full bg-[#b25d46] flex items-center justify-center text-white text-3xl mb-4 shadow">
+                🚣
+            </div>
+            <h2 class="text-2xl font-bold font-classical text-[#3d644d] tracking-wide mb-2">武陵渡口 ── 登船名冊</h2>
+            <p class="text-xs text-gray-500 font-classical mb-6">「忘路之遠近，欲窮其林。」請於名冊簽上大名，隨漁人撐篙起航。</p>
+
+            <div class="space-y-4 mb-6 text-left">
+                <label class="block text-xs font-bold text-gray-600">學員大名（或學號帳號）：</label>
+                <input type="text" id="usernameInput" value="漁郎小智"
+                    class="w-full px-4 py-3 rounded-lg border-2 border-[#d6cebe] focus:border-[#b25d46] focus:outline-none bg-white font-classical font-bold transition shadow-inner"
+                    placeholder="請輸入您的姓名..." />
+            </div>
+
+            <button onclick="handleLoginSubmit()"
+                class="w-full py-3 bg-[#b25d46] hover:bg-[#b25d46]/90 text-white font-bold font-classical rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
+                🎋 簽名登船，破浪出發
+            </button>
+
+            <div class="mt-4 text-[10px] text-gray-400">
+                系統將自動保存作答進度與自備多媒體檔案。若受瀏覽器安全性限制，將自動啟用記憶體與儲存安全快取。
+            </div>
+        </div>
+    </div>
+
+    <!-- 資料庫重置與清空確認 Overlay -->
+    <div id="dbClearOverlay"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/95 backdrop-blur-md px-4 transition-all duration-300 hidden">
+        <div
+            class="max-w-md w-full bg-[#fcfaf2] border-4 border-red-600 rounded-xl p-6 shadow-2xl relative text-center">
+            <div
+                class="w-16 h-16 mx-auto rounded-full bg-red-600 flex items-center justify-center text-white text-3xl mb-4 shadow">
+                ⚠️
+            </div>
+            <h2 class="text-2xl font-bold font-classical text-red-700 tracking-wide mb-2">確定要清空資料庫嗎？</h2>
+            <p class="text-sm text-gray-600 font-classical mb-6 leading-relaxed">
+                此操作將會<strong>永久清除</strong>您的所有學習記錄、得分、已解鎖的成就稱號，以及您自定義的背景音樂與導讀影片！清除後此程序將不可復原。
+            </p>
+            <div class="flex gap-4">
+                <button onclick="confirmClearDatabase()"
+                    class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold font-classical rounded-lg transition shadow-md">
+                    💥 確定清空資料
+                </button>
+                <button onclick="closeDbClearOverlay()"
+                    class="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold font-classical rounded-lg transition">
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 導航列 -->
+    <header class="sticky top-0 z-40 bg-[#f7f4eb]/95 backdrop-blur-md border-b border-[#d6cebe] px-4 py-3 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
+
+            <!-- 標題與標誌 -->
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-full bg-[#b25d46] flex items-center justify-center text-white text-xl font-bold shadow-md animate-pulse">
+                    🍑
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wider text-[#3d644d] flex flex-wrap items-center gap-2">
+                        《桃花源記》沉浸式文本解謎教學系統
+                        <span
+                            class="text-xs bg-[#b25d46]/10 text-[#b25d46] border border-[#b25d46]/30 px-2 py-0.5 rounded-full font-normal">v1.5.0
+                            音影串接版</span>
+                    </h1>
+                    <p class="text-xs text-gray-500 font-classical">陶淵明文學託喻與大同社會思想之數位學習鷹架</p>
+                </div>
+            </div>
+
+            <!-- 控制工具列 -->
+            <div class="flex flex-wrap items-center gap-2 md:gap-3 justify-center">
+                <button id="showVideoBtn" onclick="playCustomVideo()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-[#b25d46] text-white hover:bg-[#b25d46]/90 rounded-md text-sm font-medium transition shadow-sm hidden"
+                    title="觀看文本導讀短影片">
+                    🎬 觀看導讀影片
+                </button>
+
+                <button onclick="toggleFullscreen()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-[#5c4033] text-white hover:bg-[#5c4033]/90 rounded-md text-sm font-medium transition shadow-sm"
+                    title="切換網頁全螢幕顯示">
+                    🖥️ 全螢幕模式
+                </button>
+
+                <button onclick="toggleMediaHubModal()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-[#3d644d] text-white hover:bg-[#3d644d]/90 rounded-md text-sm font-medium transition shadow-sm">
+                    🎛️ 多媒體定製中心
+                </button>
+
+                <button id="bgmToggleBtn" onclick="toggleBGM()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-md text-sm font-medium transition-all duration-300 shadow-sm">
+                    <span id="bgmStatusText">🔇 開啟古典背景音樂</span>
+                </button>
+
+                <button onclick="exportProgressJSON()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-md text-sm font-medium transition shadow-sm"
+                    title="匯出 JSON 學習歷程存檔">
+                    📤 匯出進度
+                </button>
+
+                <label
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-md text-sm font-medium cursor-pointer transition shadow-sm">
+                    📥 匯入存檔
+                    <input type="file" id="jsonImportInput" accept=".json" onchange="handleImportJSON(event)"
+                        class="hidden" />
+                </label>
+
+                <button onclick="openDbClearOverlay()"
+                    class="px-3 py-1.5 bg-red-600/10 text-red-600 hover:bg-red-600/20 border border-red-600/30 rounded-md text-sm font-medium transition shadow-sm"
+                    title="清空全部資料與媒體檔案">
+                    🧹 清空資料庫
+                </button>
+
+                <button onclick="logoutStudent()"
+                    class="px-3 py-1.5 bg-[#b25d46]/10 text-[#b25d46] hover:bg-[#b25d46]/20 border border-[#b25d46]/30 rounded-md text-sm font-medium transition">
+                    🚪 登出
+                </button>
+            </div>
+        </div>
+
+        <!-- 學習進度條 -->
+        <div class="max-w-7xl mx-auto mt-3">
+            <div class="w-full bg-[#e8e2d5] h-2.5 rounded-full overflow-hidden shadow-inner">
+                <div id="progressBar"
+                    class="bg-gradient-to-r from-[#3d644d] to-[#b25d46] h-full w-[25%] transition-all duration-700 ease-out">
+                </div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500 mt-1 font-classical">
+                <span>起點：緣溪行 (25%)</span>
+                <span>探幽：初極狹 (50%)</span>
+                <span>做客：村中客 (75%)</span>
+                <span>尋覓：迷蹤尋 (100%)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 多媒體定製中心 Modal -->
+    <div id="mediaHubModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/80 backdrop-blur-md px-4 transition-all duration-300 hidden">
+        <div class="max-w-2xl w-full bg-[#fcfaf2] border-4 border-[#3d644d] rounded-xl p-6 shadow-2xl relative">
+            <button onclick="toggleMediaHubModal()"
+                class="absolute top-4 right-4 text-2xl font-bold hover:text-[#b25d46] transition">✕</button>
+
+            <h3 class="text-xl font-bold font-classical text-[#3d644d] border-b-2 border-[#d6cebe] pb-2 mb-4">
+                🎛️ 本地自定義多媒體管理中心 (智慧儲存)
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- 音訊客製化 -->
+                <div class="bg-white p-4 rounded-lg border border-[#d6cebe] shadow-inner space-y-3">
+                    <h4 class="text-sm font-bold text-[#b25d46] flex items-center gap-1.5">🎵 自備背景音樂 (BGM)</h4>
+                    <p class="text-xs text-gray-500 leading-relaxed">預設為精緻的古琴古箏古典樂。您亦可上傳自己的音軌檔（MP3 格式）進行客製覆蓋。</p>
+                    <input type="file" id="bgmFileInput" accept="audio/*" onchange="uploadCustomBGM(event)"
+                        class="hidden" />
+                    <div class="flex flex-col gap-2">
+                        <button onclick="document.getElementById('bgmFileInput').click()"
+                            class="w-full py-2 bg-[#b25d46] text-white text-xs font-bold rounded hover:bg-[#b25d46]/90 transition">
+                            📂 上傳自訂 BGM 檔案
+                        </button>
+                        <div id="bgmUploadStatus"
+                            class="text-center text-[11px] text-gray-500 font-classical mt-1 italic">
+                            目前狀態：預設背景音樂 🟢
+                        </div>
+                        <button id="clearBgmBtn" onclick="clearCustomBGM()"
+                            class="w-full py-1 bg-gray-200 text-gray-600 text-[10px] rounded hover:bg-gray-300 hidden">
+                            🗑️ 還原為系統預設音樂
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 影片客製化 (改為輸入網址以防記憶體溢出) -->
+                <div class="bg-white p-4 rounded-lg border border-[#d6cebe] shadow-inner space-y-3">
+                    <h4 class="text-sm font-bold text-[#3d644d] flex items-center gap-1.5">🎬 文本導讀影音 (YouTube)</h4>
+                    <p class="text-xs text-gray-500 leading-relaxed">請輸入《桃花源記》導讀的 YouTube 影片網址，不耗用您的實體硬體空間且不易崩潰。</p>
+
+                    <div class="space-y-2">
+                        <input type="text" id="videoUrlInput"
+                            class="w-full px-3 py-2 text-xs rounded border border-[#d6cebe] focus:border-[#3d644d] focus:outline-none bg-white font-classical"
+                            placeholder="例如：https://youtu.be/RfQ0QGzToS0" />
+                        <button onclick="updateYouTubeVideo()"
+                            class="w-full py-2 bg-[#3d644d] text-white text-xs font-bold rounded hover:bg-[#3d644d]/90 transition">
+                            💾 套用影片連結
+                        </button>
+                    </div>
+
+                    <div id="videoUploadStatus"
+                        class="text-center text-[11px] text-gray-500 font-classical mt-1 italic">
+                        目前狀態：系統預設導讀片
+                    </div>
+                    <button id="clearVideoBtn" onclick="clearCustomVideo()"
+                        class="w-full py-1 bg-gray-200 text-gray-600 text-[10px] rounded hover:bg-gray-300 hidden">
+                        🔄 還原為系統預設影片
+                    </button>
+                </div>
+            </div>
+
+            <div
+                class="bg-[#3d644d]/5 p-3 rounded-lg text-xs text-[#3d644d] border border-[#3d644d]/20 leading-relaxed">
+                <strong>💡 技術說明：</strong>本系統使用雲端直聯技術。影片透過 YouTube 快取框架解析，音樂則載入高效能 MP3 緩存，能有效保障瀏覽器穩定度並防止大檔案載入錯誤。
+            </div>
+        </div>
+    </div>
+
+    <!-- 縱書全文觀看與朗讀大 Modal -->
+    <div id="scrollExpandModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/90 backdrop-blur-md px-4 transition-all duration-300 hidden">
+        <div
+            class="max-w-5xl w-full h-[90vh] bg-[#fcfaf2] border-4 border-[#b25d46] rounded-xl p-6 shadow-2xl flex flex-col justify-between relative">
+
+            <!-- 懸浮式絕對定位關閉按鈕：徹底解決版面擠壓壓縮古文滾動空間的 Bug -->
+            <button onclick="toggleScrollExpand()"
+                class="absolute top-4 right-4 text-2xl font-bold text-gray-500 hover:text-[#b25d46] transition z-50"
+                title="關閉視窗">
+                ✕
+            </button>
+
+            <!-- 頂部控制面板 -->
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#d6cebe] pb-3 pr-10">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📜</span>
+                    <h3 class="text-base md:text-lg font-bold font-classical text-[#3d644d]">《桃花源記》古典縱書全文賞析</h3>
+                </div>
+
+                <!-- TTS 語音朗讀控制面板 -->
+                <div
+                    class="flex flex-wrap items-center gap-2.5 bg-white p-1.5 rounded-lg border border-[#d6cebe] shadow-sm">
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs font-bold text-gray-600">🎙️ 發音：</span>
+                        <select id="ttsSystemVoiceSelect"
+                            class="text-xs p-1 border rounded bg-[#f7f4eb] focus:outline-none">
+                            <!-- 系統內建中文發音人將在此異步載入 -->
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs font-bold text-gray-600">🎭 情境：</span>
+                        <select id="ttsStyleSelect"
+                            class="text-xs p-1 border rounded bg-[#f7f4eb] focus:outline-none focus:border-[#b25d46]">
+                            <option value="natural">自然預設</option>
+                            <option value="male">優雅男聲</option>
+                            <option value="female">溫柔女聲</option>
+                            <option value="grandpa">說書老翁</option>
+                            <option value="dialogue">情境對話(男女輪讀)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                        <button onclick="startTTS()"
+                            class="px-2.5 py-1 bg-[#b25d46] hover:bg-[#b25d46]/90 text-white rounded text-xs font-bold transition">▶️
+                            播放</button>
+                        <button onclick="pauseTTS()"
+                            class="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-xs font-bold transition">⏸️
+                            暫停</button>
+                        <button onclick="stopTTS()"
+                            class="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs font-bold transition">⏹️
+                            停止</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 朗讀進度調節區 (提供滑桿控制與狀態回饋) -->
+            <div
+                class="bg-[#f7f4eb] p-3 rounded-lg border border-[#d6cebe] flex flex-col md:flex-row items-center gap-4 my-2">
+                <span class="text-xs font-bold text-gray-700">朗讀段落：</span>
+                <input type="range" id="ttsProgressSlider" min="0" max="28" value="0" class="flex-1 accent-[#b25d46]"
+                    oninput="handleTtsSeek(this.value)">
+                <span id="ttsProgressLabel" class="text-xs font-mono font-bold text-gray-600">1 / 29 句</span>
+            </div>
+
+            <!-- 滾動縱書全文區 (修正排版：左右分段，不上下疊加) -->
+            <div
+                class="flex-1 my-4 py-4 px-2 bg-amber-50/20 border border-[#e8e2d5] rounded-lg custom-scroll overflow-x-auto overflow-y-hidden">
+                <div class="vertical-scroll-container">
+
+                    <div class="vertical-segment">
+                        <span class="text-xs text-[#b25d46] font-bold block pb-3 select-none">【第一段：緣溪行】</span>
+                        <span id="m-s0">晉太元中，武陵人捕魚為業。</span>
+                        <span id="m-s1">緣溪行，忘路之遠近。</span>
+                        <span id="m-s2">忽逢桃花林，夾岸數百步，中無雜樹。</span>
+                        <span id="m-s3">芳草鮮美，落英繽紛。</span>
+                        <span id="m-s4">漁人甚異之，復前行，欲窮其林。</span>
+                    </div>
+
+                    <div class="vertical-segment">
+                        <span class="text-xs text-[#b25d46] font-bold block pb-3 select-none">【第二段：初極狹】</span>
+                        <span id="m-s5">林盡水源，便得一山，山有小口，彷彿若有光。</span>
+                        <span id="m-s6">便捨船，從口入。</span>
+                        <span id="m-s7">初極狹，才通人。</span>
+                        <span id="m-s8">復行數十步，豁然開朗。</span>
+                        <span id="m-s9">土地平曠，屋舍儼然。</span>
+                        <span id="m-s10">有良田、美池、桑竹之屬。</span>
+                        <span id="m-s11">阡陌交通，雞犬相聞。</span>
+                        <span id="m-s12">其中往來種作，男女衣著，悉如外人。</span>
+                        <span id="m-s13">黃髮垂髫，並怡然自樂。</span>
+                    </div>
+
+                    <div class="vertical-segment">
+                        <span class="text-xs text-[#b25d46] font-bold block pb-3 select-none">【第三段：村中客】</span>
+                        <span id="m-s14">見漁人，乃大驚，問所從來。</span>
+                        <span id="m-s15">具答之。</span>
+                        <span id="m-s16">便要還家，設酒殺雞作食.</span>
+                        <span id="m-s17">村中聞有此人，咸來問訊。</span>
+                        <span id="m-s18">自言先世避秦時亂，率妻子邑人來此絕境。</span>
+                        <span id="m-s19">不復出焉，遂與外人間隔。</span>
+                        <span id="m-s20">問今是何世，乃不知有漢，無論魏晉。</span>
+                        <span id="m-s21">此人一一為具言所聞，皆嘆惋。</span>
+                        <span id="m-s22">餘人各復延至其家，皆出酒食。</span>
+                        <span id="m-s23">停數日，辭去。</span>
+                        <span id="m-s24">此中人語雲：「不足為外人道也。」</span>
+                    </div>
+
+                    <div class="vertical-segment border-none">
+                        <span class="text-xs text-[#b25d46] font-bold block pb-3 select-none">【第四段：迷蹤尋】</span>
+                        <span id="m-s25">既出，得其船，便扶向路，處處誌之.</span>
+                        <span id="m-s26">及郡下，詣太守，說如此。</span>
+                        <span id="m-s27">太守即遣人隨其往，尋向所誌，遂迷，不復得路。</span>
+                        <span id="m-s28">南陽劉子驥，高尚士也，聞之，欣然規往。未果，尋病終.後遂無問津者。</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div
+                class="text-[11px] text-gray-400 text-center select-none font-classical border-t border-[#d6cebe] pt-2">
+                * TTS 系統將高亮標示當前朗讀語句。對話模式會在對白交替時，於男、女音色間變頻切換，呈現逼真戲劇對白效果。
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 作者大師卡片 Modal -->
+    <div id="authorModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/90 backdrop-blur-md px-4 transition-all duration-300 hidden">
+        <div
+            class="max-w-3xl w-full bg-[#fcfaf2] border-4 border-[#3d644d] rounded-xl p-6 shadow-2xl flex flex-col justify-between relative">
+
+            <!-- 絕對定位關閉鈕 -->
+            <button onclick="toggleAuthorModal()"
+                class="absolute top-4 right-4 text-2xl font-bold hover:text-[#b25d46] transition text-gray-500 z-50"
+                title="關閉視窗">✕</button>
+
+            <div class="flex items-center justify-between border-b-2 border-[#d6cebe] pb-3 mb-4 pr-10">
+                <h3 class="text-lg md:text-xl font-bold font-classical text-[#3d644d] flex items-center gap-2">
+                    👨‍🏫 靖節先生 ── 陶淵明大師生平與文學託喻
+                </h3>
+            </div>
+
+            <div
+                class="space-y-4 text-sm font-classical leading-relaxed overflow-y-auto max-h-[60vh] pr-2 custom-scroll">
+                <div class="bg-white p-4 rounded-lg border border-[#d6cebe] shadow-inner">
+                    <h4 class="font-bold text-[#b25d46] text-base mb-2">一、不為五斗米折腰：生平背景</h4>
+                    <p class="text-gray-700">
+                        陶淵明（約365－427），字元亮，號五柳先生，私諡「靖節先生」，潯陽柴桑人。出身世族衰微之家，曾任彭澤縣令，因厭惡官場阿諛與虛偽，「不為五斗米折腰」，毅然解綬歸隱，回歸園田，自此過著躬耕自資、安貧樂道的生活。
+                    </p>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg border border-[#d6cebe] shadow-inner">
+                    <h4 class="font-bold text-[#b25d46] text-base mb-2">二、避世的桃源寄託：創作動機</h4>
+                    <p class="text-gray-700">
+                        《桃花源記》創作於東晉末期劉裕纂位前夕。當時社會政權更迭劇烈，軍閥常年混戰，民不聊生。陶淵明親歷了時代之暴烈，在對現實徹底絕望之下，寫下本篇大同世界的宏偉想像，寄託他對於避開苛捐雜稅、官場壓榨、以及戰亂侵擾的政治與哲學期望。
+                    </p>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg border border-[#d6cebe] shadow-inner">
+                    <h4 class="font-bold text-[#b25d46] text-base mb-2">三、無君無臣的自然與和諧：大同理想託喻</h4>
+                    <p class="text-gray-700">
+                        桃花源並非一個實體村落，而是一個純粹心靈上的「烏托邦」。在桃花源內，沒有至高無上的皇權，也沒有繁重的租稅徭役（不知有漢，無論魏晉）。人們共享大自然的耕作，阡陌交通、雞犬相聞，老人與孩子皆能怡然自樂。這種自然、樸實、均富的生活圖景，是中國古代思想中「大同社會」最崇高的文學具體化。
+                    </p>
+                </div>
+            </div>
+
+            <div class="border-t border-[#d6cebe] pt-3 mt-4 text-center">
+                <button onclick="toggleAuthorModal()"
+                    class="px-5 py-2 bg-[#3d644d] hover:bg-[#3d644d]/90 text-white font-bold rounded-lg transition shadow">
+                    ✔️ 已深悉大師意旨，關閉
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- ==================== 左欄：學生成就、行囊與作者介紹 ==================== -->
+        <section
+            class="col-span-12 lg:col-span-3 bg-[#f7f4eb] border border-[#d6cebe] rounded-lg p-4 shadow-sm flex flex-col justify-between gap-4 h-fit">
+            <div>
+                <h2
+                    class="text-lg font-bold text-[#3d644d] border-b border-[#d6cebe] pb-2 mb-3 flex items-center gap-2">
+                    🎒 漁人的行囊 (個人狀態)
+                </h2>
+                <div class="space-y-2.5 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500 font-classical">當前探秘學員:</span>
+                        <span id="userIdDisplay" class="font-classical font-bold text-gray-800">未登入</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">累計時間:</span>
+                        <span id="timerDisplay" class="font-mono font-bold text-gray-800">0 分 0 秒</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">當前位置:</span>
+                        <span id="levelNameDisplay" class="font-bold text-[#b25d46]">第 1 關</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 學習分數看板 -->
+            <div class="bg-white/80 p-3 rounded border border-dashed border-[#d6cebe]">
+                <h3 class="text-xs font-bold text-gray-600 mb-2 tracking-wider">📊 關卡學習評估分：</h3>
+                <div class="grid grid-cols-2 gap-2 text-xs font-classical">
+                    <div>緣溪行: <span id="score1" class="font-bold text-green-700">0 分</span></div>
+                    <div>初極狹: <span id="score2" class="font-bold text-green-700">0 分</span></div>
+                    <div>村中客: <span id="score3" class="font-bold text-green-700">0 分</span></div>
+                    <div>迷蹤尋: <span id="score4" class="font-bold text-green-700">0 分</span></div>
+                </div>
+            </div>
+
+            <!-- 解鎖成就與信物勳章 -->
+            <div>
+                <h3 class="text-sm font-bold text-[#3d644d] mb-2 flex items-center gap-1.5">
+                    🏆 已解鎖桃源成就
+                </h3>
+                <div id="achievementBox" class="flex flex-wrap gap-2">
+                    <p class="text-xs text-gray-400 italic">尚未獲得信物，請開始劃船探秘...</p>
+                </div>
+            </div>
+
+            <!-- 陶淵明作者大師卡片 (作者介紹) -->
+            <div class="bg-white/90 p-3.5 rounded-lg border-2 border-[#d6cebe] shadow-inner space-y-2">
+                <div class="flex items-center gap-2 border-b border-[#e8e2d5] pb-1.5">
+                    <span class="text-lg">👨‍🏫</span>
+                    <h4 class="text-xs font-bold text-[#3d644d] uppercase tracking-wider">桃花源記之父 ── 陶淵明</h4>
+                </div>
+                <p class="text-[11px] font-classical text-gray-600 leading-relaxed">
+                    <strong>陶淵明（約365－427）</strong>，潯陽柴桑人，東晉偉大文學家。因「不為五斗米折腰」解綬歸隱...
+                </p>
+                <button onclick="toggleAuthorModal()"
+                    class="w-full py-1.5 bg-[#3d644d]/10 hover:bg-[#3d644d]/20 text-[#3d644d] font-bold text-xs rounded transition flex items-center justify-center gap-1">
+                    🔍 放大觀看作者生平
+                </button>
+            </div>
+
+            <div class="border-t border-[#d6cebe] pt-3 text-xs text-gray-500 leading-relaxed font-classical">
+                <p>💡 <strong class="text-gray-700">互動說明：</strong> 行至每一段古文，若遇疑惑字詞，可直接點擊右側古文，下方的古典註釋書將為您提供即時字詞解析。</p>
+            </div>
+        </section>
+
+        <!-- ==================== 中欄：中央核心解謎互動舞台 ==================== -->
+        <section
+            class="col-span-12 lg:col-span-6 bg-white border border-[#d6cebe] rounded-lg p-5 shadow-md flex flex-col justify-between min-h-[520px]">
+
+            <!-- 關卡 1：緣溪行 介面 -->
+            <div id="level1Container" class="space-y-4">
+
+                <!-- 導讀短影音展示區 (採用 Iframe 快取框架) -->
+                <div id="introVideoArea"
+                    class="bg-[#fcfaf2] p-3 rounded-lg border border-[#e8e2d5] hidden animate-fade-in">
+                    <h4 class="text-xs font-bold text-[#3d644d] mb-2 flex justify-between items-center">
+                        <span>🎬 《桃花源記》文本導讀短影片</span>
+                        <button onclick="hideIntroVideo()" class="text-xs text-gray-400 hover:text-[#b25d46]">隱藏影片
+                            ✕</button>
+                    </h4>
+                    <div class="relative w-full pb-[56.25%] h-0 rounded overflow-hidden shadow-inner bg-black">
+                        <iframe id="customVideoPlayer" class="absolute top-0 left-0 w-full h-full" src=""
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
+
+                <div class="bg-[#fcfaf2] p-3 rounded-lg border border-[#e8e2d5] relative overflow-hidden">
+
+                    <div class="flex flex-wrap justify-between items-center border-b border-gray-100 pb-2 mb-2 gap-2">
+                        <h3 class="text-md font-bold text-[#3d644d]">
+                            第一關：緣溪行 ── 溪流字義漩渦
+                        </h3>
+                        <span
+                            class="text-[11px] text-gray-400 font-classical bg-[#e8e2d5]/50 px-2 py-0.5 rounded">水墨泛舟模擬鏡頭</span>
+                    </div>
+
+                    <!-- 寫意精緻水墨泛舟舞台 (SVG 高質感遠山、波浪與漂浮落英) -->
+                    <div
+                        class="w-full h-44 bg-gradient-to-b from-[#dfe4e4] via-[#e2ded2] to-[#c8c2b5] rounded-lg relative border border-gray-300 overflow-hidden shadow-inner">
+                        <!-- 遠山墨景 A (極淡) -->
+                        <svg class="absolute bottom-0 left-0 w-full h-24 opacity-15" viewBox="0 0 1000 100"
+                            preserveAspectRatio="none">
+                            <path d="M0,70 Q150,15 300,65 T600,45 T900,85 T1000,75 L1000,100 L0,100 Z" fill="#2c2c2c" />
+                        </svg>
+                        <!-- 遠山墨景 B (微深) -->
+                        <svg class="absolute bottom-0 left-0 w-full h-18 opacity-25" viewBox="0 0 1000 100"
+                            preserveAspectRatio="none">
+                            <path d="M0,85 Q220,30 440,75 T880,55 T1000,90 L1000,100 L0,100 Z" fill="#3d644d" />
+                        </svg>
+
+                        <!-- 水墨煙雨雲霧漂移層 -->
+                        <div
+                            class="absolute inset-0 bg-gradient-to-r from-transparent via-[#f3efe4]/40 to-transparent pointer-events-none animate-mist">
+                        </div>
+
+                        <!-- 水墨波浪線與動態漣漪 -->
+                        <svg class="absolute bottom-0 left-0 w-full h-10 opacity-30" viewBox="0 0 1000 40"
+                            preserveAspectRatio="none">
+                            <path d="M0,20 Q120,5 240,20 T480,20 T720,20 T960,20 T1000,20 L1000,40 L0,40 Z"
+                                fill="#a4bdc0" />
+                        </svg>
+                        <div
+                            class="absolute w-full h-0.5 bg-gradient-to-r from-transparent via-[#5c7a7c]/20 to-transparent top-[60%] animate-pulse">
+                        </div>
+
+                        <!-- 落桃花瓣飄飛動態 -->
+                        <div class="absolute top-2 left-6 text-sm text-[#b25d46] opacity-60 petal-particle"
+                            style="animation-delay: 0s;">🌸</div>
+                        <div class="absolute top-8 left-1/4 text-xs text-[#b25d46] opacity-80 petal-particle"
+                            style="animation-delay: 2s;">🌸</div>
+                        <div class="absolute top-4 right-1/4 text-md text-[#b25d46] opacity-70 petal-particle"
+                            style="animation-delay: 4.5s;">🌸</div>
+                        <div class="absolute top-10 right-8 text-xs text-[#b25d46] opacity-50 petal-particle"
+                            style="animation-delay: 1.5s;">🌸</div>
+
+                        <!-- 傳統中式木質烏篷小船 -->
+                        <div id="boatContainer"
+                            class="absolute bottom-6 transition-all duration-1000 ease-in-out flex flex-col items-center left-[15%]">
+                            <svg width="70" height="40" viewBox="0 0 120 60">
+                                <!-- 船體 -->
+                                <path d="M 5,45 Q 60,60 115,45 Q 120,25 110,32 Q 60,38 10,32 Z" fill="#3e2a22"
+                                    stroke="#1d120d" stroke-width="1.5" />
+                                <!-- 烏篷 -->
+                                <path d="M 35,34 Q 60,10 85,34" fill="#1b120f" opacity="0.95" />
+                                <path d="M 42,34 Q 60,16 78,34" fill="#2d1c16" />
+                                <!-- 篙 -->
+                                <line x1="85" y1="36" x2="105" y2="52" stroke="#251611" stroke-width="2.5" />
+                                <!-- 水波 -->
+                                <ellipse cx="60" cy="54" rx="25" ry="3" fill="none" stroke="#fcfaf2" stroke-width="1.5"
+                                    opacity="0.6" class="animate-ping" />
+                            </svg>
+                            <span
+                                class="text-[10px] text-stone-800 font-bold bg-[#fcfaf2]/80 px-2 py-0.5 rounded-full shadow-sm border border-stone-300">漁郎小舟</span>
+                        </div>
+
+                        <!-- 前方字義漩渦 -->
+                        <div id="vortexContainer"
+                            class="absolute right-12 top-10 animate-spin duration-[3000ms] text-center">
+                            <div
+                                class="w-16 h-16 rounded-full border-4 border-dashed border-[#b25d46] flex items-center justify-center bg-[#b25d46]/10 text-xl shadow-lg">
+                                🌀
+                            </div>
+                            <span id="vortexWord"
+                                class="text-xs text-[#b25d46] font-bold block mt-1 bg-white/90 px-2 py-0.5 rounded shadow-sm">緣</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 題庫區域 -->
+                <div class="bg-[#fcfaf2] p-4 rounded-lg border border-[#d6cebe] space-y-4">
+                    <div class="text-sm font-bold text-gray-500">水路遭遇阻礙，請釋義關鍵字詞以辟水路：</div>
+                    <div id="l1Sentence"
+                        class="text-lg font-classical font-bold text-[#b25d46] bg-white p-3 rounded border border-gray-200">
+                        <!-- 動態填充 -->
+                    </div>
+                    <div id="l1Options" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- 動態選項 -->
+                    </div>
+                    <div id="l1Tip" class="text-xs text-gray-400 italic">
+                        <!-- 提示 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 關卡 2：初極狹 介面 -->
+            <div id="level2Container" class="space-y-4 hidden">
+                <div class="bg-[#fcfaf2] p-4 rounded-lg border border-[#e8e2d5]">
+                    <h3 class="text-md font-bold text-[#3d644d] mb-2 flex justify-between items-center">
+                        <span>第二關：初極狹 ── 空間重構文意拼圖</span>
+                        <span id="l2PassedBadge" class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">🧩
+                            重建大同景觀中</span>
+                    </h3>
+                    <p class="text-xs text-gray-500 mb-4 font-classical">
+                        說明：請直接<strong>拖曳（Drag &
+                            Drop）</strong>下方的古典景物卡片放到對應地圖的虛線框內。在觸控設備上，也可以先點選下方景物卡，再點擊對應區域進行安放（正確區域會高亮顯示）。
+                    </p>
+
+                    <!-- 拼圖地圖底板 -->
+                    <div id="l2MapBoard"
+                        class="w-full h-64 rounded-xl relative border-2 border-[#d6cebe] overflow-hidden transition-all duration-1000 bg-gray-100 grayscale transition-grayscale">
+                        <div class="absolute inset-x-0 bottom-0 h-20 bg-[#3d644d]/5 border-t border-[#d6cebe]/30"></div>
+
+                        <!-- 四大放置槽 -->
+                        <div class="grid grid-cols-2 gap-4 p-4 h-full">
+                            <!-- Slot A: 屋舍 -->
+                            <div id="slotA" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'slotA')"
+                                onclick="handleL2SlotClick('slotA')"
+                                class="h-full border-2 border-dashed border-gray-400 hover:border-[#b25d46] hover:bg-[#b25d46]/5 rounded-lg flex flex-col items-center justify-center p-2 transition">
+                                <span class="text-xs font-bold text-gray-600 mb-1">【山下開闊平地】</span>
+                                <div id="slotA_content" class="text-center text-gray-400 italic text-xs">載入中...</div>
+                            </div>
+                            <!-- Slot B: 良田 -->
+                            <div id="slotB" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'slotB')"
+                                onclick="handleL2SlotClick('slotB')"
+                                class="h-full border-2 border-dashed border-gray-400 hover:border-[#b25d46] hover:bg-[#b25d46]/5 rounded-lg flex flex-col items-center justify-center p-2 transition">
+                                <span class="text-xs font-bold text-gray-600 mb-1">【良沃可耕田野】</span>
+                                <div id="slotB_content" class="text-center text-gray-400 italic text-xs">載入中...</div>
+                            </div>
+                            <!-- Slot C: 美池 -->
+                            <div id="slotC" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'slotC')"
+                                onclick="handleL2SlotClick('slotC')"
+                                class="h-full border-2 border-dashed border-gray-400 hover:border-[#b25d46] hover:bg-[#b25d46]/5 rounded-lg flex flex-col items-center justify-center p-2 transition">
+                                <span class="text-xs font-bold text-gray-600 mb-1">【林間匯聚之水源】</span>
+                                <div id="slotC_content" class="text-center text-gray-400 italic text-xs">載入中...</div>
+                            </div>
+                            <!-- Slot D: 桑竹 -->
+                            <div id="slotD" ondragover="allowDrop(event)" ondrop="handleDrop(event, 'slotD')"
+                                onclick="handleL2SlotClick('slotD')"
+                                class="h-full border-2 border-dashed border-gray-400 hover:border-[#b25d46] hover:bg-[#b25d46]/5 rounded-lg flex flex-col items-center justify-center p-2 transition">
+                                <span class="text-xs font-bold text-gray-600 mb-1">【山麓與阡陌邊境】</span>
+                                <div id="slotD_content" class="text-center text-gray-400 italic text-xs">載入中...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 景物備用區 -->
+                <div id="l2PieceInventory" class="bg-[#f7f4eb] p-3 rounded border border-[#d6cebe]">
+                    <div class="text-xs font-bold text-gray-600 mb-2">請拖曳或點選以下空間元素拼圖卡：</div>
+                    <div id="l2PieceButtons" class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <!-- 動態生成拼圖 -->
+                    </div>
+                    <div id="l2SelectionPrompt"
+                        class="hidden bg-white p-2 rounded border border-[#b25d46] mt-3 text-xs text-gray-600"></div>
+                </div>
+
+                <!-- 通關推進 -->
+                <div id="l2PassAction" class="hidden bg-[#e6f4ea] p-4 rounded-lg text-center space-y-3">
+                    <h4 class="text-lg font-bold text-green-800">🎉 拼圖全數歸位，神州卷軸全面復甦！</h4>
+                    <p class="text-sm text-gray-600">「土地平曠，屋舍儼然，有良田、美池、桑竹之屬。阡陌交通，雞犬相聞。」大同世界全景絢麗展開！</p>
+                    <button onclick="goToLevel(3)"
+                        class="px-6 py-2 bg-[#3d644d] text-white rounded-md text-sm font-bold shadow hover:bg-[#3d644d]/90 transition">
+                        🚶 前往第三關：拜訪村中客
+                    </button>
+                </div>
+            </div>
+
+            <!-- 關卡 3：村中客 介面 -->
+            <div id="level3Container" class="space-y-4 hidden">
+                <div class="bg-[#fcfaf2] p-4 rounded-lg border border-[#e8e2d5]">
+                    <h3 class="text-md font-bold text-[#3d644d] mb-2">第三關：村中客 ── 歷史探微與對話決策</h3>
+                    <p class="text-xs text-gray-500 mb-4 font-classical">說明：村民向你詢問外界時空更迭，你的回答將決定能否取得他們的信任與信物。</p>
+
+                    <!-- 寫意長老 avatar 與對話視窗 -->
+                    <div
+                        class="w-full bg-[#fcfaf2] border border-gray-200 rounded p-4 flex flex-col md:flex-row items-center gap-4">
+                        <div
+                            class="w-20 h-20 rounded-full bg-[#e8e2d5] border border-[#d6cebe] flex items-center justify-center text-4xl shadow-inner">
+                            👴
+                        </div>
+                        <div class="flex-1 space-y-1">
+                            <div class="text-xs font-bold text-[#b25d46]">桃花源村落大長老</div>
+                            <div id="elderDialogue"
+                                class="text-sm font-classical italic text-gray-700 bg-white p-3 rounded border border-dashed border-gray-300 min-h-[50px] flex items-center">
+                                <!-- 長老對話內容 (將在此由 JS 動態注入) -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 村民回應與對話樹 -->
+                <div id="l3FeedbackDisplay"
+                    class="hidden p-3 bg-amber-50 border border-amber-200 text-xs text-amber-800 rounded font-classical">
+                    <!-- 回饋內容 -->
+                </div>
+
+                <div id="l3OptionsContainer" class="space-y-3">
+                    <div class="text-xs font-bold text-gray-500">請抉擇你的言辭：</div>
+                    <div id="l3Options" class="grid grid-cols-1 gap-2">
+                        <!-- 歷史抉擇按鈕 (由 JS 動態注入) -->
+                    </div>
+                </div>
+
+                <!-- 通關推進 -->
+                <div id="l3PassAction" class="hidden bg-green-50 p-4 rounded-lg text-center space-y-3">
+                    <h4 class="text-md font-bold text-green-800">🎋 成功贏得桃花源村民之絕對信任！</h4>
+                    <p class="text-xs text-gray-600">你獲得了竹簡信物與長老臨別餽贈。信守承諾，是這場探祕中最高尚的操守。</p>
+                    <button onclick="goToLevel(4)"
+                        class="px-6 py-2 bg-[#3d644d] text-white rounded-md text-sm font-bold shadow hover:bg-[#3d644d]/90 transition">
+                        🚶 前往第四關：迷蹤探尋與思辨
+                    </button>
+                </div>
+            </div>
+
+            <!-- 關卡 4：迷蹤尋 介面 -->
+            <div id="level4Container" class="space-y-4 hidden">
+                <div class="bg-[#fcfaf2] p-4 rounded-lg border border-[#e8e2d5] relative">
+                    <h3 class="text-md font-bold text-[#3d644d] mb-1">第四關：迷蹤尋 ── 終極思辨與成效評估</h3>
+                    <p class="text-xs text-gray-500 mb-3 font-classical">
+                        說明：漁人離開後試圖處處標記，並引太守追尋，然而終究「迷不復得路」。這其中蘊含了作者深沉的託喻思想。</p>
+
+                    <!-- 迷霧繚繞特效 -->
+                    <div id="l4FogStage"
+                        class="w-full h-32 rounded border border-gray-300 relative overflow-hidden bg-gradient-to-br from-slate-400 via-stone-300 to-slate-200">
+                        <div id="fogOverlay"
+                            class="absolute inset-0 bg-white/70 backdrop-blur-md transition-all duration-1000 flex items-center justify-center">
+                            <span class="text-md font-bold text-slate-700 animate-pulse tracking-widest font-classical">
+                                🌫️ 迷路難尋，雲霧鎖山... 剩餘迷霧：<span id="fogPercent">100%</span>
+                            </span>
+                        </div>
+                        <div
+                            class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-xs font-bold bg-[#fcfaf2] px-3 py-1 rounded-full shadow">
+                            🌳 劉子驥不復得路 🌲
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 挑戰題目區 -->
+                <div id="l4ChallengeBox" class="bg-[#fcfaf2] p-4 rounded border border-[#d6cebe] space-y-4">
+                    <div class="text-xs text-[#b25d46] font-bold">🎯 誌記修復挑戰 (<span id="l4QNum">1</span> / 3)：</div>
+                    <div id="l4QuestionText"
+                        class="text-md font-classical font-bold text-gray-800 leading-relaxed bg-white p-3 rounded shadow-sm border border-gray-100">
+                        <!-- 題目 -->
+                    </div>
+                    <div id="l4Options" class="space-y-2">
+                        <!-- 選項 -->
+                    </div>
+                </div>
+
+                <!-- 最終結算面板 -->
+                <div id="gameFinishPanel"
+                    class="hidden bg-amber-50 p-6 rounded-lg border border-amber-200 text-center space-y-4">
+                    <h3 class="text-2xl font-classical font-bold text-[#b25d46]">🏆 探祕終章 ── 桃花源記大圓滿</h3>
+                    <p class="text-sm text-gray-700 leading-relaxed max-w-md mx-auto">
+                        「後遂無問津者。」<br>
+                        你已成功完成所有語文解謎！智慧的光芒穿透了千年的迷霧。桃花源並未消失，它作為人類避開暴政與喧囂的精神大同圖騰，永久地精雕細琢在經典文學中。
+                    </p>
+
+                    <!-- 成績結算單 -->
+                    <div class="bg-white p-4 rounded-md border border-[#d6cebe] max-w-sm mx-auto text-left shadow-sm">
+                        <h4 class="text-center font-bold text-[#3d644d] border-b pb-2 mb-2">🎓 桃花源探秘成績單</h4>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between"><span>學號帳號:</span> <strong
+                                    id="resUserId">student_guest_01</strong></div>
+                            <div class="flex justify-between"><span>第一關 緣溪行:</span> <span id="resScore1"
+                                    class="text-green-700 font-bold">0 分</span></div>
+                            <div class="flex justify-between"><span>第二關 初極狹:</span> <span id="resScore2"
+                                    class="text-green-700 font-bold">0 分</span></div>
+                            <div class="flex justify-between"><span>第三關 村中客:</span> <span id="resScore3"
+                                    class="text-green-700 font-bold">0 分</span></div>
+                            <div class="flex justify-between"><span>第四關 迷蹤尋:</span> <span id="resScore4"
+                                    class="text-green-700 font-bold">0 分</span></div>
+                            <div class="border-t pt-2 mt-2 flex justify-between text-sm font-bold">
+                                <span>綜合探秘稱號:</span>
+                                <span id="resTitle" class="text-[#b25d46]">武陵智士</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center gap-3">
+                        <button onclick="exportProgressJSON()"
+                            class="px-4 py-2 bg-[#b25d46] text-white rounded font-bold hover:bg-[#b25d46]/90 transition text-sm shadow">
+                            💾 儲存並匯出此成績單 (JSON)
+                        </button>
+                        <button onclick="resetGame()"
+                            class="px-4 py-2 bg-gray-500 text-white rounded font-bold hover:bg-gray-600 transition text-sm">
+                            🔄 重新挑戰
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部過渡導航 -->
+            <div class="mt-4 border-t border-gray-100 pt-4 flex justify-between items-center text-xs text-gray-400">
+                <span>桃花源記沉謎體驗 🌲 純客戶端高容錯設計</span>
+                <span>武陵智囊</span>
+            </div>
+        </section>
+
+        <!-- ==================== 右欄：縱向古典文本書軸與註釋工具 ==================== -->
+        <section class="col-span-12 lg:col-span-3 flex flex-col gap-4">
+
+            <!-- 古典縱書卷軸 -->
+            <div
+                class="bg-[#f7f4eb] border border-[#d6cebe] rounded-lg p-4 shadow-sm flex flex-col justify-between max-h-[480px]">
+                <h2
+                    class="text-sm font-bold text-[#3d644d] border-b border-[#d6cebe] pb-2 mb-3 flex items-center justify-between">
+                    <span class="flex items-center gap-1">📜 桃花源記縱書卷軸</span>
+                    <button onclick="toggleScrollExpand()"
+                        class="text-[10px] bg-[#b25d46] text-white px-2 py-0.5 rounded font-normal hover:bg-[#b25d46]/90 transition shadow-sm"
+                        title="點此展開全文並啟用文字逐句高亮朗讀">
+                        🔍 全文放大觀看
+                    </button>
+                </h2>
+
+                <!-- 縱書核心文字 (修復點：添加 ID 容器以支援 UI 及時通關滾動定位) -->
+                <div id="scrollContainerRight"
+                    class="bg-white rounded border border-[#e8e2d5] p-3 overflow-x-auto overflow-y-hidden h-72 custom-scroll">
+                    <div class="vertical-scroll-container">
+
+                        <!-- 第1段 -->
+                        <div id="scrollSeg1" class="vertical-segment">
+                            <span class="text-sm text-[#b25d46] font-bold block pb-3 select-none">【第一段：緣溪行】</span>
+                            <span id="s0">晉太元中，武陵人捕魚為業。</span>
+                            <span id="s1"><span onclick="lookupWord('緣')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">緣</span>溪行，忘路之遠近。</span>
+                            <span id="s2"><span onclick="lookupWord('忽逢')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">忽逢</span>桃花林，夾岸數百步，中無雜樹。</span>
+                            <span id="s3"><span onclick="lookupWord('芳草鮮美')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">芳草鮮美</span>，<span
+                                    onclick="lookupWord('落英繽紛')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">落英繽紛</span>。</span>
+                            <span id="s4">漁人<span onclick="lookupWord('甚異之')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">甚異之</span>，復前行，<span
+                                    onclick="lookupWord('欲窮其林')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">欲窮其林</span>。</span>
+                        </div>
+
+                        <!-- 第2段 -->
+                        <div id="scrollSeg2" class="vertical-segment opacity-40">
+                            <span class="text-sm text-[#b25d46] font-bold block pb-3 select-none">【第二段：初極狹】</span>
+                            <span id="s5"><span onclick="lookupWord('林盡水源')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">林盡水源</span>，便得一山，山有小口，彷彿若有光。</span>
+                            <span id="s6">便捨船，從口入。</span>
+                            <span id="s7">初極狹，<span onclick="lookupWord('才通人')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">才通人</span>。</span>
+                            <span id="s8">復行數十步，<span onclick="lookupWord('豁然開朗')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">豁然開朗</span>。</span>
+                            <span id="s9">土地平曠，<span onclick="lookupWord('屋舍儼然')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">屋舍儼然</span>。</span>
+                            <span id="s10">有<span onclick="lookupWord('良田美池')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">良田、美池</span>、<span
+                                    onclick="lookupWord('桑竹之屬')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">桑竹之屬</span>。</span>
+                            <span id="s11"><span onclick="lookupWord('阡陌交通')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">阡陌交通</span>，雞犬相聞。</span>
+                            <span id="s12">其中往來種作，男女衣著，悉如外人.</span>
+                            <span id="s13"><span onclick="lookupWord('黃髮垂髫')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">黃髮垂髫</span>，並怡然自樂。</span>
+                        </div>
+
+                        <!-- 第3段 -->
+                        <div id="scrollSeg3" class="vertical-segment opacity-40">
+                            <span class="text-sm text-[#b25d46] font-bold block pb-3 select-none">【第三段：村中客】</span>
+                            <span id="s14">見漁人，乃大驚，問所從來。</span>
+                            <span id="s15">具答之.</span>
+                            <span id="s16">便<span onclick="lookupWord('要')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">要</span>還家，設酒殺雞作食。</span>
+                            <span id="s17">村中聞有此人，<span onclick="lookupWord('咸')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">咸</span>來問訊。</span>
+                            <span id="s18">自言先世避秦時亂，率妻子邑人來此<span onclick="lookupWord('絕境')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">絕境</span>。</span>
+                            <span id="s19">不復出焉，遂與外人間隔。</span>
+                            <span id="s20">問今是何世，乃不知有漢，<span onclick="lookupWord('無論')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">無論</span>魏晉。</span>
+                            <span id="s21">此人一一為<span onclick="lookupWord('具言')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">具言</span>所聞，皆<span
+                                    onclick="lookupWord('嘆惋')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">嘆惋</span>。</span>
+                            <span id="s22">餘人各復<span onclick="lookupWord('延')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">延</span>至其家，皆出酒食。</span>
+                            <span id="s23">停數日，辭去。</span>
+                            <span id="s24">此中人語雲：「不足為外人道也。」</span>
+                        </div>
+
+                        <!-- 第4段 -->
+                        <div id="scrollSeg4" class="vertical-segment border-none opacity-40">
+                            <span class="text-sm text-[#b25d46] font-bold block pb-3 select-none">【第四段：迷蹤尋】</span>
+                            <span id="s25">既出，得其船，便<span onclick="lookupWord('扶向路')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">扶向路</span>，處處<span
+                                    onclick="lookupWord('誌')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">誌</span>之。</span>
+                            <span id="s26">及郡下，<span onclick="lookupWord('詣')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">詣</span>太守，說如此。</span>
+                            <span id="s27">太守即遣人隨其往，<span onclick="lookupWord('尋向所誌')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">尋向所誌</span>，<span
+                                    onclick="lookupWord('遂迷')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">遂迷</span>，不復得路。</span>
+                            <span id="s28">南陽劉子驥，高尚士也，聞之，<span onclick="lookupWord('規')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">規</span>往。<span
+                                    onclick="lookupWord('未果')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">未果</span>，<span
+                                    onclick="lookupWord('尋')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">尋</span>病終。後遂無<span
+                                    onclick="lookupWord('問津')"
+                                    class="text-[#b25d46] underline cursor-pointer hover:bg-amber-100">問津</span>者。</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- 生字註釋小字典 -->
+            <div class="bg-white border border-[#d6cebe] rounded-lg p-4 shadow-sm">
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    📖 縱書生詞字解隨身書 (點字看註釋)
+                </h3>
+                <div
+                    class="bg-[#fcfaf2] p-3 rounded border border-[#e8e2d5] min-h-[100px] flex flex-col justify-between">
+                    <div>
+                        <div id="wordCardTitle"
+                            class="text-md font-bold text-[#b25d46] border-b border-gray-200 pb-1 mb-1 font-classical">
+                            請點擊古文生字
+                        </div>
+                        <p id="wordCardDesc" class="text-xs text-gray-600 leading-relaxed font-classical">
+                            右側註釋區將會顯示詳細字詞解釋，此為輔助您的學習鷹架。
+                        </p>
+                    </div>
+                    <div class="text-[10px] text-gray-400 text-right mt-2 select-none">
+                        桃源國語文智慧鷹架工具
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Toast 訊息提示元件 (修正點：補上原程式遺漏之 DOM 元件) -->
+    <div id="toastBox"
+        class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none">
+        <div id="toastContent"
+            class="p-4 rounded-lg shadow-xl border flex items-center justify-between gap-3 min-w-[300px]">
+            <span id="toastText" class="text-sm font-bold font-classical"></span>
+        </div>
+    </div>
+
+    <!-- ==================== 核心邏輯 JavaScript ==================== -->
+    <script>
+        // 歷史決策長老對白資料庫
+        const l3Dialogues = {
+            0: "「老夫代表全邑百姓敬客人一杯。祖輩為避秦時戰亂攜老幼入此，如今外頭是什麼朝代了？」",
+            1: "「客人所言漢、魏、晉當真令人神傷。那不知如今外頭的百姓生活如何？徭役稅賦可還重？」",
+            2: "「唉，聽客人具言，外面依舊是白骨蔽野、生靈塗炭。客人臨行前，老夫有幾句掏心之語...」",
+            3: "「多謝客人！這有一卷古老避秦信物贈予你。請務必記住誓言，萬萬不可洩露此處。」"
+        };
+
+        // 隨機排列陣列演算法 (Fisher-Yates Shuffle)
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        class GuzhengSynth {
+            constructor() {
+                this.ctx = null;
+                this.isPlaying = false;
+                this.timer = null;
+                this.customAudioElement = null; // 播放自建或預設音樂
+                this.customAudioUrl = null;
+                this.defaultAudioUrl = 'http://googleusercontent.com/file_content/0'; // 👈 預設背景音樂 MP3 檔
+            }
+
+            init() {
+                try {
+                    if (!this.ctx) {
+                        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                } catch (e) {
+                    console.warn("Web Audio Context 初始化受限:", e);
+                }
+            }
+
+            pluck(freq, time, volume = 0.25) {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gainNode = this.ctx.createGain();
+                    const filter = this.ctx.createBiquadFilter();
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, time);
+
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(1200, time);
+                    filter.frequency.exponentialRampToValueAtTime(150, time + 0.8);
+                    filter.Q.setValueAtTime(6, time);
+
+                    gainNode.gain.setValueAtTime(0, time);
+                    gainNode.gain.linearRampToValueAtTime(volume, time + 0.02);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, time + 1.5);
+
+                    osc.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.ctx.destination);
+
+                    osc.start(time);
+                    osc.stop(time + 1.6);
+                } catch (err) {
+                    console.warn(err);
+                }
+            }
+
+            arpeggio(freqs, time, speed = 0.05, volume = 0.15) {
+                freqs.forEach((freq, idx) => {
+                    this.pluck(freq, time + idx * speed, volume);
+                });
+            }
+
+            async playScale() {
+                this.init();
+
+                // 手勢喚醒強制解鎖
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    await this.ctx.resume();
+                }
+
+                // 智慧判定播放源（客製化上傳優先，無則調用內建 defaultAudioUrl）
+                const activeAudioSrc = this.customAudioUrl || this.defaultAudioUrl;
+
+                if (activeAudioSrc) {
+                    if (!this.customAudioElement) {
+                        this.customAudioElement = new Audio();
+                        this.customAudioElement.loop = true;
+                    }
+                    if (this.customAudioElement.src !== activeAudioSrc) {
+                        this.customAudioElement.src = activeAudioSrc;
+                        this.customAudioElement.load();
+                    }
+                    this.customAudioElement.play().catch(err => {
+                        console.warn("背景音樂播放受阻，已準備就緒，請手動觸發:", err);
+                    });
+                    this.isPlaying = true;
+                    return;
+                }
+
+                // 兜底降級程序：純 Web Audio 合成古典樂
+                if (this.isPlaying) return;
+                this.isPlaying = true;
+
+                const scale = [220.00, 246.94, 277.18, 329.63, 369.99, 440.00, 493.88, 554.37, 659.25, 739.99];
+
+                const playLoop = () => {
+                    if (!this.isPlaying || !this.ctx) return;
+                    const now = this.ctx.currentTime;
+
+                    const pattern = Math.random();
+                    if (pattern < 0.4) {
+                        const note = scale[Math.floor(Math.random() * scale.length)];
+                        this.pluck(note, now, 0.2);
+                    } else if (pattern < 0.7) {
+                        const baseIdx = Math.floor(Math.random() * (scale.length - 4));
+                        this.pluck(scale[baseIdx], now, 0.15);
+                        this.pluck(scale[baseIdx + 3], now + 0.03, 0.15);
+                    } else {
+                        const baseIdx = Math.floor(Math.random() * (scale.length - 5));
+                        const freqs = [scale[baseIdx], scale[baseIdx + 1], scale[baseIdx + 2], scale[baseIdx + 4]];
+                        this.arpeggio(freqs, now, 0.06, 0.12);
+                    }
+
+                    const nextDelay = Math.random() * 1.8 + 1.2;
+                    this.timer = setTimeout(playLoop, nextDelay * 1000);
+                };
+
+                playLoop();
+            }
+
+            playSuccess() {
+                this.init();
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+                const now = this.ctx ? this.ctx.currentTime : 0;
+                const notes = [329.63, 440.00, 554.37, 659.25, 880.00];
+                notes.forEach((freq, idx) => {
+                    this.pluck(freq, now + idx * 0.04, 0.2);
+                });
+            }
+
+            playFailure() {
+                this.init();
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+                const now = this.ctx ? this.ctx.currentTime : 0;
+                this.pluck(220.00, now, 0.25);
+                this.pluck(196.00, now + 0.15, 0.25);
+            }
+
+            stop() {
+                this.isPlaying = false;
+                if (this.timer) clearTimeout(this.timer);
+
+                if (this.customAudioElement) {
+                    try {
+                        this.customAudioElement.pause();
+                    } catch (e) {
+                        console.warn(e);
+                    }
+                }
+
+                if (this.ctx) {
+                    this.ctx.close().then(() => { this.ctx = null; });
+                }
+            }
+        }
+
+        const synthInstance = new GuzhengSynth();
+
+        const DB_NAME = 'PeachBlossomDB';
+        const DB_VERSION = 5;
+
+        // Failsafe IndexedDB / Memory / LocalStorage 智慧儲存核心
+        class DurableStore {
+            constructor() {
+                this.db = null;
+                this.fallbackStore = {
+                    user_progress: {},
+                    media_assets: {}
+                };
+                this.isFallback = false;
+            }
+
+            init() {
+                if (this.db || this.isFallback) return Promise.resolve();
+                return new Promise((resolve) => {
+                    try {
+                        if (!window.indexedDB) {
+                            this.isFallback = true;
+                            resolve();
+                            return;
+                        }
+                        const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+                        request.onerror = () => {
+                            this.isFallback = true;
+                            resolve();
+                        };
+                        request.onupgradeneeded = (e) => {
+                            try {
+                                const db = e.target.result;
+                                if (!db.objectStoreNames.contains('user_progress')) {
+                                    db.createObjectStore('user_progress', { keyPath: 'userId' });
+                                }
+                                if (!db.objectStoreNames.contains('media_assets')) {
+                                    db.createObjectStore('media_assets', { keyPath: 'assetId' });
+                                }
+                            } catch (err) {
+                                this.isFallback = true;
+                            }
+                        };
+                        request.onsuccess = (e) => {
+                            this.db = e.target.result;
+                            resolve();
+                        };
+                    } catch (err) {
+                        console.warn("無法存取 IndexedDB，自動平滑降級至 Memory 暫存模式：", err);
+                        this.isFallback = true;
+                        resolve();
+                    }
+                });
+            }
+
+            // 讀取學員進度
+            async getProgress(userId) {
+                try {
+                    await this.init();
+                    if (this.isFallback || !this.db) {
+                        try {
+                            const local = localStorage.getItem(`progress_${userId}`);
+                            if (local) return JSON.parse(local);
+                        } catch (e) { }
+                        return this.fallbackStore.user_progress[userId] || null;
+                    }
+                    return new Promise((resolve) => {
+                        try {
+                            const tx = this.db.transaction(['user_progress'], 'readonly');
+                            const store = tx.objectStore('user_progress');
+                            const req = store.get(userId);
+                            req.onsuccess = () => {
+                                if (req.result) {
+                                    resolve(req.result);
+                                } else {
+                                    try {
+                                        const local = localStorage.getItem(`progress_${userId}`);
+                                        if (local) {
+                                            resolve(JSON.parse(local));
+                                            return;
+                                        }
+                                    } catch (e) { }
+                                    resolve(null);
+                                }
+                            };
+                            req.onerror = () => {
+                                try {
+                                    const local = localStorage.getItem(`progress_${userId}`);
+                                    if (local) {
+                                        resolve(JSON.parse(local));
+                                        return;
+                                    }
+                                } catch (e) { }
+                                resolve(this.fallbackStore.user_progress[userId] || null);
+                            };
+                        } catch (e) {
+                            resolve(this.fallbackStore.user_progress[userId] || null);
+                        }
+                    });
+                } catch (e) {
+                    return this.fallbackStore.user_progress[userId] || null;
+                }
+            }
+
+            // 儲存學員進度
+            async saveProgress(progress) {
+                try {
+                    localStorage.setItem(`progress_${progress.userId}`, JSON.stringify(progress));
+                } catch (e) { }
+
+                try {
+                    await this.init();
+                    if (this.isFallback || !this.db) {
+                        this.fallbackStore.user_progress[progress.userId] = progress;
+                        return true;
+                    }
+                    return new Promise((resolve) => {
+                        try {
+                            const tx = this.db.transaction(['user_progress'], 'readwrite');
+                            const store = tx.objectStore('user_progress');
+                            const req = store.put(progress);
+                            req.onsuccess = () => resolve(true);
+                            req.onerror = () => {
+                                this.fallbackStore.user_progress[progress.userId] = progress;
+                                resolve(true);
+                            };
+                        } catch (e) {
+                            this.fallbackStore.user_progress[progress.userId] = progress;
+                            resolve(true);
+                        }
+                    });
+                } catch (e) {
+                    this.fallbackStore.user_progress[progress.userId] = progress;
+                    return true;
+                }
+            }
+
+            // 讀取自備多媒體
+            async getMediaAsset(assetId) {
+                try {
+                    await this.init();
+                    if (this.isFallback || !this.db) {
+                        try {
+                            const localItem = localStorage.getItem(`media_${assetId}`);
+                            if (localItem) return { assetId, blob: localItem };
+                        } catch (e) { }
+                        return this.fallbackStore.media_assets[assetId] || null;
+                    }
+                    return new Promise((resolve) => {
+                        try {
+                            const tx = this.db.transaction(['media_assets'], 'readonly');
+                            const store = tx.objectStore('media_assets');
+                            const req = store.get(assetId);
+                            req.onsuccess = () => {
+                                if (req.result) {
+                                    resolve(req.result);
+                                } else {
+                                    try {
+                                        const localItem = localStorage.getItem(`media_${assetId}`);
+                                        if (localItem) {
+                                            resolve({ assetId, blob: localItem });
+                                            return;
+                                        }
+                                    } catch (e) { }
+                                    resolve(null);
+                                }
+                            };
+                            req.onerror = () => {
+                                try {
+                                    const localItem = localStorage.getItem(`media_${assetId}`);
+                                    if (localItem) {
+                                        resolve({ assetId, blob: localItem });
+                                        return;
+                                    }
+                                } catch (e) { }
+                                resolve(this.fallbackStore.media_assets[assetId] || null);
+                            };
+                        } catch (e) {
+                            resolve(this.fallbackStore.media_assets[assetId] || null);
+                        }
+                    });
+                } catch (e) {
+                    return this.fallbackStore.media_assets[assetId] || null;
+                }
+            }
+
+            // 儲存自訂多媒體
+            async saveMediaAsset(assetId, blob) {
+                if (blob instanceof Blob) {
+                    if (blob.size < 1500000) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            try {
+                                localStorage.setItem(`media_${assetId}`, reader.result);
+                            } catch (e) { }
+                        };
+                        reader.readAsDataURL(blob);
+                    }
+                } else if (typeof blob === 'string' && blob.length < 1500000) {
+                    try {
+                        localStorage.setItem(`media_${assetId}`, blob);
+                    } catch (e) { }
+                }
+
+                try {
+                    await this.init();
+                    if (this.isFallback || !this.db) {
+                        this.fallbackStore.media_assets[assetId] = { assetId, blob };
+                        return true;
+                    }
+                    return new Promise((resolve) => {
+                        try {
+                            const tx = this.db.transaction(['media_assets'], 'readwrite');
+                            const store = tx.objectStore('media_assets');
+                            const req = store.put({ assetId, blob });
+                            req.onsuccess = () => resolve(true);
+                            req.onerror = () => {
+                                this.fallbackStore.media_assets[assetId] = { assetId, blob };
+                                resolve(true);
+                            };
+                        } catch (e) {
+                            this.fallbackStore.media_assets[assetId] = { assetId, blob };
+                            resolve(true);
+                        }
+                    });
+                } catch (e) {
+                    this.fallbackStore.media_assets[assetId] = { assetId, blob };
+                    return true;
+                }
+            }
+
+            async deleteMediaAsset(assetId) {
+                try {
+                    localStorage.removeItem(`media_${assetId}`);
+                } catch (e) { }
+                try {
+                    await this.init();
+                    if (this.isFallback || !this.db) {
+                        delete this.fallbackStore.media_assets[assetId];
+                        return true;
+                    }
+                    return new Promise((resolve) => {
+                        try {
+                            const tx = this.db.transaction(['media_assets'], 'readwrite');
+                            const store = tx.objectStore('media_assets');
+                            const req = store.delete(assetId);
+                            req.onsuccess = () => resolve(true);
+                            req.onerror = () => resolve(true);
+                        } catch (e) {
+                            resolve(true);
+                        }
+                    });
+                } catch (e) {
+                    delete this.fallbackStore.media_assets[assetId];
+                    return true;
+                }
+            }
+        }
+
+        const failsafeDB = new DurableStore();
+
+        const saveProgress = (progress) => failsafeDB.saveProgress(progress);
+        const getProgress = (userId) => failsafeDB.getProgress(userId);
+        const saveMediaAsset = (assetId, blob) => failsafeDB.saveMediaAsset(assetId, blob);
+        const getMediaAsset = (assetId) => failsafeDB.getMediaAsset(assetId);
+        const deleteMediaAsset = (assetId) => failsafeDB.deleteMediaAsset(assetId);
+
+        const GLOSSARY = {
+            "緣": "沿著、順著河流。",
+            "行": "行走、劃船前行。",
+            "忽逢": "突然遇到、不期而遇。",
+            "芳草鮮美": "芳香的青草鮮嫩美麗。",
+            "落英繽紛": "落花繁多，繽紛雜亂地散落地上。英：花。",
+            "甚異之": "對此感到非常驚異。異：以...為異（意動用法）。",
+            "欲窮其林": "想要走到這片桃花林的盡頭。窮：窮盡、走到頭。",
+            "林盡水源": "桃花林在溪流的源頭消失了。",
+            "才通人": "僅漸容得下一個人通過。",
+            "豁然開朗": "眼前頓時寬敞明亮，形容由狹窄幽暗突然變得開闊明朗。",
+            "屋舍儼然": "房屋整整齊齊。儼然：整齊的樣子。",
+            "良田美池": "肥沃的農田、美麗的水池。",
+            "桑竹之屬": "桑樹、竹子這一類植物。屬：類。",
+            "阡陌交通": "田間小路交錯相通。阡陌：田間小路（東西為阡，南北為陌）。",
+            "黃髮垂髫": "指老人與小孩。黃髮：老人頭髮變黃，代指老人。垂髫：小孩頭髮下垂，代指小孩。",
+            "要": "通「邀」，邀請。",
+            "咸": "都、皆。",
+            "絕境": "與人世隔絕的地方，並非現代悲慘絕望之意。",
+            "無論": "更不用說、更不必提。",
+            "具言": "詳細地述說。",
+            "嘆惋": "嘆息與惋惜，對外界朝代戰亂動盪感到悲傷。",
+            "延": "邀請、款待。",
+            "不足為外人道也": "不值得向外面的人提起，透露出防備心與避世安居的強烈渴望。",
+            "扶向路": "沿著先前的路。扶：沿著、順著。向：先前的。",
+            "誌": "做標記（名詞作動詞用）。",
+            "詣": "拜見（拜見地位高的人，如太守）。",
+            "尋向所誌": "尋找先前所做的標記。尋：尋找。",
+            "遂迷": "竟然迷路了。遂：竟然。",
+            "規": "計劃、打算。",
+            "未果": "沒有實現、沒有結果。",
+            "尋": "不久、隨後。",
+            "問津": "探尋、尋求渡口。後比喻探訪、探求源頭或感興趣者。"
+        };
+
+        const ttsSentences = [
+            "晉太元中，武陵人捕魚為業。",
+            "緣溪行，忘路之遠近。",
+            "忽逢桃花林，夾岸數百步，中無雜樹。",
+            "芳草鮮美，落英繽紛。",
+            "漁人甚異之，復前行，欲窮其林。",
+            "林盡水源，便得一山，山有小口，彷彿若有光。",
+            "便捨船，從口入。",
+            "初極狹，才通人。",
+            "復行數十步，豁然開朗。",
+            "土地平曠，屋舍儼然。",
+            "有良田、美池、桑竹之屬。",
+            "阡陌交通，雞犬相聞。",
+            "其中往來種作，男女衣著，悉如外人。",
+            "黃髮垂髫，並怡然自樂。",
+            "見漁人，乃大驚，問所從來。",
+            "具答之。",
+            "便要還家，設酒殺雞作食.",
+            "村中聞有此人，咸來問訊。",
+            "自言先世避秦時亂，率妻子邑人來此絕境。",
+            "不復出焉，遂與外人間隔。",
+            "問今是何世，乃不知有漢，無論魏晉。",
+            "此人一一為具言所聞，皆嘆惋。",
+            "餘人各復延至其家，皆出酒食。",
+            "停數日，辭去。",
+            "此中人語雲：「不足為外人道也。」",
+            "既出，得其船，便扶向路，處處誌之。",
+            "及郡下，詣太守，說如此。",
+            "太守即遣人隨其往，尋向所誌，遂迷，不復得路。",
+            "南陽劉子驥，高尚士也，聞之，欣然規往。未果，尋病終.後遂無問津者。"
+        ];
+
+        const level1Questions = [
+            {
+                sentence: "「緣」溪行，忘路之遠近。",
+                word: "緣",
+                options: [
+                    { key: "A", text: "沿著、順著", correct: true },
+                    { key: "B", text: "溪流的邊緣", correct: false },
+                    { key: "C", text: "因為、由於", correct: false },
+                    { key: "D", text: "緣分天註定", correct: false }
+                ],
+                tip: "提示：漁人是順著溪水劃船前行的。"
+            },
+            {
+                sentence: "「忽逢」桃花林，夾岸數百步。",
+                word: "忽逢",
+                options: [
+                    { key: "A", text: "故意去拜訪", correct: false },
+                    { key: "B", text: "突然遇到、不期而遇", correct: true },
+                    { key: "C", text: "尋找了很久", correct: false },
+                    { key: "D", text: "聽見傳聞", correct: false }
+                ],
+                tip: "提示：這是一場『忘路之遠近』後的意外邂逅。"
+            },
+            {
+                sentence: "漁人「甚異之」，復前行，欲窮其林。",
+                word: "甚異之",
+                options: [
+                    { key: "A", text: "覺得那裡很怪異，想趕快離開", correct: false },
+                    { key: "B", text: "看見了許多異性", correct: false },
+                    { key: "C", text: "對此感到非常奇特與驚異", correct: true },
+                    { key: "D", text: "完全不在意", correct: false }
+                ],
+                tip: "提示：『異』在這裡是意動用法，覺得這景色漸奇。"
+            },
+            {
+                sentence: "芳草鮮美，「落英繽紛」。",
+                word: "落英繽紛",
+                options: [
+                    { key: "A", text: "落花繁多，雜亂而美麗地散落地上", correct: true },
+                    { key: "B", text: "落魄英雄在樹林裡紛爭", correct: false },
+                    { key: "C", text: "枯葉一片片掉了下來", correct: false },
+                    { key: "D", text: "大雪紛飛的冬景", correct: false }
+                ],
+                tip: "提示：『英』指花，『繽紛』指雜亂繁多而美麗的姿態。"
+            }
+        ];
+
+        const l2Pieces = [
+            { id: 'house', name: '屋舍儼然', desc: '整齊排列的房屋，需建於平曠開闊土地上。', targetSlot: 'slotA', icon: '🏡' },
+            { id: 'field', name: '良田萬頃', desc: '整整齊齊的肥沃農地，需安插於大片平野耕區。', targetSlot: 'slotB', icon: '🌾' },
+            { id: 'pool', name: '清澄美池', desc: '波光粼粼的水池，是村中農作之水源.', targetSlot: 'slotC', icon: '🏞️' },
+            { id: 'bamboo', name: '桑竹之屬', desc: '翠綠的桑樹和竹林，環繞於田地與村落外圍。', targetSlot: 'slotD', icon: '🎋' }
+        ];
+
+        const level4Questions = [
+            {
+                question: "Q1. 漁人離開桃花源時「處處誌之」，後來帶領太守前去卻「遂迷，不復得路」。陶淵明這樣編排結尾，其核心用意是什麼？",
+                options: [
+                    { key: "A", text: "暗示桃花源僅是漁人一場不期而遇的虛幻夢境，在充滿戰亂掠奪的現實中，真正的理想大同社會是不存在的託喻。", correct: true },
+                    { key: "B", text: "諷刺漁人雖然不守信用欲出賣桃源，但因其裝瘋賣傻，故意帶領太守迷路。", correct: false },
+                    { key: "C", text: "說明桃花源的村民在漁人離開後，連夜動員村民將所有路標與記號全部抹除。", correct: false }
+                ]
+            },
+            {
+                question: "Q2. 桃花源村民自述「不知有漢，無論魏晉」。這段歷史時空的斷代停滯，在文學藝術上傳達出什麼內涵？",
+                options: [
+                    { key: "A", text: "象徵著一個免受封建皇權壓榨、無戰亂侵害的自給自足大同社會理想，是心靈上的烏托邦。", correct: true },
+                    { key: "B", text: "反映桃花源地理偏僻、資訊極度落後，村民普遍缺乏基本的歷史與科學常識。", correct: false },
+                    { key: "C", text: "說明村民們故意裝作不認識外界，以防被外人侵佔家園、剝奪土地資源。", correct: false }
+                ]
+            },
+            {
+                question: "Q3. 文章最後寫「南陽劉子驥...欣然規往。未果，尋病終.後遂無問津者。」最後這句話給予後代讀者怎樣的審美感受？",
+                options: [
+                    { key: "A", text: "將這座大同理想樂土隱入迷茫，蒙上一層可望而不可即的朦朧惆悵之美，暗示這類桃花源在現實亂世中只可神往而難以求得。", correct: true },
+                    { key: "B", text: "警示後世文人長途跋涉、體質虛弱容易在中途染病身亡，強調戶外安全。", correct: false },
+                    { key: "C", text: "說明南陽爆發了嚴重的瘟疫，導致進入桃花源的所有通道都被大水和疫病封閉。", correct: false }
+                ]
+            }
+        ];
+
+        const state = {
+            userId: '',
+            currentLevel: 1,
+            scores: { level1: 0, level2: 0, level3: 0, level4: 0 },
+            wrongAttempts: { level1: 0, level2: 0, level3: 0, level4: 0 },
+            logs: [],
+            unlockedAchievements: [],
+            timeElapsed: 0,
+            isGameFinished: false,
+            isAudioPlaying: false,
+            videoUrl: 'https://youtu.be/RfQ0QGzToS0?si=ogDfVhxA3AM87nFN', // 預設導讀影片 URL
+
+            // 關卡 1
+            l1Step: 0,
+            l1CurrentOptions: null, // 儲存當前隨機混淆選項
+
+            // 關卡 2
+            l2Grid: { slotA: null, slotB: null, slotC: null, slotD: null },
+            l2SelectedPiece: null,
+            isL2Passed: false,
+
+            // 關卡 3
+            l3Step: 0,
+            l3Feedback: '',
+
+            // 關卡 4
+            l4QIdx: 0,
+            l4CurrentOptions: null, // 儲存當前隨機混淆選項
+            fogOpacity: 1.0,
+
+            // TTS 朗讀狀態
+            ttsPlayingIndex: -1,
+            isTtsPaused: false,
+            activeUtterance: null
+        };
+
+        // ============================================================================
+        // 核心輔助方法：YouTube 網址解析為嵌入格式 (Embed Url)
+        // ============================================================================
+        function getYouTubeEmbedUrl(url) {
+            if (!url) return '';
+            let videoId = '';
+            // 比對常見 YouTube 網址正規表示法
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            if (match && match[2].length === 11) {
+                videoId = match[2];
+            }
+            if (videoId) {
+                return `https://www.youtube.com/embed/${videoId}`;
+            }
+            return url; // 若比對不成功則回傳原值
+        }
+
+        // ============================================================================
+        // 全螢幕切換
+        // ============================================================================
+        function toggleFullscreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        showToast(`全螢幕切換受限: ${err.message}`, "error");
+                    });
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            } catch (err) {
+                showToast("您的設備暫不支持此全螢幕 API", "info");
+            }
+        }
+
+        // 登入提交流程
+        async function handleLoginSubmit() {
+            const inputVal = document.getElementById('usernameInput').value.trim();
+            if (!inputVal) {
+                showToast("⚠️ 請先輸入您的探秘者姓名！", "error");
+                return;
+            }
+
+            state.userId = inputVal;
+
+            // 平滑過渡隱藏登入 Overlay
+            const loginOverlay = document.getElementById('loginOverlay');
+            loginOverlay.classList.add('pointer-events-none', 'opacity-0');
+            setTimeout(() => {
+                loginOverlay.classList.add('hidden');
+            }, 500);
+
+            // 加載歷史進度 (防衛設計)
+            try {
+                const saved = await getProgress(state.userId);
+                if (saved) {
+                    state.currentLevel = saved.currentLevel || 1;
+                    state.scores = saved.scores || { level1: 0, level2: 0, level3: 0, level4: 0 };
+                    state.wrongAttempts = saved.wrongAttempts || { level1: 0, level2: 0, level3: 0, level4: 0 };
+                    state.logs = saved.logs || [];
+                    state.unlockedAchievements = saved.unlockedAchievements || [];
+                    state.timeElapsed = saved.timeElapsed || 0;
+                    state.isGameFinished = saved.isGameFinished || false;
+                    state.l1Step = saved.l1Step !== undefined ? saved.l1Step : 0;
+                    state.l2Grid = saved.l2Grid || { slotA: null, slotB: null, slotC: null, slotD: null };
+                    state.isL2Passed = saved.isL2Passed !== undefined ? saved.isL2Passed : false;
+                    state.l3Step = saved.l3Step !== undefined ? saved.l3Step : 0;
+                    state.l3Feedback = saved.l3Feedback !== undefined ? saved.l3Feedback : '';
+                    state.l4QIdx = saved.l4QIdx !== undefined ? saved.l4QIdx : 0;
+                    state.fogOpacity = saved.fogOpacity !== undefined ? saved.fogOpacity : 1.0;
+
+                    showToast(`🎉 歡迎回來，${state.userId}！已成功讀取進度！`, "success");
+                } else {
+                    resetLocalGameState();
+                    const initProg = {
+                        userId: state.userId,
+                        currentLevel: 1,
+                        scores: { level1: 0, level2: 0, level3: 0, level4: 0 },
+                        wrongAttempts: { level1: 0, level2: 0, level3: 0, level4: 0 },
+                        logs: [{ timestamp: Date.now(), event: "student_register", wrongAttempts: 0 }],
+                        unlockedAchievements: []
+                    };
+                    await saveProgress(initProg);
+                    showToast("🎋 新學員簽署成功，起篙開船！", "success");
+                }
+            } catch (err) {
+                console.warn("進度加載失敗，切換至 Memory 運作:", err);
+            }
+
+            // 啟動背景秒數累加
+            setInterval(() => {
+                if (!state.isGameFinished && state.userId) {
+                    state.timeElapsed++;
+                    updateTimerDisplay();
+                }
+            }, 1000);
+
+            // 加載自定義與系統多媒體配置
+            await checkAndLoadCustomMedia();
+
+            // 載入系統 TTS
+            loadSystemVoices();
+
+            syncUI();
+        }
+
+        function logoutStudent() {
+            state.userId = '';
+            const loginOverlay = document.getElementById('loginOverlay');
+            loginOverlay.classList.remove('hidden', 'pointer-events-none', 'opacity-0');
+            loginOverlay.classList.add('flex');
+            document.getElementById('usernameInput').value = '';
+            resetLocalGameState();
+            syncUI();
+        }
+
+        function updateTimerDisplay() {
+            const min = Math.floor(state.timeElapsed / 60);
+            const sec = state.timeElapsed % 60;
+            document.getElementById('timerDisplay').innerText = `${min} 分 ${sec} 秒`;
+        }
+
+        // 突破沙盒制限：Base64 轉成 Clean Blob URL
+        function base64ToBlob(base64Data, defaultMime = '') {
+            try {
+                const parts = base64Data.split(';base64,');
+                const contentType = parts[0].split(':')[1] || defaultMime;
+                const raw = window.atob(parts[1]);
+                const rawLength = raw.length;
+                const uInt8Array = new Uint8Array(rawLength);
+                for (let i = 0; i < rawLength; ++i) {
+                    uInt8Array[i] = raw.charCodeAt(i);
+                }
+                return new Blob([uInt8Array], { type: contentType });
+            } catch (e) {
+                console.error("Base64 to Blob 轉換失敗:", e);
+                return null;
+            }
+        }
+
+        // 核心多媒體快取加載 (直接處理 Blob / File，影片則指向 YouTube 連結)
+        async function checkAndLoadCustomMedia() {
+            // 1. 客製化 BGM 載入
+            try {
+                const bgmAsset = await getMediaAsset('custom_bgm');
+                const bgmStatus = document.getElementById('bgmUploadStatus');
+                const clearBgmBtn = document.getElementById('clearBgmBtn');
+                if (bgmStatus && clearBgmBtn) {
+                    if (bgmAsset && bgmAsset.blob) {
+                        let blob = bgmAsset.blob;
+                        if (typeof blob === 'string') {
+                            blob = base64ToBlob(blob, 'audio/mp3');
+                        }
+                        if (blob instanceof Blob) {
+                            if (synthInstance.customAudioUrl) {
+                                URL.revokeObjectURL(synthInstance.customAudioUrl);
+                            }
+                            synthInstance.customAudioUrl = URL.createObjectURL(blob);
+                            bgmStatus.innerText = "目前狀態：自訂背景音樂已載入 🟢";
+                            clearBgmBtn.classList.remove('hidden');
+
+                            // 若目前正在播放 BGM，即時更新音軌
+                            if (state.isAudioPlaying && synthInstance.customAudioElement) {
+                                synthInstance.customAudioElement.src = synthInstance.customAudioUrl;
+                                synthInstance.customAudioElement.load();
+                                synthInstance.customAudioElement.play().catch(e => console.warn(e));
+                            }
+                        } else {
+                            bgmStatus.innerText = "目前狀態：自訂解碼失敗，將使用內建預設配樂";
+                        }
+                    } else {
+                        synthInstance.customAudioUrl = null;
+                        bgmStatus.innerText = "目前狀態：內建古典配樂 🟢";
+                        clearBgmBtn.classList.add('hidden');
+                    }
+                }
+            } catch (err) {
+                console.warn("BGM 讀取程序出錯:", err);
+            }
+
+            // 2. 智慧讀取並解析導讀影片 YouTube 連結
+            try {
+                const savedVideoUrl = localStorage.getItem('peach_blossom_video_url') || 'https://youtu.be/RfQ0QGzToS0?si=ogDfVhxA3AM87nFN';
+                state.videoUrl = savedVideoUrl;
+
+                const videoStatus = document.getElementById('videoUploadStatus');
+                const clearVideoBtn = document.getElementById('clearVideoBtn');
+                const showVideoBtn = document.getElementById('showVideoBtn');
+                const urlInput = document.getElementById('videoUrlInput');
+
+                if (urlInput) {
+                    urlInput.value = state.videoUrl;
+                }
+
+                if (videoStatus && clearVideoBtn && showVideoBtn) {
+                    if (state.videoUrl !== 'https://youtu.be/RfQ0QGzToS0?si=ogDfVhxA3AM87nFN') {
+                        videoStatus.innerText = "目前狀態：自訂導讀影片連結已載入 🟢";
+                        clearVideoBtn.classList.remove('hidden');
+                    } else {
+                        videoStatus.innerText = "目前狀態：系統預設導讀影片 🟢";
+                        clearVideoBtn.classList.add('hidden');
+                    }
+                    showVideoBtn.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.warn("影片連結讀取程序出錯:", err);
+            }
+        }
+
+        // 升級版：直接上傳 File/Blob 進入 IndexedDB，杜絕大檔案記憶體異常
+        async function uploadCustomBGM(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showToast("⏳ 正在儲存背景音樂...", "info");
+
+            try {
+                await saveMediaAsset('custom_bgm', file);
+                await checkAndLoadCustomMedia();
+                showToast("🎵 自定義背景音樂儲存成功！已套用本地快取。", "success");
+
+                if (state.isAudioPlaying) {
+                    synthInstance.stop();
+                    synthInstance.playScale();
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("❌ 寫入資料庫失敗", "error");
+            }
+        }
+
+        async function clearCustomBGM() {
+            await deleteMediaAsset('custom_bgm');
+            if (synthInstance.customAudioUrl) {
+                URL.revokeObjectURL(synthInstance.customAudioUrl);
+                synthInstance.customAudioUrl = null;
+            }
+            if (synthInstance.customAudioElement) {
+                synthInstance.customAudioElement.pause();
+                synthInstance.customAudioElement = null;
+            }
+            await checkAndLoadCustomMedia();
+            showToast("🗑️ 已還原為系統預設配樂。", "info");
+            if (state.isAudioPlaying) {
+                synthInstance.stop();
+                synthInstance.playScale();
+            }
+        }
+
+        // YouTube 影片連結自訂套用與還原
+        function updateYouTubeVideo() {
+            const urlInput = document.getElementById('videoUrlInput');
+            if (!urlInput) return;
+            const newUrl = urlInput.value.trim();
+            if (!newUrl) {
+                showToast("⚠️ 請輸入有效的 YouTube 影片連結！", "error");
+                return;
+            }
+            localStorage.setItem('peach_blossom_video_url', newUrl);
+            state.videoUrl = newUrl;
+            showToast("🎬 導讀影片連結儲存成功！", "success");
+            checkAndLoadCustomMedia();
+        }
+
+        function clearCustomVideo() {
+            localStorage.removeItem('peach_blossom_video_url');
+            state.videoUrl = 'https://youtu.be/RfQ0QGzToS0?si=ogDfVhxA3AM87nFN';
+            showToast("🔄 已重置並還原為系統預設影片！", "info");
+            checkAndLoadCustomMedia();
+        }
+
+        // 開啟影片並自動轉換為 Embed Embed Code 防止沙盒播放受阻
+        function playCustomVideo() {
+            const videoArea = document.getElementById('introVideoArea');
+            if (videoArea) {
+                videoArea.classList.remove('hidden');
+                const player = document.getElementById('customVideoPlayer');
+                if (player) {
+                    // 自動轉為安全的內嵌 iframe 格式並播放
+                    const embedUrl = getYouTubeEmbedUrl(state.videoUrl);
+                    player.src = embedUrl;
+                }
+            }
+        }
+
+        function hideIntroVideo() {
+            const videoArea = document.getElementById('introVideoArea');
+            if (videoArea) videoArea.classList.add('hidden');
+            const player = document.getElementById('customVideoPlayer');
+            if (player) {
+                player.src = ""; // 👈 關閉時清空來源，徹底修復背景影音繼續播放的 Bug
+            }
+        }
+
+        function toggleScrollExpand() {
+            const modal = document.getElementById('scrollExpandModal');
+            modal.classList.toggle('hidden');
+            if (modal.classList.contains('hidden')) {
+                stopTTS();
+            } else {
+                loadSystemVoices();
+            }
+        }
+
+        function toggleMediaHubModal() {
+            const modal = document.getElementById('mediaHubModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function toggleAuthorModal() {
+            const modal = document.getElementById('authorModal');
+            modal.classList.toggle('hidden');
+        }
+
+        // ============================================================================
+        // 一鍵清空資料庫邏輯 (回歸初始狀態)
+        // ============================================================================
+        function openDbClearOverlay() {
+            document.getElementById('dbClearOverlay').classList.remove('hidden');
+        }
+
+        function closeDbClearOverlay() {
+            document.getElementById('dbClearOverlay').classList.add('hidden');
+        }
+
+        async function confirmClearDatabase() {
+            closeDbClearOverlay();
+            showToast("🧹 正在永久清除本地資料庫...", "info");
+
+            // 停止所有音樂與朗讀，釋放通道
+            try {
+                synthInstance.stop();
+                window.speechSynthesis.cancel();
+            } catch (e) {
+                console.warn(e);
+            }
+
+            // 主動關閉當前數據庫連接以防止 Blocked 阻塞刪除
+            try {
+                if (failsafeDB && failsafeDB.db) {
+                    failsafeDB.db.close();
+                    failsafeDB.db = null;
+                }
+            } catch (e) {
+                console.warn("主動關閉連線時發生錯誤:", e);
+            }
+
+            // 實體刪除 IndexedDB
+            try {
+                if (window.indexedDB) {
+                    const req = window.indexedDB.deleteDatabase(DB_NAME);
+                    req.onsuccess = () => {
+                        console.log("PeachBlossomDB deleted successfully.");
+                    };
+                    req.onerror = () => {
+                        console.error("Error deleting PeachBlossomDB.");
+                    };
+                }
+            } catch (err) {
+                console.warn("無法主動刪除 IndexedDB 實體：", err);
+            }
+
+            // 清空 Fallback In-memory 緩存
+            failsafeDB.fallbackStore = {
+                user_progress: {},
+                media_assets: {}
+            };
+
+            // 清除本地儲存備用鍵值
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+            } catch (e) { }
+
+            showToast("💥 全本地資料庫與多媒體緩存已徹底清空！網頁即將刷新...", "success");
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        }
+
+        // ============================================================================
+        // 多語音色 TTS 朗讀機制 (Speech Synthesis)
+        // ============================================================================
+        function loadSystemVoices() {
+            const synth = window.speechSynthesis;
+            if (!synth) return;
+            const select = document.getElementById('ttsSystemVoiceSelect');
+            if (!select) return;
+
+            const updateList = () => {
+                const voices = synth.getVoices();
+                const chineseVoices = voices.filter(v => v.lang.toLowerCase().includes('zh'));
+
+                select.innerHTML = '';
+                if (chineseVoices.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = 'default';
+                    opt.innerText = '系統預設中文音色';
+                    select.appendChild(opt);
+                } else {
+                    chineseVoices.forEach(voice => {
+                        const opt = document.createElement('option');
+                        opt.value = voice.name;
+                        opt.innerText = `${voice.name} (${voice.lang})`;
+                        select.appendChild(opt);
+                    });
+                }
+            };
+
+            updateList();
+            if (synth.onvoiceschanged !== undefined) {
+                synth.onvoiceschanged = updateList;
+            }
+        }
+
+        function getCategorizedVoice(genderPreference) {
+            const synth = window.speechSynthesis;
+            if (!synth) return null;
+            const voices = synth.getVoices();
+            const zhVoices = voices.filter(v => v.lang.toLowerCase().includes('zh'));
+
+            if (genderPreference === 'male') {
+                const matched = zhVoices.find(v => v.name.includes("Yunxi") || v.name.includes("Yunyang") || v.name.includes("Kangkang") || v.name.includes("Male") || v.name.includes("云希") || v.name.includes("云扬") || v.name.includes("廖寧"));
+                return matched || null;
+            } else {
+                const matched = zhVoices.find(v => v.name.includes("Xiaoxiao") || v.name.includes("Tingting") || v.name.includes("Huihui") || v.name.includes("Female") || v.name.includes("晓晓") || v.name.includes("婷婷") || v.name.includes("雅婷"));
+                return matched || null;
+            }
+        }
+
+        function startTTS() {
+            const synth = window.speechSynthesis;
+            if (!synth) {
+                showToast("⚠️ 您的瀏覽器不支援 Web Speech 語音合成技術。", "error");
+                return;
+            }
+
+            if (state.isTtsPaused) {
+                synth.resume();
+                state.isTtsPaused = false;
+                showToast("▶️ 繼續語音朗讀。");
+                return;
+            }
+
+            synth.cancel();
+
+            if (state.ttsPlayingIndex < 0) {
+                state.ttsPlayingIndex = 0;
+            }
+
+            speakSentence();
+        }
+
+        function speakSentence() {
+            const synth = window.speechSynthesis;
+            if (!synth) return;
+
+            if (state.ttsPlayingIndex < 0 || state.ttsPlayingIndex >= ttsSentences.length) {
+                stopTTS();
+                showToast("✨ 全文朗讀圓滿結束。", "success");
+                return;
+            }
+
+            const text = ttsSentences[state.ttsPlayingIndex];
+            const utterance = new SpeechSynthesisUtterance(text);
+
+            const style = document.getElementById('ttsStyleSelect').value;
+            let matchedVoice = null;
+            let pitchVal = 1.0;
+            let rateVal = 1.0;
+
+            // 音色情境分流設計
+            if (style === 'dialogue') {
+                const isFemale = (state.ttsPlayingIndex % 2 === 0);
+                matchedVoice = getCategorizedVoice(isFemale ? 'female' : 'male');
+                if (isFemale) {
+                    pitchVal = 1.35; // 高昂女聲
+                    rateVal = 1.05;
+                } else {
+                    pitchVal = 0.75; // 低沉男聲
+                    rateVal = 0.9;
+                }
+            } else if (style === 'male') {
+                matchedVoice = getCategorizedVoice('male');
+                pitchVal = 0.85;
+                rateVal = 0.95;
+            } else if (style === 'female') {
+                matchedVoice = getCategorizedVoice('female');
+                pitchVal = 1.25;
+                rateVal = 1.0;
+            } else if (style === 'grandpa') {
+                matchedVoice = getCategorizedVoice('male');
+                pitchVal = 0.55;  // 滄桑老翁音調
+                rateVal = 0.75;  // 古雅吟誦慢速
+            }
+
+            if (matchedVoice) {
+                utterance.voice = matchedVoice;
+            } else {
+                const selectedVoiceName = document.getElementById('ttsSystemVoiceSelect').value;
+                const voices = synth.getVoices();
+                const selectedVoice = voices.find(v => v.name === selectedVoiceName);
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+            }
+
+            utterance.pitch = pitchVal;
+            utterance.rate = rateVal;
+
+            updateTtsProgressUI();
+
+            utterance.onend = () => {
+                if (!state.isTtsPaused) {
+                    state.ttsPlayingIndex++;
+                    speakSentence();
+                }
+            };
+
+            utterance.onerror = (err) => {
+                console.error("TTS 播放異常:", err);
+            };
+
+            state.activeUtterance = utterance;
+            synth.speak(utterance);
+        }
+
+        function pauseTTS() {
+            const synth = window.speechSynthesis;
+            if (synth && synth.speaking) {
+                synth.pause();
+                state.isTtsPaused = true;
+                showToast("⏸️ 朗讀已暫停。", "info");
+            }
+        }
+
+        function stopTTS() {
+            const synth = window.speechSynthesis;
+            if (synth) {
+                synth.cancel();
+                state.isTtsPaused = false;
+                clearTtsHighlights();
+                state.ttsPlayingIndex = -1;
+                updateTtsProgressUI();
+            }
+        }
+
+        function handleTtsSeek(val) {
+            const targetIdx = parseInt(val, 10);
+            state.ttsPlayingIndex = targetIdx;
+            state.isTtsPaused = false;
+
+            document.getElementById('ttsProgressLabel').innerText = `${targetIdx + 1} / 29 句`;
+
+            const synth = window.speechSynthesis;
+            if (synth && synth.speaking) {
+                synth.cancel();
+                speakSentence();
+            } else {
+                updateTtsProgressUI();
+            }
+        }
+
+        function updateTtsProgressUI() {
+            const idx = state.ttsPlayingIndex;
+            const slider = document.getElementById('ttsProgressSlider');
+            const label = document.getElementById('ttsProgressLabel');
+
+            if (idx >= 0 && idx < ttsSentences.length) {
+                slider.value = idx;
+                label.innerText = `${idx + 1} / 29 句`;
+
+                clearTtsHighlights();
+
+                const mainSpan = document.getElementById(`s${idx}`);
+                const modalSpan = document.getElementById(`m-s${idx}`);
+                if (mainSpan) mainSpan.className = "tts-active-sentence";
+                if (modalSpan) modalSpan.className = "tts-active-sentence";
+
+                if (modalSpan) {
+                    modalSpan.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }
+            } else {
+                slider.value = 0;
+                label.innerText = `0 / 29 句`;
+            }
+        }
+
+        function clearTtsHighlights() {
+            for (let i = 0; i < ttsSentences.length; i++) {
+                const m = document.getElementById(`s${i}`);
+                const md = document.getElementById(`m-s${i}`);
+                if (m) m.className = "";
+                if (md) md.className = "";
+            }
+        }
+
+        // ============================================================================
+        // 第二關 拖放與點選重構機制 (Drag & Drop)
+        // ============================================================================
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function handleDragStart(ev, pieceId) {
+            ev.dataTransfer.setData("text/plain", pieceId);
+            const piece = l2Pieces.find(p => p.id === pieceId);
+            state.l2SelectedPiece = piece;
+
+            const targetSlotId = piece.targetSlot;
+            const targetElement = document.getElementById(targetSlotId);
+            if (targetElement) {
+                targetElement.classList.add('border-amber-500', 'bg-amber-50', 'scale-105', 'animate-pulse');
+            }
+        }
+
+        function handleDragEnd(ev) {
+            // 清除所有高亮
+            const slots = ['slotA', 'slotB', 'slotC', 'slotD'];
+            slots.forEach(slot => {
+                const el = document.getElementById(slot);
+                if (el) {
+                    el.classList.remove('border-amber-500', 'bg-amber-50', 'scale-105', 'animate-pulse');
+                }
+            });
+        }
+
+        function handleDrop(ev, slotId) {
+            ev.preventDefault();
+            handleDragEnd(); // 清理高亮狀態
+
+            const pieceId = ev.dataTransfer.getData("text/plain");
+            const piece = l2Pieces.find(p => p.id === pieceId) || state.l2SelectedPiece;
+
+            if (!piece) return;
+
+            if (piece.targetSlot === slotId) {
+                synthInstance.playSuccess();
+                state.l2Grid[slotId] = piece;
+                showToast(`🎯 配對正確！配置：${piece.name}`);
+                state.l2SelectedPiece = null;
+
+                if (state.l2Grid.slotA && state.l2Grid.slotB && state.l2Grid.slotC && state.l2Grid.slotD) {
+                    state.isL2Passed = true;
+                    const score = Math.max(100 - state.wrongAttempts.level2 * 10, 60);
+                    state.scores.level2 = score;
+                    if (!state.unlockedAchievements.includes("開朗居士")) {
+                        state.unlockedAchievements.push("開朗居士");
+                    }
+                    saveGameProgress(2);
+                } else {
+                    syncUI();
+                }
+            } else {
+                synthInstance.playFailure();
+                showToast("❌ 這裡不符合該空間描述，請重新細讀文意拼圖！", "error");
+                state.wrongAttempts.level2++;
+                syncUI();
+            }
+        }
+
+        function selectL2Piece(pieceId) {
+            const piece = l2Pieces.find(p => p.id === pieceId);
+            state.l2SelectedPiece = piece;
+            renderLevel2();
+        }
+
+        function handleL2SlotClick(slotId) {
+            if (!state.l2SelectedPiece) return;
+
+            const piece = state.l2SelectedPiece;
+            if (piece.targetSlot === slotId) {
+                synthInstance.playSuccess();
+                state.l2Grid[slotId] = piece;
+                showToast(`🎯 配置成功！符合文意：${piece.name}`);
+                state.l2SelectedPiece = null;
+
+                if (state.l2Grid.slotA && state.l2Grid.slotB && state.l2Grid.slotC && state.l2Grid.slotD) {
+                    state.isL2Passed = true;
+                    const score = Math.max(100 - state.wrongAttempts.level2 * 10, 60);
+                    state.scores.level2 = score;
+                    if (!state.unlockedAchievements.includes("開朗居士")) {
+                        state.unlockedAchievements.push("開朗居士");
+                    }
+                    saveGameProgress(2);
+                } else {
+                    syncUI();
+                }
+            } else {
+                synthInstance.playFailure();
+                showToast("❌ 位置不符合空間文意配置，請重新思考！", "error");
+                state.wrongAttempts.level2++;
+                syncUI();
+            }
+        }
+
+        // ============================================================================
+        // UI 渲染與大腦調度
+        // ============================================================================
+        function syncUI() {
+            document.getElementById('userIdDisplay').innerText = state.userId || "未登入";
+            document.getElementById('levelNameDisplay').innerText = state.currentLevel === 5 ? "全卷大圓滿" : `第 ${state.currentLevel} 關`;
+
+            document.getElementById('score1').innerText = `${state.scores.level1}分`;
+            document.getElementById('score2').innerText = `${state.scores.level2}分`;
+            document.getElementById('score3').innerText = `${state.scores.level3}分`;
+            document.getElementById('score4').innerText = `${state.scores.level4}分`;
+
+            const percentage = state.isGameFinished ? 100 : Math.floor(((state.currentLevel - 1) / 4) * 100);
+            document.getElementById('progressBar').style.width = `${percentage || 25}%`;
+
+            const achBox = document.getElementById('achievementBox');
+            if (state.unlockedAchievements.length === 0) {
+                achBox.innerHTML = `<p class="text-xs text-gray-400 italic">尚未獲得信物，請開始劃船探秘...</p>`;
+            } else {
+                achBox.innerHTML = state.unlockedAchievements.map(ach => `
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-[#b25d46] text-white shadow-sm animate-pulse">
+            🎗️ ${ach}
+          </span>
+        `).join('');
+            }
+
+            // 縱書卷軸及時關聯更新與智慧滾動定位
+            for (let i = 1; i <= 4; i++) {
+                const seg = document.getElementById(`scrollSeg${i}`);
+                if (seg) {
+                    if (state.currentLevel === i) {
+                        seg.className = "vertical-segment font-bold bg-amber-50/50 rounded-lg opacity-100 border-l-2 border-[#b25d46] ring-2 ring-[#b25d46]/10";
+                        // 平滑滾動定位至當前通關進度段落
+                        setTimeout(() => {
+                            seg.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                        }, 150);
+                    } else if (state.currentLevel > i) {
+                        // 已通關段落：柔和顯示
+                        seg.className = "vertical-segment opacity-70";
+                    } else {
+                        // 未解鎖段落：鎖定
+                        seg.className = "vertical-segment opacity-20 pointer-events-none select-none";
+                    }
+                }
+            }
+
+            document.getElementById('level1Container').classList.add('hidden');
+            document.getElementById('level2Container').classList.add('hidden');
+            document.getElementById('level3Container').classList.add('hidden');
+            document.getElementById('level4Container').classList.add('hidden');
+
+            if (state.currentLevel === 1) {
+                document.getElementById('level1Container').classList.remove('hidden');
+                renderLevel1();
+            } else if (state.currentLevel === 2) {
+                document.getElementById('level2Container').classList.remove('hidden');
+                renderLevel2();
+            } else if (state.currentLevel === 3) {
+                document.getElementById('level3Container').classList.remove('hidden');
+                renderLevel3();
+            } else if (state.currentLevel >= 4) {
+                document.getElementById('level4Container').classList.remove('hidden');
+                renderLevel4();
+            }
+        }
+
+        function renderLevel1() {
+            const boat = document.getElementById('boatContainer');
+            boat.style.left = `${15 + state.l1Step * 20}%`;
+
+            const vortexW = document.getElementById('vortexWord');
+            const vortex = document.getElementById('vortexContainer');
+
+            // 加入防衛設計：確保 l1Step 小於 4 時才讀取
+            if (state.l1Step < 4 && level1Questions[state.l1Step]) {
+                vortex.classList.remove('hidden');
+                const q = level1Questions[state.l1Step];
+                vortexW.innerText = q.word;
+
+                document.getElementById('l1Sentence').innerText = q.sentence;
+                document.getElementById('l1Tip').innerText = `💡 ${q.tip}`;
+
+                // 🔀 隨機混淆選項：當題目改變時，隨機重排選項
+                if (!state.l1CurrentOptions) {
+                    state.l1CurrentOptions = shuffleArray(q.options);
+                }
+
+                const optContainer = document.getElementById('l1Options');
+                optContainer.innerHTML = state.l1CurrentOptions.map((opt, idx) => `
+          <button onclick="handleL1Answer(${idx})" class="p-3 text-left bg-white hover:bg-[#3d644d]/10 border border-gray-300 hover:border-[#3d644d] rounded-lg text-sm transition font-classical flex items-center gap-2 group w-full">
+            <span class="w-6 h-6 rounded-full bg-[#f7f4eb] group-hover:bg-[#3d644d] group-hover:text-white flex items-center justify-center text-xs font-bold border border-gray-300 transition-colors">
+              ${String.fromCharCode(65 + idx)}
+            </span>
+            <span>${opt.text}</span>
+          </button>
+        `).join('');
+            } else {
+                vortex.classList.add('hidden');
+                document.getElementById('l1Sentence').innerHTML = `
+          <div class="text-center p-4 bg-green-50 rounded-lg text-green-800">
+            <h3 class="text-xl font-bold">第一關大獲全勝！</h3>
+            <p class="text-sm mt-2">小舟破浪穿過桃花林盡頭，前方出現了奇異的山口光芒...</p>
+          </div>
+        `;
+                document.getElementById('l1Options').innerHTML = `
+          <button onclick="goToLevel(2)" class="w-full py-3 bg-[#3d644d] text-white rounded-lg font-bold shadow hover:bg-[#3d644d]/90 transition">
+            🚶 前往第二關：初極狹拼圖
+          </button>
+        `;
+                document.getElementById('l1Tip').innerText = '';
+            }
+        }
+
+        function handleL1Answer(idx) {
+            if (!state.l1CurrentOptions || !state.l1CurrentOptions[idx]) return;
+            const opt = state.l1CurrentOptions[idx];
+            if (opt.correct) {
+                synthInstance.playSuccess();
+                showToast("✨ 答對了！溪流漩渦平息，漁船乘風前行！");
+                state.l1Step++;
+                state.l1CurrentOptions = null; // 清空以便下一題重排
+
+                if (state.l1Step === 4) {
+                    const score = Math.max(100 - state.wrongAttempts.level1 * 10, 60);
+                    state.scores.level1 = score;
+                    if (!state.unlockedAchievements.includes("落英先鋒")) {
+                        state.unlockedAchievements.push("落英先鋒");
+                    }
+                    saveGameProgress(1);
+                } else {
+                    syncUI();
+                }
+            } else {
+                synthInstance.playFailure();
+                showToast("❌ 答錯了，水流阻礙了船隻前行！再試一次。", "error");
+                state.wrongAttempts.level1++;
+                syncUI();
+            }
+        }
+
+        function renderLevel2() {
+            const slotLabels = {
+                slotA: { title: '【山下開闊平地】', default: '請安放符合「平地屋舍整齊」描述的景物' },
+                slotB: { title: '【良沃可耕田野】', default: '請安放符合「沃土可耕農地」描述的景物' },
+                slotC: { title: '【林間匯聚之水源】', default: '請安放符合「林間清澈美池」描述的景物' },
+                slotD: { title: '【山麓與阡陌邊境】', default: '請安放符合「茂密桑樹竹林」描述的景物' }
+            };
+
+            const slots = ['slotA', 'slotB', 'slotC', 'slotD'];
+
+            slots.forEach(slot => {
+                const contentDiv = document.getElementById(`${slot}_content`);
+                const item = state.l2Grid[slot];
+                if (item) {
+                    contentDiv.parentNode.className = "h-full border-2 border-dashed border-green-500 bg-green-50 rounded-lg flex flex-col items-center justify-center p-2 transition shadow-inner";
+                    contentDiv.innerHTML = `
+            <div class="text-center">
+              <span class="text-3xl block">${item.icon}</span>
+              <span class="text-xs font-bold text-green-700 font-classical">${item.name}</span>
+            </div>
+          `;
+                } else {
+                    // 高亮指引效果（非暴力重構）
+                    contentDiv.parentNode.className = `h-full border-2 border-dashed border-gray-400 hover:border-[#b25d46] hover:bg-[#b25d46]/5 rounded-lg flex flex-col items-center justify-center p-2 transition`;
+                    contentDiv.innerHTML = `<span class="text-xs text-gray-400 italic font-classical text-center leading-normal">${slotLabels[slot].default}</span>`;
+                }
+            });
+
+            const board = document.getElementById('l2MapBoard');
+            const badge = document.getElementById('l2PassedBadge');
+            if (state.isL2Passed) {
+                board.className = "w-full h-64 rounded-xl relative border-2 border-[#d6cebe] overflow-hidden transition-all duration-1000 bg-gradient-to-br from-green-50 to-amber-50 shadow-inner";
+                badge.innerText = "✅ 已豁然開朗";
+                badge.className = "text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded";
+                document.getElementById('l2PieceInventory').classList.add('hidden');
+                document.getElementById('l2PassAction').classList.remove('hidden');
+            } else {
+                board.className = "w-full h-64 rounded-xl relative border-2 border-[#d6cebe] overflow-hidden transition-all duration-1000 bg-gray-100 grayscale transition-grayscale";
+                badge.innerText = "🧩 重建大同景觀中";
+                badge.className = "text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded";
+                document.getElementById('l2PieceInventory').classList.remove('hidden');
+                document.getElementById('l2PassAction').classList.add('hidden');
+
+                const pContainer = document.getElementById('l2PieceButtons');
+                pContainer.innerHTML = l2Pieces.map(piece => {
+                    const isPlaced = Object.values(state.l2Grid).some(p => p && p.id === piece.id);
+                    if (isPlaced) return '';
+                    const isSelected = state.l2SelectedPiece?.id === piece.id;
+                    return `
+            <div draggable="true" ondragstart="handleDragStart(event, '${piece.id}')" ondragend="handleDragEnd(event)" onclick="selectL2Piece('${piece.id}')" class="p-2 rounded text-center border transition w-full cursor-grab active:cursor-grabbing ${isSelected ? 'bg-[#b25d46] text-white border-[#b25d46]' : 'bg-white text-gray-700 border-gray-300 hover:border-[#b25d46] hover:shadow-md'
+                        }">
+              <span class="text-2xl block select-none">${piece.icon}</span>
+              <span class="text-xs font-bold font-classical select-none">${piece.name}</span>
+            </div>
+          `;
+                }).join('');
+
+                const prompt = document.getElementById('l2SelectionPrompt');
+                if (state.l2SelectedPiece) {
+                    prompt.classList.remove('hidden');
+                    prompt.innerHTML = `🎯 <strong class="text-[#b25d46]">當前選定：</strong> ${state.l2SelectedPiece.desc} (可拖曳或直接點選符合該描述之卡槽放置)`;
+                } else {
+                    prompt.classList.add('hidden');
+                }
+            }
+        }
+
+        // ============================================================================
+        // 第三關：村中客 ── 渲染與互動邏輯
+        // ============================================================================
+        function renderLevel3() {
+            const dialogText = (l3Dialogues && l3Dialogues[state.l3Step]) ? l3Dialogues[state.l3Step] : "（大長老沉思中...）";
+            document.getElementById('elderDialogue').innerText = dialogText;
+
+            const feedback = document.getElementById('l3FeedbackDisplay');
+            if (state.l3Feedback) {
+                feedback.classList.remove('hidden');
+                feedback.innerText = `📖 ${state.l3Feedback}`;
+            } else {
+                feedback.classList.add('hidden');
+            }
+
+            const optContainer = document.getElementById('l3Options');
+            const optSection = document.getElementById('l3OptionsContainer');
+            const passAction = document.getElementById('l3PassAction');
+
+            if (state.l3Step < 3) {
+                optSection.classList.remove('hidden');
+                passAction.classList.add('hidden');
+
+                if (state.l3Step === 0) {
+                    optContainer.innerHTML = `
+            <button onclick="handleL3Dialogue(0)" class="w-full p-3 text-left bg-white hover:bg-[#3d644d]/5 border hover:border-[#3d644d] rounded-lg text-sm transition font-classical">
+              🔴 <strong>選項 A：</strong>「實不相瞞，秦朝暴政早亡，其後有兩漢輝煌，繼以三國魏蜀吳，如今已是東晉了。」
+            </button>
+            <button onclick="handleL3Dialogue(1)" class="w-full p-3 text-left bg-white hover:bg-[#3d644d]/5 border hover:border-[#3d644d] rounded-lg text-sm transition font-classical">
+              🔴 <strong>選項 B：</strong>「外面仍是秦朝始皇治下，繁榮鼎盛，百姓富強著呢！」
+            </button>
+          `;
+                } else if (state.l3Step === 1) {
+                    optContainer.innerHTML = `
+            <button onclick="handleL3Dialogue(0)" class="w-full p-3 text-left bg-white hover:bg-[#3d644d]/5 border hover:border-[#3d644d] rounded-lg text-sm transition font-classical">
+              🔵 <strong>選項 A：</strong>「外頭政權更迭頻繁，軍閥常年混戰，官吏橫徵暴斂，賦稅繁重不堪。」
+            </button>
+            <button onclick="handleL3Dialogue(1)" class="w-full p-3 text-left bg-white hover:bg-[#3d644d]/5 border hover:border-[#3d644d] rounded-lg text-sm transition font-classical">
+              🔵 <strong>選項 B：</strong>「外面家家衣食無憂，大家豐衣足食，過得十分安樂。」
+            </button>
+          `;
+                } else if (state.l3Step === 2) {
+                    optContainer.innerHTML = `
+            <button onclick="handleL3Dialogue(0)" class="w-full p-3 text-left bg-white hover:bg-[#3d644d]/5 border hover:border-[#3d644d] rounded-lg text-sm transition font-classical">
+              🟢 <strong>選項 A：</strong>「諸位放心，我深深體會你們的避世之苦，此地安寧不可破壞。我定會恪守：『不足為外人道也』。」
+            </button>
+            <button onclick="handleL3Dialogue(1)" class="w-full p-3 text-left bg-white hover:bg-[#3d644d]/5 border hover:border-[#3d644d] rounded-lg text-sm transition font-classical">
+              🟢 <strong>選項 B：</strong>「此等樂土怎能私藏？我出山後定要向太守大人秉報，帶著官兵大張旗鼓來開發！」
+            </button>
+          `;
+                }
+            } else {
+                optSection.classList.add('hidden');
+                passAction.classList.remove('hidden');
+            }
+        }
+
+        function handleL3Dialogue(optIdx) {
+            const currentStep = parseInt(state.l3Step, 10);
+
+            if (currentStep === 0) {
+                if (optIdx === 0) {
+                    synthInstance.playSuccess();
+                    state.l3Feedback = "長老與村民面面相覷，嘆息道：『原來外界已歷經如此風霜，聽說秦朝暴政不久便亡，真是天道好還。』長老對你更顯親切。";
+                    state.l3Step = 1;
+                } else {
+                    synthInstance.playFailure();
+                    state.l3Feedback = "長老疑惑道：『秦朝安能萬世？客人莫不是在開玩笑。』他們顯得有些防備，請誠實具告。";
+                    state.wrongAttempts.level3++;
+                }
+            } else if (currentStep === 1) {
+                if (optIdx === 0) {
+                    synthInstance.playSuccess();
+                    state.l3Feedback = "村民們聽完你描述的魏晉兵燹、生靈塗炭，皆紛紛嘆惋。長老盛情款待你：『幸得祖先避亂於此，否則我等亦成了亂世孤魂。』";
+                    state.l3Step = 2;
+                } else {
+                    synthInstance.playFailure();
+                    state.l3Feedback = "長老搖搖頭：『若外面真是盛世，客人眼中怎會有疲憊與風塵？請對我們訴說真言吧。』";
+                    state.wrongAttempts.level3++;
+                }
+            } else if (currentStep === 2) {
+                if (optIdx === 0) {
+                    synthInstance.playSuccess();
+                    state.l3Feedback = "長老點了點頭，神色肅穆：『外面戰亂頻仍、人心叵測。若太守兵車至此，桃源將不復安寧。此中人語云：不足為外人道也。感謝客人專一承諾。』";
+                    state.l3Step = 3;
+
+                    const score = Math.max(100 - state.wrongAttempts.level3 * 10, 60);
+                    state.scores.level3 = score;
+                    if (!state.unlockedAchievements.includes("避秦知音")) {
+                        state.unlockedAchievements.push("避秦知音");
+                    }
+                    saveGameProgress(3);
+                    return;
+                } else {
+                    synthInstance.playFailure();
+                    state.l3Feedback = "長老聽聞此言，臉上露出極度擔憂與驚惶之色：『我們只求避世苟活，客人若張揚此事，將陷我等於萬劫不復之地啊！』";
+                    state.wrongAttempts.level3++;
+                }
+            }
+            syncUI();
+        }
+
+        // ============================================================================
+        // 第四關：迷蹤尋 ── 渲染與互動邏輯
+        // ============================================================================
+        function renderLevel4() {
+            const fogOverlay = document.getElementById('fogOverlay');
+            const fogPercent = document.getElementById('fogPercent');
+
+            const opacityVal = state.isGameFinished ? 0 : state.fogOpacity;
+            if (fogOverlay && fogPercent) {
+                fogOverlay.style.opacity = opacityVal;
+                fogPercent.innerText = `${Math.floor(opacityVal * 100)}%`;
+            }
+
+            const challengeBox = document.getElementById('l4ChallengeBox');
+            const finishPanel = document.getElementById('gameFinishPanel');
+
+            if (!state.isGameFinished) {
+                challengeBox.classList.remove('hidden');
+                finishPanel.classList.add('hidden');
+
+                if (state.l4QIdx < 3 && level4Questions[state.l4QIdx]) {
+                    const q = level4Questions[state.l4QIdx];
+                    document.getElementById('l4QNum').innerText = state.l4QIdx + 1;
+                    document.getElementById('l4QuestionText').innerText = q.question;
+
+                    // 智慧隨機呈現選項，避免硬記位置
+                    if (!state.l4CurrentOptions) {
+                        state.l4CurrentOptions = shuffleArray(q.options);
+                    }
+
+                    const optContainer = document.getElementById('l4Options');
+                    optContainer.innerHTML = state.l4CurrentOptions.map((opt, idx) => `
+            <button onclick="handleL4Answer(${idx})" class="w-full p-3 text-left bg-white hover:bg-[#3d644d]/5 border border-gray-200 hover:border-[#3d644d] rounded-lg text-xs transition font-classical leading-relaxed">
+              <strong>${String.fromCharCode(65 + idx)}.</strong> ${opt.text}
+            </button>
+          `).join('');
+                } else {
+                    state.isGameFinished = true;
+                    renderLevel4();
+                }
+            } else {
+                challengeBox.classList.add('hidden');
+                finishPanel.classList.remove('hidden');
+
+                document.getElementById('resUserId').innerText = state.userId;
+                document.getElementById('resScore1').innerText = `${state.scores.level1} 分`;
+                document.getElementById('resScore2').innerText = `${state.scores.level2} 分`;
+                document.getElementById('resScore3').innerText = `${state.scores.level3} 分`;
+                document.getElementById('resScore4').innerText = `${state.scores.level4} 分`;
+
+                const avgScore = (state.scores.level1 + state.scores.level2 + state.scores.level3 + state.scores.level4) / 4;
+                let finalTitle = "探秘名士";
+                if (avgScore >= 95) {
+                    finalTitle = "桃源逸仙";
+                } else if (avgScore >= 85) {
+                    finalTitle = "武陵智士";
+                } else if (avgScore >= 70) {
+                    finalTitle = "探秘名士";
+                } else {
+                    finalTitle = "迷途漁郎";
+                }
+                document.getElementById('resTitle').innerText = finalTitle;
+                if (!state.unlockedAchievements.includes(finalTitle)) {
+                    state.unlockedAchievements.push(finalTitle);
+                }
+            }
+        }
+
+        function handleL4Answer(idx) {
+            if (!state.l4CurrentOptions || !state.l4CurrentOptions[idx]) return;
+            const opt = state.l4CurrentOptions[idx];
+
+            if (opt.correct) {
+                synthInstance.playSuccess();
+                showToast("✨ 睿智的思辨！智慧之光撥開了重重迷霧！");
+                state.fogOpacity = Math.max(state.fogOpacity - 0.34, 0);
+            } else {
+                synthInstance.playFailure();
+                showToast("❌ 思考似乎有所偏差，再從陶淵明寫作時的歷史處境想一想。", "error");
+                state.wrongAttempts.level4++;
+            }
+
+            state.l4CurrentOptions = null; // 重置下一題
+            if (state.l4QIdx < 2) {
+                state.l4QIdx++;
+                syncUI();
+            } else {
+                state.isGameFinished = true;
+                const score = Math.max(100 - state.wrongAttempts.level4 * 10, 60);
+                state.scores.level4 = score;
+                saveGameProgress(4);
+            }
+        }
+
+        function resetLocalGameState() {
+            state.currentLevel = 1;
+            state.scores = { level1: 0, level2: 0, level3: 0, level4: 0 };
+            state.wrongAttempts = { level1: 0, level2: 0, level3: 0, level4: 0 };
+            state.unlockedAchievements = [];
+            state.l1Step = 0;
+            state.l1CurrentOptions = null;
+            state.l2Grid = { slotA: null, slotB: null, slotC: null, slotD: null };
+            state.isL2Passed = false;
+            state.l2SelectedPiece = null;
+            state.l3Step = 0;
+            state.l3Feedback = '';
+            state.l4QIdx = 0;
+            state.l4CurrentOptions = null;
+            state.fogOpacity = 1.0;
+            state.isGameFinished = false;
+            state.timeElapsed = 0;
+        }
+
+        async function resetGame() {
+            if (!state.userId) {
+                showToast("⚠️ 請先在武陵名冊簽到登船。", "error");
+                return;
+            }
+            const freshProgress = {
+                userId: state.userId,
+                currentLevel: 1,
+                scores: { level1: 0, level2: 0, level3: 0, level4: 0 },
+                wrongAttempts: { level1: 0, level2: 0, level3: 0, level4: 0 },
+                logs: [{ timestamp: Date.now(), event: "game_reset", wrongAttempts: 0 }],
+                unlockedAchievements: [],
+                timeElapsed: 0,
+                isGameFinished: false,
+                l1Step: 0,
+                l2Grid: { slotA: null, slotB: null, slotC: null, slotD: null },
+                isL2Passed: false,
+                l3Step: 0,
+                l3Feedback: '',
+                l4QIdx: 0,
+                fogOpacity: 1.0
+            };
+            await saveProgress(freshProgress);
+            resetLocalGameState();
+
+            showToast("🔄 學習紀錄已成功重置，開啟全新桃花源探秘旅程！", "info");
+            syncUI();
+        }
+
+        async function saveGameProgress(lvlPassed) {
+            const nextLvl = lvlPassed + 1;
+
+            const newLog = {
+                timestamp: Date.now(),
+                event: `level${lvlPassed}_pass`,
+                wrongAttempts: state.wrongAttempts[`level${lvlPassed}`] || 0
+            };
+            state.logs.push(newLog);
+
+            const progressObj = {
+                userId: state.userId,
+                currentLevel: nextLvl,
+                scores: state.scores,
+                wrongAttempts: state.wrongAttempts,
+                logs: state.logs,
+                unlockedAchievements: state.unlockedAchievements,
+                timeElapsed: state.timeElapsed,
+                isGameFinished: state.isGameFinished,
+                l1Step: state.l1Step,
+                l2Grid: state.l2Grid,
+                isL2Passed: state.isL2Passed,
+                l3Step: state.l3Step,
+                l3Feedback: state.l3Feedback,
+                l4QIdx: state.l4QIdx,
+                fogOpacity: state.fogOpacity
+            };
+            await saveProgress(progressObj);
+
+            if (lvlPassed < 4) {
+                state.currentLevel = nextLvl;
+                showToast(`🏆 恭喜通過第 ${lvlPassed} 關！即將開啟下一卷軸探尋！`);
+            }
+            syncUI();
+        }
+
+        function goToLevel(lvl) {
+            state.currentLevel = lvl;
+            syncUI();
+        }
+
+        function exportProgressJSON() {
+            if (!state.userId) {
+                showToast("⚠️ 請先登入再匯出數據。", "error");
+                return;
+            }
+
+            const backupData = {
+                metadata: {
+                    appId: "PeachBlossomQuest",
+                    exportTime: Date.now(),
+                    version: "1.1.0"
+                },
+                progressData: {
+                    userId: state.userId,
+                    currentLevel: state.currentLevel,
+                    scores: state.scores,
+                    wrongAttempts: state.wrongAttempts,
+                    logs: state.logs,
+                    unlockedAchievements: state.unlockedAchievements,
+                    timeElapsed: state.timeElapsed,
+                    isGameFinished: state.isGameFinished,
+                    l1Step: state.l1Step,
+                    l2Grid: state.l2Grid,
+                    isL2Passed: state.isL2Passed,
+                    l3Step: state.l3Step,
+                    l3Feedback: state.l3Feedback,
+                    l4QIdx: state.l4QIdx,
+                    fogOpacity: state.fogOpacity
+                }
+            };
+
+            const jsonString = JSON.stringify(backupData, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+
+            const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `桃花源記學習檔案_${state.userId}_${dateStr}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("💾 學習進度已成功匯出為 JSON 備份！", "success");
+        }
+
+        function handleImportJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.metadata?.appId === "PeachBlossomQuest") {
+                        const pd = parsed.progressData;
+
+                        const progressObj = {
+                            userId: pd.userId || 'student_guest_01',
+                            currentLevel: pd.currentLevel || 1,
+                            scores: pd.scores || { level1: 0, level2: 0, level3: 0, level4: 0 },
+                            wrongAttempts: pd.wrongAttempts || { level1: 0, level2: 0, level3: 0, level4: 0 },
+                            logs: pd.logs || [],
+                            unlockedAchievements: pd.unlockedAchievements || [],
+                            timeElapsed: pd.timeElapsed || 0,
+                            isGameFinished: pd.isGameFinished || false,
+                            l1Step: pd.l1Step !== undefined ? pd.l1Step : 0,
+                            l2Grid: pd.l2Grid || { slotA: null, slotB: null, slotC: null, slotD: null },
+                            isL2Passed: pd.isL2Passed !== undefined ? pd.isL2Passed : false,
+                            l3Step: pd.l3Step !== undefined ? pd.l3Step : 0,
+                            l3Feedback: pd.l3Feedback !== undefined ? pd.l3Feedback : '',
+                            l4QIdx: pd.l4QIdx !== undefined ? pd.l4QIdx : 0,
+                            fogOpacity: pd.fogOpacity !== undefined ? pd.fogOpacity : 1.0
+                        };
+
+                        await saveProgress(progressObj);
+                        showToast("📂 學習存檔還原成功！正在重新加載...", "success");
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1200);
+                    } else {
+                        showToast("❌ 非本教學系統專屬備份檔，解析失敗。", "error");
+                    }
+                } catch (err) {
+                    showToast("❌ JSON 格式損壞或解析錯誤。", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function toggleBGM() {
+            const btnText = document.getElementById('bgmStatusText');
+
+            try {
+                synthInstance.init();
+                if (synthInstance.ctx && synthInstance.ctx.state === 'suspended') {
+                    await synthInstance.ctx.resume();
+                }
+            } catch (err) {
+                console.warn("AudioContext 喚醒失敗:", err);
+            }
+
+            if (state.isAudioPlaying) {
+                synthInstance.stop();
+                state.isAudioPlaying = false;
+                btnText.innerText = "🔇 開啟古典背景音";
+                showToast("🔇 背景音樂已關閉", "info");
+            } else {
+                await synthInstance.playScale();
+                state.isAudioPlaying = true;
+                btnText.innerText = "🎵 背景音樂：播放中";
+                showToast("🎵 背景旋律已開啟", "success");
+            }
+        }
+
+        function lookupWord(word) {
+            const desc = GLOSSARY[word] || "無對應註釋資料。";
+            document.getElementById('wordCardTitle').innerText = word;
+            document.getElementById('wordCardDesc').innerText = desc;
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toastBox');
+            const text = document.getElementById('toastText');
+            const content = document.getElementById('toastContent');
+
+            if (!toast || !text || !content) return; // 容錯機制
+
+            text.innerText = msg;
+
+            if (type === 'success') {
+                content.className = "p-4 rounded-lg shadow-xl border flex items-center justify-between bg-[#e6f4ea] text-[#137333] border-[#a3cfbb] font-classical";
+                toast.className = "fixed top-5 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-100";
+            } else if (type === 'error') {
+                content.className = "p-4 rounded-lg shadow-xl border flex items-center justify-between bg-[#fce8e6] text-[#c5221f] border-[#f5c2c7] font-classical";
+                toast.className = "fixed top-5 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-100";
+            } else {
+                content.className = "p-4 rounded-lg shadow-xl border flex items-center justify-between bg-[#e8f0fe] text-[#1a73e8] border-[#b1cbf0] font-classical";
+                toast.className = "fixed top-5 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-100";
+            }
+
+            toast.style.transform = 'translate(-50%, 10px)';
+
+            setTimeout(() => {
+                toast.className = "fixed top-5 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none";
+                toast.style.transform = 'translate(-50%, -20px)';
+            }, 3500);
+        }
+
+        // 當 DOM 載入完畢，預備好 TTS 發音人
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSystemVoices();
+        });
+    </script>
+</body>
+
+</html>
