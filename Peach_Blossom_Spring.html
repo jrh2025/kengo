@@ -205,8 +205,8 @@
             <div class="flex flex-wrap items-center gap-2 md:gap-3 justify-center">
                 <button id="showVideoBtn" onclick="playCustomVideo()"
                     class="flex items-center gap-1.5 px-3 py-1.5 bg-[#b25d46] text-white hover:bg-[#b25d46]/90 rounded-md text-sm font-medium transition shadow-sm hidden"
-                    title="觀看文本導讀短影片">
-                    🎬 觀看導讀影片
+                    title="短影片欣賞">
+                    🎬 短影片欣賞
                 </button>
 
                 <button onclick="toggleFullscreen()"
@@ -282,48 +282,55 @@
                 <!-- 音訊客製化 -->
                 <div class="bg-white p-4 rounded-lg border border-[#d6cebe] shadow-inner space-y-3">
                     <h4 class="text-sm font-bold text-[#b25d46] flex items-center gap-1.5">🎵 自備背景音樂 (BGM)</h4>
-                    <p class="text-xs text-gray-500 leading-relaxed">預設為精緻的古琴古箏古典樂。您亦可上傳自己的音軌檔（MP3 格式）進行客製覆蓋。</p>
+                    <p class="text-xs text-gray-500 leading-relaxed">預設採用 Web Audio API
+                        即時合成的古典古箏音效，免除任何檔案依賴。若有需要，您也可以上傳自備的 MP3 音樂檔。</p>
                     <input type="file" id="bgmFileInput" accept="audio/*" onchange="uploadCustomBGM(event)"
                         class="hidden" />
                     <div class="flex flex-col gap-2">
                         <button onclick="document.getElementById('bgmFileInput').click()"
                             class="w-full py-2 bg-[#b25d46] text-white text-xs font-bold rounded hover:bg-[#b25d46]/90 transition">
-                            📂 上傳自訂 BGM 檔案
+                            📂 上傳並快取自訂 BGM 檔案
                         </button>
                         <div id="bgmUploadStatus"
                             class="text-center text-[11px] text-gray-500 font-classical mt-1 italic">
-                            目前狀態：預設背景音樂 🟢
+                            目前狀態：預設古箏合成器 🟢
                         </div>
                         <button id="clearBgmBtn" onclick="clearCustomBGM()"
                             class="w-full py-1 bg-gray-200 text-gray-600 text-[10px] rounded hover:bg-gray-300 hidden">
-                            🗑️ 還原為系統預設音樂
+                            🗑️ 還原為預設合成器
                         </button>
                     </div>
                 </div>
 
                 <!-- 影片客製化 (改為輸入網址以防記憶體溢出) -->
-                <div class="bg-white p-4 rounded-lg border border-[#d6cebe] shadow-inner space-y-3">
-                    <h4 class="text-sm font-bold text-[#3d644d] flex items-center gap-1.5">🎬 文本導讀影音 (YouTube)</h4>
-                    <p class="text-xs text-gray-500 leading-relaxed">請輸入《桃花源記》導讀的 YouTube 影片網址，不耗用您的實體硬體空間且不易崩潰。</p>
+                <div
+                    class="bg-white p-4 rounded-lg border border-[#d6cebe] shadow-inner space-y-3 flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-sm font-bold text-[#3d644d] flex items-center gap-1.5">🎬 文本導讀影音 (YouTube)</h4>
+                        <p class="text-xs text-gray-500 leading-relaxed mb-2">請輸入《桃花源記》導讀的 YouTube
+                            影片網址</p>
 
-                    <div class="space-y-2">
-                        <input type="text" id="videoUrlInput"
-                            class="w-full px-3 py-2 text-xs rounded border border-[#d6cebe] focus:border-[#3d644d] focus:outline-none bg-white font-classical"
-                            placeholder="例如：https://youtu.be/RfQ0QGzToS0" />
-                        <button onclick="updateYouTubeVideo()"
-                            class="w-full py-2 bg-[#3d644d] text-white text-xs font-bold rounded hover:bg-[#3d644d]/90 transition">
-                            💾 套用影片連結
+                        <div class="space-y-2">
+                            <input type="text" id="videoUrlInput"
+                                class="w-full px-3 py-2 text-xs rounded border border-[#d6cebe] focus:border-[#3d644d] focus:outline-none bg-white font-classical"
+                                placeholder="例如：https://youtu.be/RfQ0QGzToS0" />
+                            <button onclick="updateYouTubeVideo()"
+                                class="w-full py-2 bg-[#3d644d] text-white text-xs font-bold rounded hover:bg-[#3d644d]/90 transition">
+                                💾 套用影片連結
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div id="videoUploadStatus"
+                            class="text-center text-[11px] text-gray-500 font-classical mt-1 italic">
+                            目前狀態：系統預設導讀片
+                        </div>
+                        <button id="clearVideoBtn" onclick="clearCustomVideo()"
+                            class="w-full py-1 bg-gray-200 text-gray-600 text-[10px] rounded hover:bg-gray-300 hidden">
+                            🔄 還原為系統預設影片
                         </button>
                     </div>
-
-                    <div id="videoUploadStatus"
-                        class="text-center text-[11px] text-gray-500 font-classical mt-1 italic">
-                        目前狀態：系統預設導讀片
-                    </div>
-                    <button id="clearVideoBtn" onclick="clearCustomVideo()"
-                        class="w-full py-1 bg-gray-200 text-gray-600 text-[10px] rounded hover:bg-gray-300 hidden">
-                        🔄 還原為系統預設影片
-                    </button>
                 </div>
             </div>
 
@@ -589,7 +596,7 @@
                 <div id="introVideoArea"
                     class="bg-[#fcfaf2] p-3 rounded-lg border border-[#e8e2d5] hidden animate-fade-in">
                     <h4 class="text-xs font-bold text-[#3d644d] mb-2 flex justify-between items-center">
-                        <span>🎬 《桃花源記》文本導讀短影片</span>
+                        <span>🎬 《桃花源記》短影片欣賞</span>
                         <button onclick="hideIntroVideo()" class="text-xs text-gray-400 hover:text-[#b25d46]">隱藏影片
                             ✕</button>
                     </h4>
@@ -1043,7 +1050,7 @@
         </section>
     </main>
 
-    <!-- Toast 訊息提示元件 (修正點：補上原程式遺漏之 DOM 元件) -->
+    <!-- Toast 訊息提示元件 -->
     <div id="toastBox"
         class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none">
         <div id="toastContent"
@@ -1058,7 +1065,7 @@
         const l3Dialogues = {
             0: "「老夫代表全邑百姓敬客人一杯。祖輩為避秦時戰亂攜老幼入此，如今外頭是什麼朝代了？」",
             1: "「客人所言漢、魏、晉當真令人神傷。那不知如今外頭的百姓生活如何？徭役稅賦可還重？」",
-            2: "「唉，聽客人具言，外面依舊是白骨蔽野、生靈塗炭。客人臨行前，老夫有幾句掏心之語...」",
+            2: "「唉，聽客人具言，外面依舊是白骨蔽野、生靈湯炭。客人臨行前，老夫有幾句掏心之語...」",
             3: "「多謝客人！這有一卷古老避秦信物贈予你。請務必記住誓言，萬萬不可洩露此處。」"
         };
 
@@ -1079,7 +1086,6 @@
                 this.timer = null;
                 this.customAudioElement = null; // 播放自建或預設音樂
                 this.customAudioUrl = null;
-                this.defaultAudioUrl = 'http://googleusercontent.com/file_content/0'; // 👈 預設背景音樂 MP3 檔
             }
 
             init() {
@@ -1136,26 +1142,24 @@
                     await this.ctx.resume();
                 }
 
-                // 智慧判定播放源（客製化上傳優先，無則調用內建 defaultAudioUrl）
-                const activeAudioSrc = this.customAudioUrl || this.defaultAudioUrl;
-
-                if (activeAudioSrc) {
+                // 若有自訂上傳的音樂，優先播放
+                if (this.customAudioUrl) {
                     if (!this.customAudioElement) {
                         this.customAudioElement = new Audio();
                         this.customAudioElement.loop = true;
                     }
-                    if (this.customAudioElement.src !== activeAudioSrc) {
-                        this.customAudioElement.src = activeAudioSrc;
+                    if (this.customAudioElement.src !== this.customAudioUrl) {
+                        this.customAudioElement.src = this.customAudioUrl;
                         this.customAudioElement.load();
                     }
                     this.customAudioElement.play().catch(err => {
-                        console.warn("背景音樂播放受阻，已準備就緒，請手動觸發:", err);
+                        console.warn("背景音樂播放受阻，等待使用者互動觸發:", err);
                     });
                     this.isPlaying = true;
                     return;
                 }
 
-                // 兜底降級程序：純 Web Audio 合成古典樂
+                // 預設程序：純 Web Audio 即時合成古典古箏樂（0 外部檔案依賴）
                 if (this.isPlaying) return;
                 this.isPlaying = true;
 
@@ -1921,7 +1925,7 @@
                 synthInstance.customAudioElement = null;
             }
             await checkAndLoadCustomMedia();
-            showToast("🗑️ 已還原為系統預設配樂。", "info");
+            showToast("🗑️ 已還原為預設古箏合成器。", "info");
             if (state.isAudioPlaying) {
                 synthInstance.stop();
                 synthInstance.playScale();
